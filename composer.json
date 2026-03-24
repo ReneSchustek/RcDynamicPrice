@@ -39,6 +39,11 @@
             "@test"
         ]
     },
+    "config": {
+        "allow-plugins": {
+            "symfony/runtime": true
+        }
+    },
     "extra": {
         "shopware-plugin-class": "Ruhrcoder\\RcDynamicPrice\\RcDynamicPrice",
         "label": {
