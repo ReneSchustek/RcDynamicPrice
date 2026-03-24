@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/shopware/shopware/trunk/src/Core/System/SystemConfig/Schema/config.xsd">
+
+    <card>
+        <title>Dynamischer Meterpreis</title>
+        <title lang="en-GB">Dynamic Meter Price</title>
+
+        <input-field type="textarea">
+            <name>hintText</name>
+            <label>Hinweistext im Eingabe-Modal</label>
+            <label lang="en-GB">Hint text in input modal</label>
+            <placeholder>Bitte Länge in Millimetern eingeben – z. B. 1500 für 1,5 m</placeholder>
+            <defaultValue>Bitte Länge in Millimetern eingeben – z. B. 1500 für 1,5 m</defaultValue>
+            <helpText>Wird angezeigt, wenn der Kunde das Längenfeld fokussiert.</helpText>
+            <helpText lang="en-GB">Displayed when the customer focuses the length input field.</helpText>
+        </input-field>
+
+        <input-field type="int">
+            <name>minLength</name>
+            <label>Mindestlänge (mm)</label>
+            <label lang="en-GB">Minimum length (mm)</label>
+            <defaultValue>1</defaultValue>
+            <helpText>Kleinste erlaubte Eingabe in Millimetern.</helpText>
+            <helpText lang="en-GB">Smallest allowed input in millimetres.</helpText>
+        </input-field>
+
+        <input-field type="int">
+            <name>maxLength</name>
+            <label>Maximallänge (mm)</label>
+            <label lang="en-GB">Maximum length (mm)</label>
+            <defaultValue>10000</defaultValue>
+            <helpText>Größte erlaubte Eingabe in Millimetern.</helpText>
+            <helpText lang="en-GB">Largest allowed input in millimetres.</helpText>
+        </input-field>
+    </card>
+</config>

@@ -1,0 +1,112 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Ruhrcoder\RcDynamicPrice\Migration;
+
+use Doctrine\DBAL\Connection;
+use Shopware\Core\Framework\Migration\MigrationStep;
+use Shopware\Core\Framework\Uuid\Uuid;
+
+class Migration1743123456CreateMeterPriceCustomField extends MigrationStep
+{
+    private const SET_NAME = 'rc_dynamic_price';
+    private const FIELD_NAME = 'rc_meter_price_active';
+
+    public function getCreationTimestamp(): int
+    {
+        return 1743123456;
+    }
+
+    public function update(Connection $connection): void
+    {
+        $setId = $this->ensureCustomFieldSet($connection);
+        $this->ensureCustomFieldSetRelation($connection, $setId);
+        $this->ensureCustomField($connection, $setId);
+    }
+
+    public function updateDestructive(Connection $connection): void
+    {
+    }
+
+    private function ensureCustomFieldSet(Connection $connection): string
+    {
+        $existingId = $connection->fetchOne(
+            'SELECT `id` FROM `custom_field_set` WHERE `name` = :name',
+            ['name' => self::SET_NAME]
+        );
+
+        if ($existingId !== false) {
+            return (string) $existingId;
+        }
+
+        $setId = Uuid::randomBytes();
+
+        $connection->executeStatement(
+            'INSERT INTO `custom_field_set` (`id`, `name`, `config`, `active`, `global`, `position`, `created_at`)
+             VALUES (:id, :name, :config, 1, 0, 1, NOW())',
+            [
+                'id'     => $setId,
+                'name'   => self::SET_NAME,
+                'config' => json_encode([
+                    'label'      => ['de-DE' => 'Dynamischer Meterpreis', 'en-GB' => 'Dynamic Meter Price'],
+                    'translated' => true,
+                ], \JSON_THROW_ON_ERROR),
+            ]
+        );
+
+        return $setId;
+    }
+
+    private function ensureCustomFieldSetRelation(Connection $connection, string $setId): void
+    {
+        $exists = $connection->fetchOne(
+            'SELECT 1 FROM `custom_field_set_relation` WHERE `set_id` = :setId AND `entity_name` = :entity',
+            ['setId' => $setId, 'entity' => 'product']
+        );
+
+        if ($exists !== false) {
+            return;
+        }
+
+        $connection->executeStatement(
+            'INSERT INTO `custom_field_set_relation` (`id`, `set_id`, `entity_name`, `created_at`)
+             VALUES (:id, :setId, :entity, NOW())',
+            [
+                'id'     => Uuid::randomBytes(),
+                'setId'  => $setId,
+                'entity' => 'product',
+            ]
+        );
+    }
+
+    private function ensureCustomField(Connection $connection, string $setId): void
+    {
+        $exists = $connection->fetchOne(
+            'SELECT 1 FROM `custom_field` WHERE `name` = :name',
+            ['name' => self::FIELD_NAME]
+        );
+
+        if ($exists !== false) {
+            return;
+        }
+
+        $connection->executeStatement(
+            'INSERT INTO `custom_field` (`id`, `name`, `type`, `config`, `active`, `set_id`, `created_at`)
+             VALUES (:id, :name, :type, :config, 1, :setId, NOW())',
+            [
+                'id'     => Uuid::randomBytes(),
+                'name'   => self::FIELD_NAME,
+                'type'   => 'bool',
+                'config' => json_encode([
+                    'label'               => ['de-DE' => 'Meterpreis aktiv', 'en-GB' => 'Meter price active'],
+                    'componentName'       => 'sw-field',
+                    'customFieldType'     => 'checkbox',
+                    'type'                => 'checkbox',
+                    'customFieldPosition' => 1,
+                ], \JSON_THROW_ON_ERROR),
+                'setId'  => $setId,
+            ]
+        );
+    }
+}
