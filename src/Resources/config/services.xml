@@ -5,6 +5,23 @@
            http://symfony.com/schema/dic/services/services-1.0.xsd">
 
     <services>
-        <!-- Services werden in nachfolgenden BRIEFs registriert -->
+
+        <service id="Ruhrcoder\RcDynamicPrice\Storefront\Subscriber\ProductPageSubscriber">
+            <argument type="service" id="Shopware\Core\System\SystemConfig\SystemConfigService"/>
+            <tag name="kernel.event_subscriber"/>
+        </service>
+
+        <service id="Ruhrcoder\RcDynamicPrice\Subscriber\LineItemSubscriber">
+            <argument type="service" id="request_stack"/>
+            <argument type="service" id="Shopware\Core\System\SystemConfig\SystemConfigService"/>
+            <tag name="kernel.event_subscriber"/>
+        </service>
+
+        <service id="Ruhrcoder\RcDynamicPrice\Cart\DynamicPriceProcessor">
+            <argument type="service" id="Shopware\Core\Checkout\Cart\Price\QuantityPriceCalculator"/>
+            <!-- Läuft nach ProductCartProcessor (Priorität 5000) -->
+            <tag name="shopware.cart.processor" priority="4800"/>
+        </service>
+
     </services>
 </container>

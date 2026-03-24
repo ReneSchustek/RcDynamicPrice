@@ -1,0 +1,59 @@
+{% sw_extends '@Storefront/storefront/component/buy-widget/buy-widget-form.html.twig' %}
+
+{% block buy_widget_buy_quantity_container %}
+    {% set meterPriceActive = product.customFields.rc_meter_price_active|default(false) %}
+
+    {% if meterPriceActive %}
+        {% set rcConfig = page.extensions.rcDynamicPriceConfig %}
+        {% set hintText = rcConfig ? rcConfig.hintText : 'Bitte Länge in Millimetern eingeben – z. B. 1500 für 1,5 m' %}
+        {% set minLength = rcConfig ? rcConfig.minLength : 1 %}
+        {% set maxLength = rcConfig ? rcConfig.maxLength : 10000 %}
+
+        <div class="col-12 rc-dynamic-price"
+             data-dynamic-price="true"
+             data-hint-text="{{ hintText|e('html_attr') }}"
+             data-min-length="{{ minLength }}"
+             data-max-length="{{ maxLength }}"
+             data-base-price="{{ product.calculatedPrice.unitPrice }}"
+             data-currency="{{ context.currency.isoCode|default('EUR') }}"
+             data-product-id="{{ product.id }}">
+
+            <div class="rc-dynamic-price__field mb-3">
+                <label class="form-label rc-dynamic-price__label"
+                       for="rc-length-input-{{ product.id }}">
+                    Länge in Millimetern
+                </label>
+                <div class="input-group">
+                    <input type="text"
+                           id="rc-length-input-{{ product.id }}"
+                           class="form-control rc-dynamic-price__input"
+                           inputmode="numeric"
+                           autocomplete="off"
+                           placeholder="z. B. 1500">
+                    <span class="input-group-text">mm</span>
+                </div>
+                <div class="rc-dynamic-price__error text-danger small mt-1" hidden></div>
+                <div class="rc-dynamic-price__modal alert alert-info py-2 mt-2 small" hidden>
+                    {{ hintText }}
+                </div>
+            </div>
+
+            <div class="rc-dynamic-price__result alert alert-success py-2 mb-3" hidden>
+                Berechneter Preis:&nbsp;<strong class="rc-dynamic-price__result-price"></strong>
+            </div>
+
+            {# Überträgt die validierte Länge an den Server #}
+            <input type="hidden"
+                   class="rc-dynamic-price__hidden"
+                   name="mmLength"
+                   value="">
+        </div>
+
+        {# Quantity-Selektor ausblenden – Menge wird durch die Länge bestimmt #}
+        <input type="hidden"
+               name="lineItems[{{ product.id }}][quantity]"
+               value="1">
+    {% else %}
+        {{ parent() }}
+    {% endif %}
+{% endblock %}
