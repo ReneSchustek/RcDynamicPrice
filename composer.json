@@ -11,6 +11,7 @@
         }
     ],
     "require": {
+        "php": ">=8.2",
         "shopware/core": "~6.7.0 || ~6.8.0"
     },
     "require-dev": {
@@ -29,7 +30,7 @@
         }
     },
     "scripts": {
-        "test": "vendor/bin/phpunit",
+        "test": "vendor/bin/phpunit --no-coverage",
         "phpstan": "vendor/bin/phpstan analyse --memory-limit=512M",
         "cs-fix": "vendor/bin/php-cs-fixer fix",
         "cs-check": "vendor/bin/php-cs-fixer fix --dry-run --diff",
