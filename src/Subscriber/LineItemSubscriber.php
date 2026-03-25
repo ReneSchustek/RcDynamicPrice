@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Ruhrcoder\RcDynamicPrice\Subscriber;
 
+use Ruhrcoder\RcDynamicPrice\DynamicPriceConstants;
+use Ruhrcoder\RcDynamicPrice\Service\MeterProductHelper;
 use Shopware\Core\Checkout\Cart\Event\BeforeLineItemAddedEvent;
 use Shopware\Core\System\SystemConfig\SystemConfigService;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
@@ -14,6 +16,7 @@ final class LineItemSubscriber implements EventSubscriberInterface
     public function __construct(
         private readonly RequestStack $requestStack,
         private readonly SystemConfigService $systemConfigService,
+        private readonly MeterProductHelper $meterProductHelper,
     ) {
     }
 
@@ -36,6 +39,12 @@ final class LineItemSubscriber implements EventSubscriberInterface
             return;
         }
 
+        // Nur Produkte mit aktivem Meterpreis-Flag akzeptieren — verhindert Preismanipulation
+        $productId = $event->getLineItem()->getReferencedId();
+        if ($productId === null || !$this->meterProductHelper->isMeterProduct($productId, $event->getSalesChannelContext()->getContext())) {
+            return;
+        }
+
         // Serverseitige Bounds-Validierung als zweite Sicherheitsschicht
         $salesChannelId = $event->getSalesChannelContext()->getSalesChannel()->getId();
         $minLength = $this->systemConfigService->getInt('RcDynamicPrice.config.minLength', $salesChannelId) ?: 1;
@@ -45,6 +54,9 @@ final class LineItemSubscriber implements EventSubscriberInterface
             return;
         }
 
-        $event->getLineItem()->setPayloadValue('meterLengthMm', $mmLength);
+        $lineItem = $event->getLineItem();
+        $lineItem->setPayloadValue(DynamicPriceConstants::PAYLOAD_LENGTH_MM, $mmLength);
+        // Flag im Payload speichern damit der DynamicPriceProcessor es ohne DB-Zugriff prüfen kann
+        $lineItem->setPayloadValue(DynamicPriceConstants::PAYLOAD_METER_ACTIVE, true);
     }
 }

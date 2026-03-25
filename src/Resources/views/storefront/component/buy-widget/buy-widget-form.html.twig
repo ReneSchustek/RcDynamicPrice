@@ -1,13 +1,12 @@
 {% sw_extends '@Storefront/storefront/component/buy-widget/buy-widget-form.html.twig' %}
 
 {% block buy_widget_buy_quantity_container %}
-    {% set meterPriceActive = product.customFields.rc_meter_price_active|default(false) %}
-
-    {% if meterPriceActive %}
+    {# Extension wird serverseitig nur für Meterartikel gesetzt — kein weiterer Custom-Field-Check nötig #}
+    {% if page.extensions.rcDynamicPriceConfig is defined %}
         {% set rcConfig = page.extensions.rcDynamicPriceConfig %}
-        {% set hintText = rcConfig ? rcConfig.hintText : 'Bitte Länge in Millimetern eingeben – z. B. 1500 für 1,5 m' %}
-        {% set minLength = rcConfig ? rcConfig.minLength : 1 %}
-        {% set maxLength = rcConfig ? rcConfig.maxLength : 10000 %}
+        {% set hintText = rcConfig.hintText %}
+        {% set minLength = rcConfig.minLength %}
+        {% set maxLength = rcConfig.maxLength %}
 
         <div class="col-12 rc-dynamic-price"
              data-dynamic-price="true"

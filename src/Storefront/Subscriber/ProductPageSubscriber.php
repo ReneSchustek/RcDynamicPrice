@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Ruhrcoder\RcDynamicPrice\Storefront\Subscriber;
 
+use Ruhrcoder\RcDynamicPrice\Service\MeterProductHelper;
 use Ruhrcoder\RcDynamicPrice\Storefront\Struct\RcDynamicPriceConfigStruct;
 use Shopware\Core\System\SystemConfig\SystemConfigService;
 use Shopware\Storefront\Page\Product\ProductPageLoadedEvent;
@@ -17,6 +18,7 @@ final class ProductPageSubscriber implements EventSubscriberInterface
 
     public function __construct(
         private readonly SystemConfigService $systemConfigService,
+        private readonly MeterProductHelper $meterProductHelper,
     ) {
     }
 
@@ -29,6 +31,13 @@ final class ProductPageSubscriber implements EventSubscriberInterface
 
     public function onProductPageLoaded(ProductPageLoadedEvent $event): void
     {
+        $product = $event->getPage()->getProduct();
+
+        // Eingabefeld nur für explizit als Meterartikel markierte Produkte einblenden
+        if (!$this->meterProductHelper->isMeterProductEntity($product)) {
+            return;
+        }
+
         $salesChannelId = $event->getSalesChannelContext()->getSalesChannel()->getId();
 
         $hintText = $this->systemConfigService->getString(

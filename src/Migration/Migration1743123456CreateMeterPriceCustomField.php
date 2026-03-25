@@ -8,7 +8,7 @@ use Doctrine\DBAL\Connection;
 use Shopware\Core\Framework\Migration\MigrationStep;
 use Shopware\Core\Framework\Uuid\Uuid;
 
-class Migration1743123456CreateMeterPriceCustomField extends MigrationStep
+final class Migration1743123456CreateMeterPriceCustomField extends MigrationStep
 {
     private const SET_NAME = 'rc_dynamic_price';
     private const FIELD_NAME = 'rc_meter_price_active';

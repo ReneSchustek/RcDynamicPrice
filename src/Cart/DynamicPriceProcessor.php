@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Ruhrcoder\RcDynamicPrice\Cart;
 
+use Ruhrcoder\RcDynamicPrice\DynamicPriceConstants;
 use Shopware\Core\Checkout\Cart\Cart;
 use Shopware\Core\Checkout\Cart\CartBehavior;
 use Shopware\Core\Checkout\Cart\CartProcessorInterface;
@@ -28,7 +29,13 @@ final class DynamicPriceProcessor implements CartProcessorInterface
         CartBehavior $behavior,
     ): void {
         foreach ($toCalculate->getLineItems()->filterType(LineItem::PRODUCT_LINE_ITEM_TYPE) as $lineItem) {
-            $mmLength = $lineItem->getPayloadValue('meterLengthMm');
+            // Zweite Absicherung: nur Artikel mit explizit gesetztem Flag verarbeiten,
+            // damit manipulierte Payloads ohne Subscriber-Durchlauf keine Wirkung haben.
+            if ($lineItem->getPayloadValue(DynamicPriceConstants::PAYLOAD_METER_ACTIVE) !== true) {
+                continue;
+            }
+
+            $mmLength = $lineItem->getPayloadValue(DynamicPriceConstants::PAYLOAD_LENGTH_MM);
 
             if (!is_int($mmLength) || $mmLength <= 0) {
                 continue;
@@ -52,7 +59,7 @@ final class DynamicPriceProcessor implements CartProcessorInterface
 
             // Längenbezeichnung für Warenkorb- und Bestellübersicht
             $lineItem->setPayloadValue(
-                'rc_length_label',
+                DynamicPriceConstants::PAYLOAD_LENGTH_LABEL,
                 'Länge: ' . number_format($mmLength, 0, ',', '.') . ' mm'
             );
         }
