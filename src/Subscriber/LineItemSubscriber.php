@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Ruhrcoder\RcDynamicPrice\Subscriber;
 
 use Ruhrcoder\RcDynamicPrice\DynamicPriceConstants;
-use Ruhrcoder\RcDynamicPrice\Service\MeterProductHelper;
+use Ruhrcoder\RcDynamicPrice\Service\MeterProductHelperInterface;
 use Shopware\Core\Checkout\Cart\Event\BeforeLineItemAddedEvent;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpFoundation\RequestStack;
@@ -14,7 +14,7 @@ final class LineItemSubscriber implements EventSubscriberInterface
 {
     public function __construct(
         private readonly RequestStack $requestStack,
-        private readonly MeterProductHelper $meterProductHelper,
+        private readonly MeterProductHelperInterface $meterProductHelper,
     ) {
     }
 

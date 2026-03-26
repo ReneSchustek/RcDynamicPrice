@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Ruhrcoder\RcDynamicPrice\Tests\Unit\Storefront\Subscriber;
 
 use PHPUnit\Framework\TestCase;
-use Ruhrcoder\RcDynamicPrice\Service\MeterProductHelper;
+use Ruhrcoder\RcDynamicPrice\Service\MeterProductHelperInterface;
 use Ruhrcoder\RcDynamicPrice\Storefront\Struct\RcDynamicPriceConfigStruct;
 use Ruhrcoder\RcDynamicPrice\Storefront\Subscriber\ProductPageSubscriber;
 use Shopware\Core\Content\Product\ProductEntity;
@@ -19,13 +19,13 @@ use Symfony\Component\HttpFoundation\Request;
 final class ProductPageSubscriberTest extends TestCase
 {
     private SystemConfigService $systemConfig;
-    private MeterProductHelper $meterProductHelper;
+    private MeterProductHelperInterface $meterProductHelper;
     private ProductPageSubscriber $subscriber;
 
     protected function setUp(): void
     {
         $this->systemConfig = $this->createMock(SystemConfigService::class);
-        $this->meterProductHelper = $this->createMock(MeterProductHelper::class);
+        $this->meterProductHelper = $this->createMock(MeterProductHelperInterface::class);
         $this->subscriber = new ProductPageSubscriber($this->systemConfig, $this->meterProductHelper);
     }
 

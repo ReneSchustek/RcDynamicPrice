@@ -11,7 +11,7 @@ use Shopware\Core\Framework\DataAbstractionLayer\EntityRepository;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\Criteria;
 use Shopware\Core\System\SystemConfig\SystemConfigService;
 
-final class MeterProductHelper
+final class MeterProductHelper implements MeterProductHelperInterface
 {
     private const DEFAULT_MIN_LENGTH = 1;
     private const DEFAULT_MAX_LENGTH = 10000;

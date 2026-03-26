@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Ruhrcoder\RcDynamicPrice\Storefront\Subscriber;
 
-use Ruhrcoder\RcDynamicPrice\Service\MeterProductHelper;
+use Ruhrcoder\RcDynamicPrice\Service\MeterProductHelperInterface;
 use Ruhrcoder\RcDynamicPrice\Storefront\Struct\RcDynamicPriceConfigStruct;
 use Shopware\Core\System\SystemConfig\SystemConfigService;
 use Shopware\Storefront\Page\Product\ProductPageLoadedEvent;
@@ -16,7 +16,7 @@ final class ProductPageSubscriber implements EventSubscriberInterface
 
     public function __construct(
         private readonly SystemConfigService $systemConfigService,
-        private readonly MeterProductHelper $meterProductHelper,
+        private readonly MeterProductHelperInterface $meterProductHelper,
     ) {
     }
 

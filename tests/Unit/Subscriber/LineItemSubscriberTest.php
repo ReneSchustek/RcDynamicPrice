@@ -6,7 +6,7 @@ namespace Ruhrcoder\RcDynamicPrice\Tests\Unit\Subscriber;
 
 use PHPUnit\Framework\TestCase;
 use Ruhrcoder\RcDynamicPrice\DynamicPriceConstants;
-use Ruhrcoder\RcDynamicPrice\Service\MeterProductHelper;
+use Ruhrcoder\RcDynamicPrice\Service\MeterProductHelperInterface;
 use Ruhrcoder\RcDynamicPrice\Subscriber\LineItemSubscriber;
 use Shopware\Core\Checkout\Cart\Cart;
 use Shopware\Core\Checkout\Cart\Event\BeforeLineItemAddedEvent;
@@ -22,13 +22,13 @@ use Symfony\Component\HttpFoundation\RequestStack;
 final class LineItemSubscriberTest extends TestCase
 {
     private RequestStack $requestStack;
-    private MeterProductHelper $meterProductHelper;
+    private MeterProductHelperInterface $meterProductHelper;
     private LineItemSubscriber $subscriber;
 
     protected function setUp(): void
     {
         $this->requestStack = $this->createMock(RequestStack::class);
-        $this->meterProductHelper = $this->createMock(MeterProductHelper::class);
+        $this->meterProductHelper = $this->createMock(MeterProductHelperInterface::class);
         $this->subscriber = new LineItemSubscriber(
             $this->requestStack,
             $this->meterProductHelper,
