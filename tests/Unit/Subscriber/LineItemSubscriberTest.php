@@ -194,8 +194,9 @@ final class LineItemSubscriberTest extends TestCase
         $lineItem->method('getReferencedId')->willReturn('product-id');
         $lineItem->method('getId')->willReturn('line-item-id');
         $lineItem->expects($this->exactly(2))->method('setPayloadValue')
-            ->willReturnCallback(function (string $key, mixed $value): void {
+            ->willReturnCallback(function (string $key, mixed $value) use ($lineItem): LineItem {
                 $this->assertContains($key, [DynamicPriceConstants::PAYLOAD_LENGTH_MM, DynamicPriceConstants::PAYLOAD_METER_ACTIVE]);
+                return $lineItem;
             });
 
         // Cart gibt dasselbe Item zurück — simuliert den Normalfall
