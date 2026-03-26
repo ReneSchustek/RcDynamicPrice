@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Ruhrcoder\RcDynamicPrice\Cart;
 
 use Ruhrcoder\RcDynamicPrice\DynamicPriceConstants;
+use Ruhrcoder\RcDynamicPrice\Service\MeterProductHelperInterface;
 use Shopware\Core\Checkout\Cart\Cart;
 use Shopware\Core\Checkout\Cart\CartBehavior;
 use Shopware\Core\Checkout\Cart\CartProcessorInterface;
@@ -18,6 +19,7 @@ final class DynamicPriceProcessor implements CartProcessorInterface
 {
     public function __construct(
         private readonly QuantityPriceCalculator $calculator,
+        private readonly MeterProductHelperInterface $meterProductHelper,
     ) {
     }
 
@@ -39,17 +41,29 @@ final class DynamicPriceProcessor implements CartProcessorInterface
                 continue;
             }
 
+            // Serverseitige Bounds-Validierung — Min/Max wurde vom Subscriber im Payload gespeichert
+            $minLength = $lineItem->getPayloadValue(DynamicPriceConstants::PAYLOAD_MIN_LENGTH);
+            $maxLength = $lineItem->getPayloadValue(DynamicPriceConstants::PAYLOAD_MAX_LENGTH);
+
+            if (is_int($minLength) && $mmLength < $minLength) {
+                continue;
+            }
+
+            if (is_int($maxLength) && $mmLength > $maxLength) {
+                continue;
+            }
+
             $price = $lineItem->getPrice();
             if ($price === null) {
                 continue;
             }
 
-            // Aufrunden prüfen — Custom Fields werden vom ProductCartProcessor im Payload gespeichert
-            $customFields = $lineItem->getPayloadValue('customFields') ?? [];
-            $roundUp = (bool) ($customFields[DynamicPriceConstants::FIELD_ROUND_UP_METER] ?? false);
-            $billedLength = $roundUp ? (int) (ceil($mmLength / 1000) * 1000) : $mmLength;
+            // Aufrunden — Flag vom Subscriber gesetzt, Logik aus Helper (kein Duplikat)
+            $roundUp = $lineItem->getPayloadValue(DynamicPriceConstants::PAYLOAD_ROUND_UP) === true;
+            $billedLength = $roundUp
+                ? $this->meterProductHelper->roundUpToMeter($mmLength)
+                : $mmLength;
 
-            // Grundpreis gilt pro 1.000 mm (1 m) – Preis proportional zur berechneten Länge skalieren
             $adjustedUnitPrice = ($price->getUnitPrice() / 1000.0) * $billedLength;
 
             $definition = new QuantityPriceDefinition(
@@ -60,7 +74,6 @@ final class DynamicPriceProcessor implements CartProcessorInterface
 
             $lineItem->setPrice($this->calculator->calculate($definition, $context));
 
-            // Längenbezeichnung für Warenkorb- und Bestellübersicht
             $label = 'Länge: ' . number_format($mmLength, 0, ',', '.') . ' mm';
             if ($roundUp && $billedLength !== $mmLength) {
                 $label .= ' (berechnet: ' . number_format($billedLength, 0, ',', '.') . ' mm)';

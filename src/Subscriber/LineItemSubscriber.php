@@ -63,10 +63,15 @@ final class LineItemSubscriber implements EventSubscriberInterface
             return;
         }
 
-        // Originaleingabe speichern — das ist die Schnittlänge für die Bestellung.
-        // Aufrunden für die Preisberechnung erfolgt im DynamicPriceProcessor.
+        $roundUp = $this->meterProductHelper->shouldRoundUpToMeter($product);
+
+        // Originaleingabe + Konfiguration als Payload speichern.
+        // Der Processor liest diese Werte, ohne das Produkt erneut laden zu müssen.
         $cartItem = $event->getCart()->get($event->getLineItem()->getId()) ?? $event->getLineItem();
         $cartItem->setPayloadValue(DynamicPriceConstants::PAYLOAD_LENGTH_MM, $mmLength);
         $cartItem->setPayloadValue(DynamicPriceConstants::PAYLOAD_METER_ACTIVE, true);
+        $cartItem->setPayloadValue(DynamicPriceConstants::PAYLOAD_ROUND_UP, $roundUp);
+        $cartItem->setPayloadValue(DynamicPriceConstants::PAYLOAD_MIN_LENGTH, $minLength);
+        $cartItem->setPayloadValue(DynamicPriceConstants::PAYLOAD_MAX_LENGTH, $maxLength);
     }
 }

@@ -26,4 +26,13 @@ final class DynamicPriceConstants
 
     /** Custom-Field-Name am Produkt — Eingabe auf nächsten vollen Meter aufrunden */
     public const FIELD_ROUND_UP_METER = 'rc_meter_price_round_up_meter';
+
+    /** Payload-Schlüssel: Aufrundungs-Flag, vom Subscriber aus dem Produkt gelesen */
+    public const PAYLOAD_ROUND_UP = 'rc_round_up_meter';
+
+    /** Payload-Schlüssel: produktspezifische Mindestlänge, vom Subscriber gesetzt */
+    public const PAYLOAD_MIN_LENGTH = 'rc_min_length_mm';
+
+    /** Payload-Schlüssel: produktspezifische Maximallänge, vom Subscriber gesetzt */
+    public const PAYLOAD_MAX_LENGTH = 'rc_max_length_mm';
 }

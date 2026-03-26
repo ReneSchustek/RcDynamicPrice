@@ -16,18 +16,19 @@
 
         <service id="Ruhrcoder\RcDynamicPrice\Storefront\Subscriber\ProductPageSubscriber">
             <argument type="service" id="Shopware\Core\System\SystemConfig\SystemConfigService"/>
-            <argument type="service" id="Ruhrcoder\RcDynamicPrice\Service\MeterProductHelper"/>
+            <argument type="service" id="Ruhrcoder\RcDynamicPrice\Service\MeterProductHelperInterface"/>
             <tag name="kernel.event_subscriber"/>
         </service>
 
         <service id="Ruhrcoder\RcDynamicPrice\Subscriber\LineItemSubscriber">
             <argument type="service" id="request_stack"/>
-            <argument type="service" id="Ruhrcoder\RcDynamicPrice\Service\MeterProductHelper"/>
+            <argument type="service" id="Ruhrcoder\RcDynamicPrice\Service\MeterProductHelperInterface"/>
             <tag name="kernel.event_subscriber"/>
         </service>
 
         <service id="Ruhrcoder\RcDynamicPrice\Cart\DynamicPriceProcessor">
             <argument type="service" id="Shopware\Core\Checkout\Cart\Price\QuantityPriceCalculator"/>
+            <argument type="service" id="Ruhrcoder\RcDynamicPrice\Service\MeterProductHelperInterface"/>
             <!-- Läuft nach ProductCartProcessor (Priorität 5000) -->
             <tag name="shopware.cart.processor" priority="4800"/>
         </service>

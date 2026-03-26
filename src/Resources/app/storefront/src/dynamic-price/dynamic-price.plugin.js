@@ -208,7 +208,7 @@ export default class DynamicPricePlugin extends Plugin {
         this._resultEl.hidden = false;
 
         if (this._productPrice) {
-            this._productPrice.innerHTML = formatted;
+            this._productPrice.textContent = formatted;
         }
     }
 

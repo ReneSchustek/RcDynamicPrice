@@ -200,4 +200,35 @@ final class MeterProductHelperTest extends TestCase
 
         $this->assertSame(200, $this->helper->getMinLength($product, 'sc-id'));
     }
+
+    public function testRoundUpToMeterRoundsUp(): void
+    {
+        $this->assertSame(5000, $this->helper->roundUpToMeter(4050));
+    }
+
+    public function testRoundUpToMeterKeepsExactMeter(): void
+    {
+        $this->assertSame(3000, $this->helper->roundUpToMeter(3000));
+    }
+
+    public function testRoundUpToMeterRoundsSmallValue(): void
+    {
+        $this->assertSame(1000, $this->helper->roundUpToMeter(1));
+    }
+
+    public function testShouldRoundUpToMeterReturnsTrueWhenSet(): void
+    {
+        $product = new ProductEntity();
+        $product->setCustomFields(['rc_meter_price_round_up_meter' => true]);
+
+        $this->assertTrue($this->helper->shouldRoundUpToMeter($product));
+    }
+
+    public function testShouldRoundUpToMeterReturnsFalseWhenNotSet(): void
+    {
+        $product = new ProductEntity();
+        $product->setCustomFields([]);
+
+        $this->assertFalse($this->helper->shouldRoundUpToMeter($product));
+    }
 }
