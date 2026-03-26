@@ -193,9 +193,16 @@ final class LineItemSubscriberTest extends TestCase
         $lineItem = $this->createMock(LineItem::class);
         $lineItem->method('getReferencedId')->willReturn('product-id');
         $lineItem->method('getId')->willReturn('line-item-id');
-        $lineItem->expects($this->exactly(2))->method('setPayloadValue')
-            ->willReturnCallback(function (string $key, mixed $value) use ($lineItem): LineItem {
-                $this->assertContains($key, [DynamicPriceConstants::PAYLOAD_LENGTH_MM, DynamicPriceConstants::PAYLOAD_METER_ACTIVE]);
+        $expectedKeys = [
+            DynamicPriceConstants::PAYLOAD_LENGTH_MM,
+            DynamicPriceConstants::PAYLOAD_METER_ACTIVE,
+            DynamicPriceConstants::PAYLOAD_ROUND_UP,
+            DynamicPriceConstants::PAYLOAD_MIN_LENGTH,
+            DynamicPriceConstants::PAYLOAD_MAX_LENGTH,
+        ];
+        $lineItem->expects($this->exactly(5))->method('setPayloadValue')
+            ->willReturnCallback(function (string $key, mixed $value) use ($lineItem, $expectedKeys): LineItem {
+                $this->assertContains($key, $expectedKeys);
                 return $lineItem;
             });
 
