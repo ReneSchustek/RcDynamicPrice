@@ -16,12 +16,17 @@
              data-base-price="{{ product.calculatedPrice.unitPrice }}"
              data-currency="{{ context.currency.isoCode|default('EUR') }}"
              data-product-id="{{ product.id }}"
-             data-round-up-meter="{{ rcConfig.roundUpToMeter ? '1' : '0' }}">
+             data-round-up-meter="{{ rcConfig.roundUpToMeter ? '1' : '0' }}"
+             data-snippet-error-integer="{{ 'rc-dynamic-price.errorIntegerOnly'|trans|e('html_attr') }}"
+             data-snippet-error-min="{{ 'rc-dynamic-price.errorMinLength'|trans|e('html_attr') }}"
+             data-snippet-error-max="{{ 'rc-dynamic-price.errorMaxLength'|trans|e('html_attr') }}"
+             data-snippet-round-up="{{ 'rc-dynamic-price.roundUpHint'|trans|e('html_attr') }}"
+             data-snippet-modal-button="{{ 'rc-dynamic-price.hintModalButton'|trans|e('html_attr') }}">
 
             <div class="rc-dynamic-price__field mb-3">
                 <label class="form-label rc-dynamic-price__label"
                        for="rc-length-input-{{ product.id }}">
-                    Länge in Millimetern
+                    {{ 'rc-dynamic-price.label'|trans }}
                 </label>
                 <div class="input-group">
                     <input type="text"
@@ -29,14 +34,14 @@
                            class="form-control rc-dynamic-price__input"
                            inputmode="numeric"
                            autocomplete="off"
-                           placeholder="z. B. 1500">
-                    <span class="input-group-text">mm</span>
+                           placeholder="{{ 'rc-dynamic-price.placeholder'|trans }}">
+                    <span class="input-group-text">{{ 'rc-dynamic-price.unit'|trans }}</span>
                 </div>
                 <div class="rc-dynamic-price__error text-danger small mt-1" hidden></div>
             </div>
 
             <div class="rc-dynamic-price__result alert alert-success py-2 mb-3" hidden>
-                Berechneter Preis:&nbsp;<strong class="rc-dynamic-price__result-price"></strong>
+                {{ 'rc-dynamic-price.calculatedPrice'|trans }}&nbsp;<strong class="rc-dynamic-price__result-price"></strong>
             </div>
 
             {# Überträgt die validierte Länge an den Server — leer wenn keine gültige Eingabe #}
@@ -50,31 +55,6 @@
         <input type="hidden"
                name="lineItems[{{ product.id }}][quantity]"
                value="1">
-
-        <style>
-            .rc-dynamic-price-backdrop {
-                position: fixed;
-                inset: 0;
-                background: rgba(0, 0, 0, .4);
-                z-index: 1050;
-            }
-            .rc-dynamic-price-modal {
-                position: fixed;
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%, -50%);
-                background: #fff;
-                border-radius: .5rem;
-                padding: 1.5rem;
-                max-width: 28rem;
-                width: 90%;
-                z-index: 1051;
-                box-shadow: 0 .5rem 1rem rgba(0, 0, 0, .25);
-            }
-            .rc-dynamic-price-modal__content p {
-                margin-bottom: 1rem;
-            }
-        </style>
     {% else %}
         {{ parent() }}
     {% endif %}

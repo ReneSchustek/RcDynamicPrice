@@ -1,0 +1,15 @@
+{
+    "rc-dynamic-price": {
+        "label": "Länge in Millimetern",
+        "placeholder": "z. B. 1500",
+        "unit": "mm",
+        "calculatedPrice": "Berechneter Preis:",
+        "errorIntegerOnly": "Bitte nur positive ganze Zahlen eingeben.",
+        "errorMinLength": "Mindestlänge: %minLength% mm",
+        "errorMaxLength": "Maximallänge: %maxLength% mm",
+        "roundUpHint": "Eingabe %input% mm → berechnet werden %billed% mm (auf vollen Meter gerundet)",
+        "hintModalButton": "Verstanden",
+        "cartLengthLabel": "Länge: %length% mm",
+        "cartLengthLabelRoundUp": "Länge: %length% mm (berechnet: %billed% mm)"
+    }
+}

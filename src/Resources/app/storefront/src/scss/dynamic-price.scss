@@ -1,0 +1,24 @@
+.rc-dynamic-price-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, .4);
+    z-index: 1050;
+}
+
+.rc-dynamic-price-modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: #fff;
+    border-radius: .5rem;
+    padding: 1.5rem;
+    max-width: 28rem;
+    width: 90%;
+    z-index: 1051;
+    box-shadow: 0 .5rem 1rem rgba(0, 0, 0, .25);
+}
+
+.rc-dynamic-price-modal__content p {
+    margin-bottom: 1rem;
+}

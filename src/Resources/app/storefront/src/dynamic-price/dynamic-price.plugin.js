@@ -17,19 +17,33 @@ export default class DynamicPricePlugin extends Plugin {
 
         this._hintShown = false;
 
-        // LineItem-ID-Input aus dem Shopware-Formular (gesetzt im buy_widget_buy_product_buy_info-Block)
         this._lineItemIdInput = this._form
             ? this._form.querySelector('[name="lineItems[' + this._productId + '][id]"]')
             : null;
+
+        // Gebundene Event-Handler für sauberes Cleanup in destroy()
+        this._boundOnFocus   = this._onFocus.bind(this);
+        this._boundOnInput   = this._onInput.bind(this);
+        this._boundOnKeydown = this._onKeydown.bind(this);
 
         this._disableSubmit();
         this._registerEvents();
     }
 
+    destroy() {
+        if (this._input) {
+            this._input.removeEventListener('focus', this._boundOnFocus);
+            this._input.removeEventListener('input', this._boundOnInput);
+            this._input.removeEventListener('keydown', this._boundOnKeydown);
+        }
+
+        super.destroy();
+    }
+
     _registerEvents() {
-        this._input.addEventListener('focus', this._onFocus.bind(this));
-        this._input.addEventListener('input', this._onInput.bind(this));
-        this._input.addEventListener('keydown', this._onKeydown.bind(this));
+        this._input.addEventListener('focus', this._boundOnFocus);
+        this._input.addEventListener('input', this._boundOnInput);
+        this._input.addEventListener('keydown', this._boundOnKeydown);
     }
 
     _onFocus() {
@@ -47,6 +61,8 @@ export default class DynamicPricePlugin extends Plugin {
     }
 
     _showHintModal(text) {
+        const buttonLabel = this.el.dataset.snippetModalButton || 'OK';
+
         const backdrop = document.createElement('div');
         backdrop.className = 'rc-dynamic-price-backdrop';
 
@@ -55,7 +71,9 @@ export default class DynamicPricePlugin extends Plugin {
         modal.innerHTML =
             '<div class="rc-dynamic-price-modal__content">' +
                 '<p>' + this._escapeHtml(text) + '</p>' +
-                '<button type="button" class="btn btn-primary btn-sm rc-dynamic-price-modal__close">Verstanden</button>' +
+                '<button type="button" class="btn btn-primary btn-sm rc-dynamic-price-modal__close">'
+                    + this._escapeHtml(buttonLabel) +
+                '</button>' +
             '</div>';
 
         document.body.appendChild(backdrop);
@@ -98,7 +116,7 @@ export default class DynamicPricePlugin extends Plugin {
         const mm = this._parse(raw);
 
         if (mm === null) {
-            this._showError('Bitte nur positive ganze Zahlen eingeben.');
+            this._showError(this.el.dataset.snippetErrorInteger || 'Invalid input');
             this._clearResult();
             this._disableSubmit();
             this._updateMeterState(null);
@@ -107,9 +125,12 @@ export default class DynamicPricePlugin extends Plugin {
 
         const min = parseInt(this.el.dataset.minLength, 10) || 1;
         const max = parseInt(this.el.dataset.maxLength, 10) || 10000;
+        const locale = document.documentElement.lang || 'de-DE';
 
         if (mm < min) {
-            this._showError('Mindestlänge: ' + min.toLocaleString('de-DE') + ' mm');
+            const msg = (this.el.dataset.snippetErrorMin || 'Min: %minLength% mm')
+                .replace('%minLength%', min.toLocaleString(locale));
+            this._showError(msg);
             this._clearResult();
             this._disableSubmit();
             this._updateMeterState(null);
@@ -117,7 +138,9 @@ export default class DynamicPricePlugin extends Plugin {
         }
 
         if (mm > max) {
-            this._showError('Maximallänge: ' + max.toLocaleString('de-DE') + ' mm');
+            const msg = (this.el.dataset.snippetErrorMax || 'Max: %maxLength% mm')
+                .replace('%maxLength%', max.toLocaleString(locale));
+            this._showError(msg);
             this._clearResult();
             this._disableSubmit();
             this._updateMeterState(null);
@@ -126,12 +149,10 @@ export default class DynamicPricePlugin extends Plugin {
 
         this._clearError();
 
-        // Originaleingabe speichern — das ist die Schnittlänge
         this._hidden.value = mm;
         this._updateMeterState(mm);
         this._enableSubmit();
 
-        // Preis auf Basis der berechneten Länge (ggf. aufgerundet)
         const roundUp = this.el.dataset.roundUpMeter === '1';
         const billedMm = roundUp ? Math.ceil(mm / 1000) * 1000 : mm;
         this._updatePrice(billedMm);
@@ -148,11 +169,6 @@ export default class DynamicPricePlugin extends Plugin {
         return parseInt(value, 10);
     }
 
-    /**
-     * Setzt den Meter-Suffix als data-Attribut auf dem Formular und feuert ein Event.
-     * RcCustomFields kann diesen Suffix in seinen ID-Hash einbeziehen.
-     * Wenn RcCustomFields nicht aktiv ist, setzt dieses Plugin die LineItem-ID direkt.
-     */
     _updateMeterState(mm) {
         if (!this._form || !this._productId) {
             return;
@@ -165,13 +181,11 @@ export default class DynamicPricePlugin extends Plugin {
             detail: { mm: mm, suffix: suffix },
         }));
 
-        // Wenn RcCustomFields aktiv ist, überlässt es diesem Plugin die finale ID
         const hasCustomFields = this._form.querySelector('[data-rc-custom-fields]');
         if (hasCustomFields) {
             return;
         }
 
-        // Kein RcCustomFields → ID direkt setzen
         if (this._lineItemIdInput) {
             this._lineItemIdInput.value = mm
                 ? (this._productId + '-' + suffix)
@@ -180,9 +194,12 @@ export default class DynamicPricePlugin extends Plugin {
     }
 
     _showRoundUpHint(inputMm, billedMm) {
-        this._errorEl.textContent =
-            'Eingabe ' + inputMm.toLocaleString('de-DE') + ' mm → berechnet werden '
-            + billedMm.toLocaleString('de-DE') + ' mm (auf vollen Meter gerundet)';
+        const locale = document.documentElement.lang || 'de-DE';
+        const msg = (this.el.dataset.snippetRoundUp || 'Input %input% mm → billed %billed% mm')
+            .replace('%input%', inputMm.toLocaleString(locale))
+            .replace('%billed%', billedMm.toLocaleString(locale));
+
+        this._errorEl.textContent = msg;
         this._errorEl.hidden = false;
         this._errorEl.classList.remove('text-danger');
         this._errorEl.classList.add('text-info');
