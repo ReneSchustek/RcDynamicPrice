@@ -49,8 +49,8 @@
     "extra": {
         "shopware-plugin-class": "Ruhrcoder\\RcDynamicPrice\\RcDynamicPrice",
         "label": {
-            "de-DE": "Ruhrcoder - Dynamischer Meterpreis",
-            "en-GB": "Ruhrcoder - Dynamic Meter Price"
+            "de-DE": "Dynamischer Meterpreis",
+            "en-GB": "Dynamic Meter Price"
         },
         "description": {
             "de-DE": "Längenbasierte Preisberechnung: Kunden geben ihre Wunschlänge in mm ein, der Preis wird live berechnet und in den Warenkorb übernommen.",
