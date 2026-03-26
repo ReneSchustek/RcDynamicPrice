@@ -16,8 +16,8 @@ Produkte (z. B. Kabel, Stoffe, Profile) werden nach Meterlänge verkauft. Der Gr
 - Verschiedene Längen erzeugen separate Warenkorbpositionen
 - Länge wird im Warenkorb, im Checkout und in Bestellungen angezeigt
 - Per Produkt aktivierbar über das Custom Field `rc_meter_price_active`
-- Kompatibel mit RcCustomFields (siehe Abschnitt Plugin-Interaktion)
-- Theme-kompatibel (BEM-Klassen, kein Inline-CSS)
+- Kompatibel mit RcCartSplitter und TmmsProductCustomerInputs
+- Theme-kompatibel (BEM-Klassen, SCSS in `base.scss`)
 
 ## Voraussetzungen
 
@@ -29,6 +29,7 @@ Produkte (z. B. Kabel, Stoffe, Profile) werden nach Meterlänge verkauft. Der Gr
 ```bash
 php bin/console plugin:refresh
 php bin/console plugin:install --activate RcDynamicPrice
+bin/build-storefront.sh
 php bin/console cache:clear
 ```
 
@@ -36,7 +37,7 @@ php bin/console cache:clear
 
 ### Globale Plugin-Konfiguration
 
-Im Admin unter **Einstellungen → Plugins → Ruhrcoder - Dynamischer Meterpreis**:
+Im Admin unter **Einstellungen → Plugins → Dynamischer Meterpreis**:
 
 | Feld | Beschreibung | Standard |
 |------|-------------|---------|
@@ -55,15 +56,15 @@ Im Admin unter dem jeweiligen Produkt → **Individuelle Felder** → **Dynamisc
 | Maximallänge (mm) | Zahl | Produktspezifisches Maximum (leer = globaler Wert) |
 | Auf vollen Meter aufrunden | Checkbox | Eingabe wird für die Preisberechnung auf den nächsten vollen Meter aufgerundet (z. B. 4050 → 5000). Die tatsächliche Schnittlänge bleibt erhalten. |
 
-## Plugin-Interaktion mit RcCustomFields
+## Deployment
 
-RcDynamicPrice und RcCustomFields können auf demselben Produkt eingesetzt werden. Die Koordination funktioniert über ein Event-basiertes Protokoll:
+| Änderung | Befehl |
+|----------|--------|
+| Nur PHP / Twig | `php bin/console cache:clear` |
+| SCSS geändert | `php bin/console theme:compile` |
+| JS / main.js geändert | `bin/build-storefront.sh` |
 
-1. RcDynamicPrice setzt `data-rc-meter-suffix` auf dem Buy-Formular und feuert ein `rcMeterLengthChanged`-Event
-2. RcCustomFields hört auf dieses Event und bezieht den Meter-Suffix in seinen ID-Hash ein
-3. Ergebnis: Verschiedene Längen UND verschiedene Custom-Field-Werte erzeugen separate Warenkorbpositionen
-
-Siehe auch: [Plugin-Interaktionsprotokoll](.ai/rules/plugin-interaction.md) (Entwicklerdokumentation)
+Siehe CHANGELOG.md für den Deployment-Hinweis pro Version.
 
 ## Entwicklung
 
