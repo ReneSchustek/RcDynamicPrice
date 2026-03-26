@@ -7,6 +7,7 @@ namespace Ruhrcoder\RcDynamicPrice\Service;
 use Ruhrcoder\RcDynamicPrice\DynamicPriceConstants;
 use Shopware\Core\Content\Product\ProductEntity;
 use Shopware\Core\Framework\Context;
+use Shopware\Core\Content\Product\ProductCollection;
 use Shopware\Core\Framework\DataAbstractionLayer\EntityRepository;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\Criteria;
 use Shopware\Core\System\SystemConfig\SystemConfigService;
@@ -16,6 +17,7 @@ final class MeterProductHelper implements MeterProductHelperInterface
     private const DEFAULT_MIN_LENGTH = 1;
     private const DEFAULT_MAX_LENGTH = 10000;
 
+    /** @param EntityRepository<ProductCollection> $productRepository */
     public function __construct(
         private readonly EntityRepository $productRepository,
         private readonly SystemConfigService $systemConfigService,
