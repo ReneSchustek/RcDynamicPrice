@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace Ruhrcoder\RcDynamicPrice\Service;
 
 use Ruhrcoder\RcDynamicPrice\DynamicPriceConstants;
+use Shopware\Core\Content\Product\ProductCollection;
 use Shopware\Core\Content\Product\ProductEntity;
 use Shopware\Core\Framework\Context;
-use Shopware\Core\Content\Product\ProductCollection;
 use Shopware\Core\Framework\DataAbstractionLayer\EntityRepository;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\Criteria;
 use Shopware\Core\System\SystemConfig\SystemConfigService;

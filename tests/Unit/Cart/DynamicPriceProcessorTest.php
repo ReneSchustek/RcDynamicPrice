@@ -118,7 +118,7 @@ final class DynamicPriceProcessorTest extends TestCase
             ->expects($this->once())
             ->method('calculate')
             ->with(
-                $this->callback(fn(QuantityPriceDefinition $def) => $def->getPrice() === 150.0),
+                $this->callback(fn (QuantityPriceDefinition $def) => $def->getPrice() === 150.0),
                 $this->context,
             )
             ->willReturn($adjustedPrice);
@@ -150,7 +150,7 @@ final class DynamicPriceProcessorTest extends TestCase
             ->expects($this->once())
             ->method('calculate')
             ->with(
-                $this->callback(fn(QuantityPriceDefinition $def) => $def->getPrice() === 500.0),
+                $this->callback(fn (QuantityPriceDefinition $def) => $def->getPrice() === 500.0),
                 $this->context,
             )
             ->willReturn($this->createPrice(500.0));
@@ -185,7 +185,7 @@ final class DynamicPriceProcessorTest extends TestCase
             ->expects($this->once())
             ->method('calculate')
             ->with(
-                $this->callback(fn(QuantityPriceDefinition $def) => $def->getPrice() === 405.0),
+                $this->callback(fn (QuantityPriceDefinition $def) => $def->getPrice() === 405.0),
                 $this->context,
             )
             ->willReturn($this->createPrice(405.0));
