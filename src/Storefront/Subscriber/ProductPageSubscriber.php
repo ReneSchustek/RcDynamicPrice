@@ -13,8 +13,6 @@ use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 final class ProductPageSubscriber implements EventSubscriberInterface
 {
     private const DEFAULT_HINT_TEXT = 'Bitte Länge in Millimetern eingeben – z. B. 1500 für 1,5 m';
-    private const DEFAULT_MIN_LENGTH = 1;
-    private const DEFAULT_MAX_LENGTH = 10000;
 
     public function __construct(
         private readonly SystemConfigService $systemConfigService,
@@ -33,7 +31,6 @@ final class ProductPageSubscriber implements EventSubscriberInterface
     {
         $product = $event->getPage()->getProduct();
 
-        // Eingabefeld nur für explizit als Meterartikel markierte Produkte einblenden
         if (!$this->meterProductHelper->isMeterProductEntity($product)) {
             return;
         }
@@ -45,19 +42,13 @@ final class ProductPageSubscriber implements EventSubscriberInterface
             $salesChannelId
         ) ?: self::DEFAULT_HINT_TEXT;
 
-        $minLength = $this->systemConfigService->getInt(
-            'RcDynamicPrice.config.minLength',
-            $salesChannelId
-        ) ?: self::DEFAULT_MIN_LENGTH;
-
-        $maxLength = $this->systemConfigService->getInt(
-            'RcDynamicPrice.config.maxLength',
-            $salesChannelId
-        ) ?: self::DEFAULT_MAX_LENGTH;
+        $minLength = $this->meterProductHelper->getMinLength($product, $salesChannelId);
+        $maxLength = $this->meterProductHelper->getMaxLength($product, $salesChannelId);
+        $roundUpToMeter = $this->meterProductHelper->shouldRoundUpToMeter($product);
 
         $event->getPage()->addExtension(
             'rcDynamicPriceConfig',
-            new RcDynamicPriceConfigStruct($hintText, $minLength, $maxLength)
+            new RcDynamicPriceConfigStruct($hintText, $minLength, $maxLength, $roundUpToMeter)
         );
     }
 }

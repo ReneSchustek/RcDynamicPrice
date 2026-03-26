@@ -50,9 +50,10 @@ final class ProductPageSubscriberTest extends TestCase
     public function testAddsExtensionWithConfigWhenProductIsMeterProduct(): void
     {
         $this->meterProductHelper->method('isMeterProductEntity')->willReturn(true);
+        $this->meterProductHelper->method('getMinLength')->willReturn(1);
+        $this->meterProductHelper->method('getMaxLength')->willReturn(10000);
 
         $this->systemConfig->method('getString')->willReturn('');
-        $this->systemConfig->method('getInt')->willReturn(0);
 
         $page = $this->createMock(ProductPage::class);
         $page->method('getProduct')->willReturn(new ProductEntity());
@@ -63,9 +64,11 @@ final class ProductPageSubscriberTest extends TestCase
         $this->subscriber->onProductPageLoaded($this->createProductPageEvent($page, 'sc-id'));
     }
 
-    public function testExtensionContainsConfigValues(): void
+    public function testExtensionContainsProductSpecificValues(): void
     {
         $this->meterProductHelper->method('isMeterProductEntity')->willReturn(true);
+        $this->meterProductHelper->method('getMinLength')->willReturn(1000);
+        $this->meterProductHelper->method('getMaxLength')->willReturn(6000);
 
         $capturedStruct = null;
 
@@ -77,23 +80,14 @@ final class ProductPageSubscriberTest extends TestCase
             }
         );
 
-        $this->systemConfig->method('getString')->willReturnCallback(
-            fn(string $key) => str_ends_with($key, 'hintText') ? 'Bitte Länge eingeben' : ''
-        );
-        $this->systemConfig->method('getInt')->willReturnCallback(
-            fn(string $key) => match(true) {
-                str_ends_with($key, 'minLength') => 100,
-                str_ends_with($key, 'maxLength') => 5000,
-                default => 0,
-            }
-        );
+        $this->systemConfig->method('getString')->willReturn('Bitte Länge eingeben');
 
         $this->subscriber->onProductPageLoaded($this->createProductPageEvent($page, 'sc-id'));
 
         $this->assertInstanceOf(RcDynamicPriceConfigStruct::class, $capturedStruct);
         $this->assertSame('Bitte Länge eingeben', $capturedStruct->getHintText());
-        $this->assertSame(100, $capturedStruct->getMinLength());
-        $this->assertSame(5000, $capturedStruct->getMaxLength());
+        $this->assertSame(1000, $capturedStruct->getMinLength());
+        $this->assertSame(6000, $capturedStruct->getMaxLength());
     }
 
     private function createProductPageEvent(ProductPage $page, string $salesChannelId): ProductPageLoadedEvent

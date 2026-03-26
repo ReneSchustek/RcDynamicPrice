@@ -10,16 +10,19 @@ use Shopware\Core\Content\Product\ProductEntity;
 use Shopware\Core\Framework\Context;
 use Shopware\Core\Framework\DataAbstractionLayer\EntityRepository;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\EntitySearchResult;
+use Shopware\Core\System\SystemConfig\SystemConfigService;
 
 final class MeterProductHelperTest extends TestCase
 {
     private EntityRepository $productRepository;
+    private SystemConfigService $systemConfig;
     private MeterProductHelper $helper;
 
     protected function setUp(): void
     {
         $this->productRepository = $this->createMock(EntityRepository::class);
-        $this->helper = new MeterProductHelper($this->productRepository);
+        $this->systemConfig = $this->createMock(SystemConfigService::class);
+        $this->helper = new MeterProductHelper($this->productRepository, $this->systemConfig);
     }
 
     public function testIsMeterProductEntityReturnsTrueWhenFlagIsSet(): void
@@ -49,7 +52,6 @@ final class MeterProductHelperTest extends TestCase
     public function testIsMeterProductEntityReturnsFalseWhenCustomFieldsNull(): void
     {
         $product = new ProductEntity();
-        // setCustomFields(null) setzt das Feld auf null — Test prüft null-sicheren Zugriff
         $product->setCustomFields(null);
 
         $this->assertFalse($this->helper->isMeterProductEntity($product));
@@ -89,5 +91,113 @@ final class MeterProductHelperTest extends TestCase
         $this->productRepository->method('search')->willReturn($result);
 
         $this->assertFalse($this->helper->isMeterProduct('product-id', Context::createDefaultContext()));
+    }
+
+    public function testLoadProductReturnsEntityWhenFound(): void
+    {
+        $product = new ProductEntity();
+
+        $result = $this->createMock(EntitySearchResult::class);
+        $result->method('first')->willReturn($product);
+
+        $this->productRepository->method('search')->willReturn($result);
+
+        $this->assertSame($product, $this->helper->loadProduct('product-id', Context::createDefaultContext()));
+    }
+
+    public function testLoadProductReturnsNullWhenNotFound(): void
+    {
+        $result = $this->createMock(EntitySearchResult::class);
+        $result->method('first')->willReturn(null);
+
+        $this->productRepository->method('search')->willReturn($result);
+
+        $this->assertNull($this->helper->loadProduct('product-id', Context::createDefaultContext()));
+    }
+
+    public function testGetMinLengthReturnsProductValueWhenSet(): void
+    {
+        $product = new ProductEntity();
+        $product->setCustomFields(['rc_meter_price_min_length' => 500]);
+
+        $this->assertSame(500, $this->helper->getMinLength($product, 'sc-id'));
+    }
+
+    public function testGetMinLengthFallsBackToGlobalConfig(): void
+    {
+        $product = new ProductEntity();
+        $product->setCustomFields(['rc_meter_price_active' => true]);
+
+        $this->systemConfig->method('getInt')->willReturn(100);
+
+        $this->assertSame(100, $this->helper->getMinLength($product, 'sc-id'));
+    }
+
+    public function testGetMinLengthFallsBackToDefaultWhenGlobalConfigIsZero(): void
+    {
+        $product = new ProductEntity();
+        $product->setCustomFields([]);
+
+        $this->systemConfig->method('getInt')->willReturn(0);
+
+        $this->assertSame(1, $this->helper->getMinLength($product, 'sc-id'));
+    }
+
+    public function testGetMaxLengthReturnsProductValueWhenSet(): void
+    {
+        $product = new ProductEntity();
+        $product->setCustomFields(['rc_meter_price_max_length' => 6000]);
+
+        $this->assertSame(6000, $this->helper->getMaxLength($product, 'sc-id'));
+    }
+
+    public function testGetMaxLengthFallsBackToGlobalConfig(): void
+    {
+        $product = new ProductEntity();
+        $product->setCustomFields([]);
+
+        $this->systemConfig->method('getInt')->willReturn(8000);
+
+        $this->assertSame(8000, $this->helper->getMaxLength($product, 'sc-id'));
+    }
+
+    public function testGetMaxLengthFallsBackToDefaultWhenGlobalConfigIsZero(): void
+    {
+        $product = new ProductEntity();
+        $product->setCustomFields([]);
+
+        $this->systemConfig->method('getInt')->willReturn(0);
+
+        $this->assertSame(10000, $this->helper->getMaxLength($product, 'sc-id'));
+    }
+
+    public function testGetMinLengthIgnoresZeroProductValue(): void
+    {
+        $product = new ProductEntity();
+        $product->setCustomFields(['rc_meter_price_min_length' => 0]);
+
+        $this->systemConfig->method('getInt')->willReturn(50);
+
+        $this->assertSame(50, $this->helper->getMinLength($product, 'sc-id'));
+    }
+
+    public function testGetMaxLengthIgnoresNegativeProductValue(): void
+    {
+        $product = new ProductEntity();
+        $product->setCustomFields(['rc_meter_price_max_length' => -100]);
+
+        $this->systemConfig->method('getInt')->willReturn(5000);
+
+        $this->assertSame(5000, $this->helper->getMaxLength($product, 'sc-id'));
+    }
+
+    public function testGetMinLengthWithNullCustomFields(): void
+    {
+        $product = new ProductEntity();
+        $product->setCustomFields(null);
+
+        $this->systemConfig->method('getInt')->willReturn(200);
+
+        $this->assertSame(200, $this->helper->getMinLength($product, 'sc-id'));
     }
 }

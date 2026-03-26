@@ -1,0 +1,11 @@
+{% sw_extends '@Storefront/storefront/component/line-item/type/product.html.twig' %}
+
+{% block component_line_item_type_product_label %}
+    {{ parent() }}
+
+    {% if lineItem.payload.rc_length_label is defined and lineItem.payload.rc_length_label %}
+        <div class="line-item-meter-length text-muted small">
+            {{ lineItem.payload.rc_length_label }}
+        </div>
+    {% endif %}
+{% endblock %}

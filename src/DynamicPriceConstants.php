@@ -17,4 +17,13 @@ final class DynamicPriceConstants
 
     /** Payload-Schlüssel: lesbare Längenbezeichnung für Warenkorb- und Bestellübersicht */
     public const PAYLOAD_LENGTH_LABEL = 'rc_length_label';
+
+    /** Custom-Field-Name am Produkt — produktspezifische Mindestlänge in mm */
+    public const FIELD_MIN_LENGTH = 'rc_meter_price_min_length';
+
+    /** Custom-Field-Name am Produkt — produktspezifische Maximallänge in mm */
+    public const FIELD_MAX_LENGTH = 'rc_meter_price_max_length';
+
+    /** Custom-Field-Name am Produkt — Eingabe auf nächsten vollen Meter aufrunden */
+    public const FIELD_ROUND_UP_METER = 'rc_meter_price_round_up_meter';
 }

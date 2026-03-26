@@ -29,8 +29,6 @@ final class DynamicPriceProcessor implements CartProcessorInterface
         CartBehavior $behavior,
     ): void {
         foreach ($toCalculate->getLineItems()->filterType(LineItem::PRODUCT_LINE_ITEM_TYPE) as $lineItem) {
-            // Zweite Absicherung: nur Artikel mit explizit gesetztem Flag verarbeiten,
-            // damit manipulierte Payloads ohne Subscriber-Durchlauf keine Wirkung haben.
             if ($lineItem->getPayloadValue(DynamicPriceConstants::PAYLOAD_METER_ACTIVE) !== true) {
                 continue;
             }
@@ -46,8 +44,13 @@ final class DynamicPriceProcessor implements CartProcessorInterface
                 continue;
             }
 
-            // Grundpreis gilt pro 1.000 mm (1 m) – Preis proportional zur Länge skalieren
-            $adjustedUnitPrice = ($price->getUnitPrice() / 1000.0) * $mmLength;
+            // Aufrunden prüfen — Custom Fields werden vom ProductCartProcessor im Payload gespeichert
+            $customFields = $lineItem->getPayloadValue('customFields') ?? [];
+            $roundUp = (bool) ($customFields[DynamicPriceConstants::FIELD_ROUND_UP_METER] ?? false);
+            $billedLength = $roundUp ? (int) (ceil($mmLength / 1000) * 1000) : $mmLength;
+
+            // Grundpreis gilt pro 1.000 mm (1 m) – Preis proportional zur berechneten Länge skalieren
+            $adjustedUnitPrice = ($price->getUnitPrice() / 1000.0) * $billedLength;
 
             $definition = new QuantityPriceDefinition(
                 $adjustedUnitPrice,
@@ -58,10 +61,12 @@ final class DynamicPriceProcessor implements CartProcessorInterface
             $lineItem->setPrice($this->calculator->calculate($definition, $context));
 
             // Längenbezeichnung für Warenkorb- und Bestellübersicht
-            $lineItem->setPayloadValue(
-                DynamicPriceConstants::PAYLOAD_LENGTH_LABEL,
-                'Länge: ' . number_format($mmLength, 0, ',', '.') . ' mm'
-            );
+            $label = 'Länge: ' . number_format($mmLength, 0, ',', '.') . ' mm';
+            if ($roundUp && $billedLength !== $mmLength) {
+                $label .= ' (berechnet: ' . number_format($billedLength, 0, ',', '.') . ' mm)';
+            }
+
+            $lineItem->setPayloadValue(DynamicPriceConstants::PAYLOAD_LENGTH_LABEL, $label);
         }
     }
 }

@@ -7,12 +7,16 @@ Produkte (z. B. Kabel, Stoffe, Profile) werden nach Meterlänge verkauft. Der Gr
 ## Funktionen
 
 - Längeneingabe in Millimetern auf der Produktdetailseite
-- Modal mit konfigurierbarem Hinweistext beim Fokussieren des Eingabefelds
+- Popup mit konfigurierbarem Hinweistext beim ersten Fokus auf das Eingabefeld
 - Live-Preisberechnung: `Grundpreis ÷ 1000 × eingegebene mm`
 - Validierung: nur positive Ganzzahlen, Mindest- und Maximalwert konfigurierbar
+- Produktspezifische Min/Max-Länge (mit Fallback auf globale Konfiguration)
+- Optional: Eingabe auf nächsten vollen Meter aufrunden (pro Produkt konfigurierbar)
 - Berechneter Preis wird verbindlich in den Warenkorb übernommen
-- Länge wird im Warenkorb und in Bestellungen angezeigt (z. B. „Länge: 1.500 mm")
+- Verschiedene Längen erzeugen separate Warenkorbpositionen
+- Länge wird im Warenkorb, im Checkout und in Bestellungen angezeigt
 - Per Produkt aktivierbar über das Custom Field `rc_meter_price_active`
+- Kompatibel mit RcCustomFields (siehe Abschnitt Plugin-Interaktion)
 - Theme-kompatibel (BEM-Klassen, kein Inline-CSS)
 
 ## Voraussetzungen
@@ -23,7 +27,6 @@ Produkte (z. B. Kabel, Stoffe, Profile) werden nach Meterlänge verkauft. Der Gr
 ## Installation
 
 ```bash
-# Plugin installieren
 php bin/console plugin:refresh
 php bin/console plugin:install --activate RcDynamicPrice
 php bin/console cache:clear
@@ -31,17 +34,36 @@ php bin/console cache:clear
 
 ## Konfiguration
 
+### Globale Plugin-Konfiguration
+
 Im Admin unter **Einstellungen → Plugins → Ruhrcoder - Dynamischer Meterpreis**:
 
 | Feld | Beschreibung | Standard |
 |------|-------------|---------|
-| Hinweistext | Text im Modal beim Fokus auf das Eingabefeld | „Bitte Länge in Millimetern eingeben – z. B. 1500 für 1,5 m" |
-| Mindestlänge (mm) | Kleinste erlaubte Eingabe | 1 |
-| Maximallänge (mm) | Größte erlaubte Eingabe | 10000 |
+| Hinweistext | Text im Popup beim ersten Fokus auf das Eingabefeld | „Bitte Länge in Millimetern eingeben – z. B. 1500 für 1,5 m" |
+| Mindestlänge (mm) | Kleinste erlaubte Eingabe (Fallback) | 1 |
+| Maximallänge (mm) | Größte erlaubte Eingabe (Fallback) | 10000 |
 
-## Produkt aktivieren
+### Produktspezifische Custom Fields
 
-Im Admin unter dem jeweiligen Produkt → **Individuelle Felder** → **Meterpreis aktiv** aktivieren.
+Im Admin unter dem jeweiligen Produkt → **Individuelle Felder** → **Dynamischer Meterpreis**:
+
+| Feld | Typ | Beschreibung |
+|------|-----|-------------|
+| Meterpreis aktiv | Checkbox | Aktiviert die Längeneingabe für dieses Produkt |
+| Mindestlänge (mm) | Zahl | Produktspezifisches Minimum (leer = globaler Wert) |
+| Maximallänge (mm) | Zahl | Produktspezifisches Maximum (leer = globaler Wert) |
+| Auf vollen Meter aufrunden | Checkbox | Eingabe wird für die Preisberechnung auf den nächsten vollen Meter aufgerundet (z. B. 4050 → 5000). Die tatsächliche Schnittlänge bleibt erhalten. |
+
+## Plugin-Interaktion mit RcCustomFields
+
+RcDynamicPrice und RcCustomFields können auf demselben Produkt eingesetzt werden. Die Koordination funktioniert über ein Event-basiertes Protokoll:
+
+1. RcDynamicPrice setzt `data-rc-meter-suffix` auf dem Buy-Formular und feuert ein `rcMeterLengthChanged`-Event
+2. RcCustomFields hört auf dieses Event und bezieht den Meter-Suffix in seinen ID-Hash ein
+3. Ergebnis: Verschiedene Längen UND verschiedene Custom-Field-Werte erzeugen separate Warenkorbpositionen
+
+Siehe auch: [Plugin-Interaktionsprotokoll](.ai/rules/plugin-interaction.md) (Entwicklerdokumentation)
 
 ## Entwicklung
 

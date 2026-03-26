@@ -12,6 +12,7 @@ final class RcDynamicPriceConfigStruct extends Struct
         private readonly string $hintText,
         private readonly int $minLength,
         private readonly int $maxLength,
+        private readonly bool $roundUpToMeter = false,
     ) {
     }
 
@@ -28,5 +29,10 @@ final class RcDynamicPriceConfigStruct extends Struct
     public function getMaxLength(): int
     {
         return $this->maxLength;
+    }
+
+    public function isRoundUpToMeter(): bool
+    {
+        return $this->roundUpToMeter;
     }
 }

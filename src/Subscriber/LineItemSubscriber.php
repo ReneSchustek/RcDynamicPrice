@@ -7,7 +7,6 @@ namespace Ruhrcoder\RcDynamicPrice\Subscriber;
 use Ruhrcoder\RcDynamicPrice\DynamicPriceConstants;
 use Ruhrcoder\RcDynamicPrice\Service\MeterProductHelper;
 use Shopware\Core\Checkout\Cart\Event\BeforeLineItemAddedEvent;
-use Shopware\Core\System\SystemConfig\SystemConfigService;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpFoundation\RequestStack;
 
@@ -15,7 +14,6 @@ final class LineItemSubscriber implements EventSubscriberInterface
 {
     public function __construct(
         private readonly RequestStack $requestStack,
-        private readonly SystemConfigService $systemConfigService,
         private readonly MeterProductHelper $meterProductHelper,
     ) {
     }
@@ -34,29 +32,41 @@ final class LineItemSubscriber implements EventSubscriberInterface
             return;
         }
 
-        $mmLength = $request->request->getInt('mmLength', 0);
+        $rawLength = $request->request->get('mmLength', '');
+        if ($rawLength === '' || $rawLength === null) {
+            return;
+        }
+
+        $mmLength = (int) $rawLength;
         if ($mmLength <= 0) {
             return;
         }
 
-        // Nur Produkte mit aktivem Meterpreis-Flag akzeptieren — verhindert Preismanipulation
+        // referencedId ist immer die echte Produkt-ID, auch wenn die LineItem-ID den mm-Suffix enthält
         $productId = $event->getLineItem()->getReferencedId();
-        if ($productId === null || !$this->meterProductHelper->isMeterProduct($productId, $event->getSalesChannelContext()->getContext())) {
+        if ($productId === null) {
             return;
         }
 
-        // Serverseitige Bounds-Validierung als zweite Sicherheitsschicht
+        $context = $event->getSalesChannelContext()->getContext();
+        $product = $this->meterProductHelper->loadProduct($productId, $context);
+
+        if ($product === null || !$this->meterProductHelper->isMeterProductEntity($product)) {
+            return;
+        }
+
         $salesChannelId = $event->getSalesChannelContext()->getSalesChannel()->getId();
-        $minLength = $this->systemConfigService->getInt('RcDynamicPrice.config.minLength', $salesChannelId) ?: 1;
-        $maxLength = $this->systemConfigService->getInt('RcDynamicPrice.config.maxLength', $salesChannelId) ?: 10000;
+        $minLength = $this->meterProductHelper->getMinLength($product, $salesChannelId);
+        $maxLength = $this->meterProductHelper->getMaxLength($product, $salesChannelId);
 
         if ($mmLength < $minLength || $mmLength > $maxLength) {
             return;
         }
 
-        $lineItem = $event->getLineItem();
-        $lineItem->setPayloadValue(DynamicPriceConstants::PAYLOAD_LENGTH_MM, $mmLength);
-        // Flag im Payload speichern damit der DynamicPriceProcessor es ohne DB-Zugriff prüfen kann
-        $lineItem->setPayloadValue(DynamicPriceConstants::PAYLOAD_METER_ACTIVE, true);
+        // Originaleingabe speichern — das ist die Schnittlänge für die Bestellung.
+        // Aufrunden für die Preisberechnung erfolgt im DynamicPriceProcessor.
+        $cartItem = $event->getCart()->get($event->getLineItem()->getId()) ?? $event->getLineItem();
+        $cartItem->setPayloadValue(DynamicPriceConstants::PAYLOAD_LENGTH_MM, $mmLength);
+        $cartItem->setPayloadValue(DynamicPriceConstants::PAYLOAD_METER_ACTIVE, true);
     }
 }
