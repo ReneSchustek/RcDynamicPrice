@@ -13,7 +13,7 @@ use Shopware\Core\Checkout\Cart\Event\BeforeLineItemAddedEvent;
 use Shopware\Core\Checkout\Cart\LineItem\LineItem;
 use Shopware\Core\Content\Product\ProductEntity;
 use Shopware\Core\Framework\Context;
-use Shopware\Core\System\SalesChannel\SalesChannel;
+use Shopware\Core\System\SalesChannel\SalesChannelEntity;
 use Shopware\Core\System\SalesChannel\SalesChannelContext;
 use Symfony\Component\HttpFoundation\InputBag;
 use Symfony\Component\HttpFoundation\Request;
@@ -123,7 +123,7 @@ final class LineItemSubscriberTest extends TestCase
         $this->meterProductHelper->method('getMinLength')->willReturn(1000);
         $this->meterProductHelper->method('getMaxLength')->willReturn(6000);
 
-        $salesChannel = $this->createMock(SalesChannel::class);
+        $salesChannel = $this->createMock(SalesChannelEntity::class);
         $salesChannel->method('getId')->willReturn('sc-id');
 
         $salesChannelContext = $this->createMock(SalesChannelContext::class);
@@ -153,7 +153,7 @@ final class LineItemSubscriberTest extends TestCase
         $this->meterProductHelper->method('getMinLength')->willReturn(1000);
         $this->meterProductHelper->method('getMaxLength')->willReturn(6000);
 
-        $salesChannel = $this->createMock(SalesChannel::class);
+        $salesChannel = $this->createMock(SalesChannelEntity::class);
         $salesChannel->method('getId')->willReturn('sc-id');
 
         $salesChannelContext = $this->createMock(SalesChannelContext::class);
@@ -183,7 +183,7 @@ final class LineItemSubscriberTest extends TestCase
         $this->meterProductHelper->method('getMinLength')->willReturn(1000);
         $this->meterProductHelper->method('getMaxLength')->willReturn(6000);
 
-        $salesChannel = $this->createMock(SalesChannel::class);
+        $salesChannel = $this->createMock(SalesChannelEntity::class);
         $salesChannel->method('getId')->willReturn('sc-id');
 
         $salesChannelContext = $this->createMock(SalesChannelContext::class);

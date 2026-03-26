@@ -8,8 +8,8 @@ use PHPUnit\Framework\TestCase;
 use Ruhrcoder\RcDynamicPrice\Service\MeterProductHelperInterface;
 use Ruhrcoder\RcDynamicPrice\Storefront\Struct\RcDynamicPriceConfigStruct;
 use Ruhrcoder\RcDynamicPrice\Storefront\Subscriber\ProductPageSubscriber;
-use Shopware\Core\Content\Product\ProductEntity;
-use Shopware\Core\System\SalesChannel\SalesChannel;
+use Shopware\Core\Content\Product\SalesChannel\SalesChannelProductEntity;
+use Shopware\Core\System\SalesChannel\SalesChannelEntity;
 use Shopware\Core\System\SalesChannel\SalesChannelContext;
 use Shopware\Core\System\SystemConfig\SystemConfigService;
 use Shopware\Storefront\Page\Product\ProductPage;
@@ -41,7 +41,7 @@ final class ProductPageSubscriberTest extends TestCase
         $this->meterProductHelper->method('isMeterProductEntity')->willReturn(false);
 
         $page = $this->createMock(ProductPage::class);
-        $page->method('getProduct')->willReturn(new ProductEntity());
+        $page->method('getProduct')->willReturn(new SalesChannelProductEntity());
         $page->expects($this->never())->method('addExtension');
 
         $this->subscriber->onProductPageLoaded($this->createProductPageEvent($page, 'sc-id'));
@@ -56,7 +56,7 @@ final class ProductPageSubscriberTest extends TestCase
         $this->systemConfig->method('getString')->willReturn('');
 
         $page = $this->createMock(ProductPage::class);
-        $page->method('getProduct')->willReturn(new ProductEntity());
+        $page->method('getProduct')->willReturn(new SalesChannelProductEntity());
         $page->expects($this->once())
             ->method('addExtension')
             ->with('rcDynamicPriceConfig', $this->isInstanceOf(RcDynamicPriceConfigStruct::class));
@@ -73,7 +73,7 @@ final class ProductPageSubscriberTest extends TestCase
         $capturedStruct = null;
 
         $page = $this->createMock(ProductPage::class);
-        $page->method('getProduct')->willReturn(new ProductEntity());
+        $page->method('getProduct')->willReturn(new SalesChannelProductEntity());
         $page->method('addExtension')->willReturnCallback(
             function (string $name, mixed $struct) use (&$capturedStruct): void {
                 $capturedStruct = $struct;
@@ -92,7 +92,7 @@ final class ProductPageSubscriberTest extends TestCase
 
     private function createProductPageEvent(ProductPage $page, string $salesChannelId): ProductPageLoadedEvent
     {
-        $salesChannel = $this->createMock(SalesChannel::class);
+        $salesChannel = $this->createMock(SalesChannelEntity::class);
         $salesChannel->method('getId')->willReturn($salesChannelId);
 
         $context = $this->createMock(SalesChannelContext::class);
