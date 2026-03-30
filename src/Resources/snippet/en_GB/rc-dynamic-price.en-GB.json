@@ -8,8 +8,6 @@
         "errorMinLength": "Minimum length: %minLength% mm",
         "errorMaxLength": "Maximum length: %maxLength% mm",
         "roundUpHint": "Input %input% mm → billed as %billed% mm (rounded up to full metre)",
-        "hintModalButton": "Got it",
-        "cartLengthLabel": "Length: %length% mm",
-        "cartLengthLabelRoundUp": "Length: %length% mm (billed: %billed% mm)"
+        "hintModalButton": "Got it"
     }
 }
