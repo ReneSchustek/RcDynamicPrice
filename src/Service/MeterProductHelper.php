@@ -17,6 +17,7 @@ final class MeterProductHelper implements MeterProductHelperInterface
     private const DEFAULT_MIN_LENGTH = 1;
     private const DEFAULT_MAX_LENGTH = 10000;
 
+    // Sync mit dynamic-price.plugin.js _roundUp()
     private const ROUNDING_STEPS = [
         DynamicPriceConstants::ROUNDING_NONE => 0,
         DynamicPriceConstants::ROUNDING_CM => 10,

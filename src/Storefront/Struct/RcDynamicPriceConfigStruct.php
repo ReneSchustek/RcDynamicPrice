@@ -14,6 +14,11 @@ final class RcDynamicPriceConfigStruct extends Struct
         private readonly int $maxLength,
         private readonly string $roundingMode = 'none',
     ) {
+        if ($this->minLength > $this->maxLength) {
+            throw new \InvalidArgumentException(
+                sprintf('minLength (%d) darf maxLength (%d) nicht ueberschreiten', $this->minLength, $this->maxLength)
+            );
+        }
     }
 
     public function getHintText(): string

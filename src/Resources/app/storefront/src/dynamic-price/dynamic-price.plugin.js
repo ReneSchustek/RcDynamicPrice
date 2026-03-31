@@ -207,6 +207,7 @@ export default class DynamicPricePlugin extends Plugin {
 
     _roundUp(mm) {
         const mode = this.el.dataset.roundingMode || 'none';
+        // Sync mit MeterProductHelper::ROUNDING_STEPS
         const steps = { none: 0, cm: 10, quarter_m: 250, half_m: 500, full_m: 1000 };
         const step = steps[mode] || 0;
 

@@ -54,7 +54,7 @@ final class DynamicPriceProcessor implements CartProcessorInterface
             }
 
             $price = $lineItem->getPrice();
-            if ($price === null) {
+            if ($price === null || $price->getUnitPrice() <= 0.0) {
                 continue;
             }
 
