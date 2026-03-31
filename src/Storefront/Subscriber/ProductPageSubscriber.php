@@ -12,8 +12,6 @@ use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 
 final class ProductPageSubscriber implements EventSubscriberInterface
 {
-    private const DEFAULT_HINT_TEXT = 'Bitte Länge in Millimetern eingeben – z. B. 1500 für 1,5 m';
-
     public function __construct(
         private readonly SystemConfigService $systemConfigService,
         private readonly MeterProductHelperInterface $meterProductHelper,
@@ -40,15 +38,15 @@ final class ProductPageSubscriber implements EventSubscriberInterface
         $hintText = $this->systemConfigService->getString(
             'RcDynamicPrice.config.hintText',
             $salesChannelId
-        ) ?: self::DEFAULT_HINT_TEXT;
+        );
 
         $minLength = $this->meterProductHelper->getMinLength($product, $salesChannelId);
         $maxLength = $this->meterProductHelper->getMaxLength($product, $salesChannelId);
-        $roundUpToMeter = $this->meterProductHelper->shouldRoundUpToMeter($product);
+        $roundingMode = $this->meterProductHelper->getRoundingMode($product);
 
         $event->getPage()->addExtension(
             'rcDynamicPriceConfig',
-            new RcDynamicPriceConfigStruct($hintText, $minLength, $maxLength, $roundUpToMeter)
+            new RcDynamicPriceConfigStruct($hintText, $minLength, $maxLength, $roundingMode)
         );
     }
 }

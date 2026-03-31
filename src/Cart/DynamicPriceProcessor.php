@@ -58,10 +58,10 @@ final class DynamicPriceProcessor implements CartProcessorInterface
                 continue;
             }
 
-            // Aufrunden — Flag vom Subscriber gesetzt, Logik aus Helper (kein Duplikat)
-            $roundUp = $lineItem->getPayloadValue(DynamicPriceConstants::PAYLOAD_ROUND_UP) === true;
-            $billedLength = $roundUp
-                ? $this->meterProductHelper->roundUpToMeter($mmLength)
+            // Rundungsmodus vom Subscriber im Payload gespeichert
+            $roundingMode = $lineItem->getPayloadValue(DynamicPriceConstants::PAYLOAD_ROUNDING);
+            $billedLength = \is_string($roundingMode)
+                ? $this->meterProductHelper->roundUp($mmLength, $roundingMode)
                 : $mmLength;
 
             $adjustedUnitPrice = ($price->getUnitPrice() / 1000.0) * $billedLength;
@@ -74,12 +74,7 @@ final class DynamicPriceProcessor implements CartProcessorInterface
 
             $lineItem->setPrice($this->calculator->calculate($definition, $context));
 
-            $label = 'Länge: ' . number_format($mmLength, 0, ',', '.') . ' mm';
-            if ($roundUp && $billedLength !== $mmLength) {
-                $label .= ' (berechnet: ' . number_format($billedLength, 0, ',', '.') . ' mm)';
-            }
-
-            $lineItem->setPayloadValue(DynamicPriceConstants::PAYLOAD_LENGTH_LABEL, $label);
+            $lineItem->setPayloadValue(DynamicPriceConstants::PAYLOAD_BILLED_LENGTH_MM, $billedLength);
         }
     }
 }

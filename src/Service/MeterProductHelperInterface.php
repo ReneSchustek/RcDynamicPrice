@@ -19,7 +19,7 @@ interface MeterProductHelperInterface
 
     public function getMaxLength(ProductEntity $product, string $salesChannelId): int;
 
-    public function shouldRoundUpToMeter(ProductEntity $product): bool;
+    public function getRoundingMode(ProductEntity $product): string;
 
-    public function roundUpToMeter(int $mm): int;
+    public function roundUp(int $mm, string $mode): int;
 }

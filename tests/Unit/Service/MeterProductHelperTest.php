@@ -201,34 +201,114 @@ final class MeterProductHelperTest extends TestCase
         $this->assertSame(200, $this->helper->getMinLength($product, 'sc-id'));
     }
 
-    public function testRoundUpToMeterRoundsUp(): void
-    {
-        $this->assertSame(5000, $this->helper->roundUpToMeter(4050));
-    }
+    // --- Rundungsmodus ---
 
-    public function testRoundUpToMeterKeepsExactMeter(): void
-    {
-        $this->assertSame(3000, $this->helper->roundUpToMeter(3000));
-    }
-
-    public function testRoundUpToMeterRoundsSmallValue(): void
-    {
-        $this->assertSame(1000, $this->helper->roundUpToMeter(1));
-    }
-
-    public function testShouldRoundUpToMeterReturnsTrueWhenSet(): void
+    public function testGetRoundingModeReturnsValueWhenValid(): void
     {
         $product = new ProductEntity();
-        $product->setCustomFields(['rc_meter_price_round_up_meter' => true]);
+        $product->setCustomFields(['rc_meter_price_rounding' => 'quarter_m']);
 
-        $this->assertTrue($this->helper->shouldRoundUpToMeter($product));
+        $this->assertSame('quarter_m', $this->helper->getRoundingMode($product));
     }
 
-    public function testShouldRoundUpToMeterReturnsFalseWhenNotSet(): void
+    public function testGetRoundingModeReturnsNoneWhenNotSet(): void
     {
         $product = new ProductEntity();
         $product->setCustomFields([]);
 
-        $this->assertFalse($this->helper->shouldRoundUpToMeter($product));
+        $this->assertSame('none', $this->helper->getRoundingMode($product));
+    }
+
+    public function testGetRoundingModeReturnsNoneForInvalidValue(): void
+    {
+        $product = new ProductEntity();
+        $product->setCustomFields(['rc_meter_price_rounding' => 'invalid']);
+
+        $this->assertSame('none', $this->helper->getRoundingMode($product));
+    }
+
+    public function testGetRoundingModeReturnsNoneForNullCustomFields(): void
+    {
+        $product = new ProductEntity();
+        $product->setCustomFields(null);
+
+        $this->assertSame('none', $this->helper->getRoundingMode($product));
+    }
+
+    // --- roundUp: Modus none ---
+
+    public function testRoundUpNoneReturnsExactValue(): void
+    {
+        $this->assertSame(4050, $this->helper->roundUp(4050, 'none'));
+    }
+
+    // --- roundUp: Modus cm (10 mm) ---
+
+    public function testRoundUpCmRoundsUp(): void
+    {
+        $this->assertSame(1510, $this->helper->roundUp(1505, 'cm'));
+    }
+
+    public function testRoundUpCmKeepsExactMultiple(): void
+    {
+        $this->assertSame(1500, $this->helper->roundUp(1500, 'cm'));
+    }
+
+    public function testRoundUpCmSmallValue(): void
+    {
+        $this->assertSame(10, $this->helper->roundUp(1, 'cm'));
+    }
+
+    // --- roundUp: Modus quarter_m (250 mm) ---
+
+    public function testRoundUpQuarterMeterRoundsUp(): void
+    {
+        $this->assertSame(1500, $this->helper->roundUp(1300, 'quarter_m'));
+    }
+
+    public function testRoundUpQuarterMeterKeepsExactMultiple(): void
+    {
+        $this->assertSame(1250, $this->helper->roundUp(1250, 'quarter_m'));
+    }
+
+    public function testRoundUpQuarterMeterSmallValue(): void
+    {
+        $this->assertSame(250, $this->helper->roundUp(1, 'quarter_m'));
+    }
+
+    // --- roundUp: Modus half_m (500 mm) ---
+
+    public function testRoundUpHalfMeterRoundsUp(): void
+    {
+        $this->assertSame(2500, $this->helper->roundUp(2100, 'half_m'));
+    }
+
+    public function testRoundUpHalfMeterKeepsExactMultiple(): void
+    {
+        $this->assertSame(2000, $this->helper->roundUp(2000, 'half_m'));
+    }
+
+    // --- roundUp: Modus full_m (1000 mm) ---
+
+    public function testRoundUpFullMeterRoundsUp(): void
+    {
+        $this->assertSame(5000, $this->helper->roundUp(4050, 'full_m'));
+    }
+
+    public function testRoundUpFullMeterKeepsExactMeter(): void
+    {
+        $this->assertSame(3000, $this->helper->roundUp(3000, 'full_m'));
+    }
+
+    public function testRoundUpFullMeterSmallValue(): void
+    {
+        $this->assertSame(1000, $this->helper->roundUp(1, 'full_m'));
+    }
+
+    // --- roundUp: unbekannter Modus ---
+
+    public function testRoundUpUnknownModeReturnsExactValue(): void
+    {
+        $this->assertSame(4050, $this->helper->roundUp(4050, 'invalid'));
     }
 }

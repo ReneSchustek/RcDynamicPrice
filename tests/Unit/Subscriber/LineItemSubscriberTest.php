@@ -196,7 +196,7 @@ final class LineItemSubscriberTest extends TestCase
         $expectedKeys = [
             DynamicPriceConstants::PAYLOAD_LENGTH_MM,
             DynamicPriceConstants::PAYLOAD_METER_ACTIVE,
-            DynamicPriceConstants::PAYLOAD_ROUND_UP,
+            DynamicPriceConstants::PAYLOAD_ROUNDING,
             DynamicPriceConstants::PAYLOAD_MIN_LENGTH,
             DynamicPriceConstants::PAYLOAD_MAX_LENGTH,
         ];

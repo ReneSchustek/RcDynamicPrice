@@ -11,6 +11,7 @@
             <label>Hinweistext im Eingabe-Modal</label>
             <label lang="en-GB">Hint text in input modal</label>
             <placeholder>Bitte Länge in Millimetern eingeben – z. B. 1500 für 1,5 m</placeholder>
+            <placeholder lang="en-GB">Please enter the length in millimetres – e.g. 1500 for 1.5 m</placeholder>
             <defaultValue>Bitte Länge in Millimetern eingeben – z. B. 1500 für 1,5 m</defaultValue>
             <helpText>Wird angezeigt, wenn der Kunde das Längenfeld fokussiert.</helpText>
             <helpText lang="en-GB">Displayed when the customer focuses the length input field.</helpText>

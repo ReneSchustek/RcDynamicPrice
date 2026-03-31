@@ -3,9 +3,15 @@
 {% block component_line_item_type_product_label %}
     {{ parent() }}
 
-    {% if lineItem.payload.rc_length_label is defined and lineItem.payload.rc_length_label %}
+    {% if lineItem.payload.meterLengthMm is defined and lineItem.payload.meterLengthMm %}
+        {% set lengthMm = lineItem.payload.meterLengthMm %}
+        {% set billedMm = lineItem.payload.rc_billed_length_mm|default(lengthMm) %}
+
         <div class="line-item-meter-length text-muted small">
-            {{ lineItem.payload.rc_length_label }}
+            {{ 'rc-dynamic-price.cartLengthLabel'|trans({'%length%': lengthMm|number_format(0, ',', '.')}) }}
+            {% if billedMm != lengthMm %}
+                {{ 'rc-dynamic-price.cartBilledLabel'|trans({'%billed%': billedMm|number_format(0, ',', '.')}) }}
+            {% endif %}
         </div>
     {% endif %}
 {% endblock %}

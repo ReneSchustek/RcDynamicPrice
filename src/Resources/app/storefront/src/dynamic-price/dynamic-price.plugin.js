@@ -153,11 +153,10 @@ export default class DynamicPricePlugin extends Plugin {
         this._updateMeterState(mm);
         this._enableSubmit();
 
-        const roundUp = this.el.dataset.roundUpMeter === '1';
-        const billedMm = roundUp ? Math.ceil(mm / 1000) * 1000 : mm;
+        const billedMm = this._roundUp(mm);
         this._updatePrice(billedMm);
 
-        if (roundUp && billedMm !== mm) {
+        if (billedMm !== mm) {
             this._showRoundUpHint(mm, billedMm);
         }
     }
@@ -204,6 +203,18 @@ export default class DynamicPricePlugin extends Plugin {
         this._errorEl.classList.remove('text-danger');
         this._errorEl.classList.add('text-info');
         this._input.classList.remove('is-invalid');
+    }
+
+    _roundUp(mm) {
+        const mode = this.el.dataset.roundingMode || 'none';
+        const steps = { none: 0, cm: 10, quarter_m: 250, half_m: 500, full_m: 1000 };
+        const step = steps[mode] || 0;
+
+        if (step <= 0) {
+            return mm;
+        }
+
+        return Math.ceil(mm / step) * step;
     }
 
     _updatePrice(mm) {

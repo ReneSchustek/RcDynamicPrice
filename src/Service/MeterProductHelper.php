@@ -17,6 +17,22 @@ final class MeterProductHelper implements MeterProductHelperInterface
     private const DEFAULT_MIN_LENGTH = 1;
     private const DEFAULT_MAX_LENGTH = 10000;
 
+    private const ROUNDING_STEPS = [
+        DynamicPriceConstants::ROUNDING_NONE => 0,
+        DynamicPriceConstants::ROUNDING_CM => 10,
+        DynamicPriceConstants::ROUNDING_QUARTER_M => 250,
+        DynamicPriceConstants::ROUNDING_HALF_M => 500,
+        DynamicPriceConstants::ROUNDING_FULL_M => 1000,
+    ];
+
+    private const VALID_ROUNDING_MODES = [
+        DynamicPriceConstants::ROUNDING_NONE,
+        DynamicPriceConstants::ROUNDING_CM,
+        DynamicPriceConstants::ROUNDING_QUARTER_M,
+        DynamicPriceConstants::ROUNDING_HALF_M,
+        DynamicPriceConstants::ROUNDING_FULL_M,
+    ];
+
     /** @param EntityRepository<ProductCollection> $productRepository */
     public function __construct(
         private readonly EntityRepository $productRepository,
@@ -79,16 +95,28 @@ final class MeterProductHelper implements MeterProductHelperInterface
         ) ?: self::DEFAULT_MAX_LENGTH;
     }
 
-    /** Prüft ob die Eingabe auf den nächsten vollen Meter aufgerundet werden soll. */
-    public function shouldRoundUpToMeter(ProductEntity $product): bool
+    /** Liest den Rundungsmodus aus den Custom Fields des Produkts. */
+    public function getRoundingMode(ProductEntity $product): string
     {
-        return (bool) (($product->getCustomFields() ?? [])[DynamicPriceConstants::FIELD_ROUND_UP_METER] ?? false);
+        $value = ($product->getCustomFields() ?? [])[DynamicPriceConstants::FIELD_ROUNDING] ?? null;
+
+        if (\is_string($value) && \in_array($value, self::VALID_ROUNDING_MODES, true)) {
+            return $value;
+        }
+
+        return DynamicPriceConstants::ROUNDING_NONE;
     }
 
-    /** Rundet auf den nächsten vollen Meter (1000 mm) auf. 4050 → 5000, 3000 → 3000. */
-    public function roundUpToMeter(int $mm): int
+    /** Rundet auf die nächste volle Einheit gemäß Modus. Exakte Vielfache bleiben unverändert. */
+    public function roundUp(int $mm, string $mode): int
     {
-        return (int) (ceil($mm / 1000) * 1000);
+        $step = self::ROUNDING_STEPS[$mode] ?? 0;
+
+        if ($step <= 0) {
+            return $mm;
+        }
+
+        return (int) (ceil($mm / $step) * $step);
     }
 
     /** Liest ein Custom Field als positive Ganzzahl, gibt null zurück wenn nicht gesetzt oder ungültig. */

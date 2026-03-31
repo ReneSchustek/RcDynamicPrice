@@ -16,7 +16,7 @@
              data-base-price="{{ product.calculatedPrice.unitPrice }}"
              data-currency="{{ context.currency.isoCode|default('EUR') }}"
              data-product-id="{{ product.id }}"
-             data-round-up-meter="{{ rcConfig.roundUpToMeter ? '1' : '0' }}"
+             data-rounding-mode="{{ rcConfig.roundingMode|e('html_attr') }}"
              data-snippet-error-integer="{{ 'rc-dynamic-price.errorIntegerOnly'|trans|e('html_attr') }}"
              data-snippet-error-min="{{ 'rc-dynamic-price.errorMinLength'|trans|e('html_attr') }}"
              data-snippet-error-max="{{ 'rc-dynamic-price.errorMaxLength'|trans|e('html_attr') }}"

@@ -128,7 +128,7 @@ final class DynamicPriceProcessorTest extends TestCase
         $this->assertSame($adjustedPrice, $lineItem->getPrice());
     }
 
-    public function testSetsLengthLabelPayload(): void
+    public function testSetsBilledLengthPayloadWithoutRounding(): void
     {
         $lineItem = $this->createMeterLineItem(1500, 100.0);
 
@@ -136,15 +136,15 @@ final class DynamicPriceProcessorTest extends TestCase
 
         $this->process([$lineItem]);
 
-        $this->assertSame('Länge: 1.500 mm', $lineItem->getPayloadValue('rc_length_label'));
+        $this->assertSame(1500, $lineItem->getPayloadValue(DynamicPriceConstants::PAYLOAD_BILLED_LENGTH_MM));
     }
 
-    public function testCalculatesPriceWithRoundUpToMeter(): void
+    public function testCalculatesPriceWithFullMeterRounding(): void
     {
         $lineItem = $this->createMeterLineItem(4050, 100.0);
-        $lineItem->setPayloadValue(DynamicPriceConstants::PAYLOAD_ROUND_UP, true);
+        $lineItem->setPayloadValue(DynamicPriceConstants::PAYLOAD_ROUNDING, 'full_m');
 
-        $this->helper->method('roundUpToMeter')->with(4050)->willReturn(5000);
+        $this->helper->method('roundUp')->with(4050, 'full_m')->willReturn(5000);
 
         $this->calculator
             ->expects($this->once())
@@ -158,28 +158,82 @@ final class DynamicPriceProcessorTest extends TestCase
         $this->process([$lineItem]);
     }
 
-    public function testLabelShowsRoundUpInfo(): void
+    public function testBilledLengthReflectsRounding(): void
     {
         $lineItem = $this->createMeterLineItem(4050, 100.0);
-        $lineItem->setPayloadValue(DynamicPriceConstants::PAYLOAD_ROUND_UP, true);
+        $lineItem->setPayloadValue(DynamicPriceConstants::PAYLOAD_ROUNDING, 'full_m');
 
-        $this->helper->method('roundUpToMeter')->willReturn(5000);
+        $this->helper->method('roundUp')->willReturn(5000);
         $this->calculator->method('calculate')->willReturn($this->createPrice(500.0));
 
         $this->process([$lineItem]);
 
-        $this->assertSame(
-            'Länge: 4.050 mm (berechnet: 5.000 mm)',
-            $lineItem->getPayloadValue('rc_length_label')
-        );
+        $this->assertSame(5000, $lineItem->getPayloadValue(DynamicPriceConstants::PAYLOAD_BILLED_LENGTH_MM));
     }
 
-    public function testNoRoundUpWhenFlagIsFalse(): void
+    public function testCalculatesPriceWithQuarterMeterRounding(): void
+    {
+        $lineItem = $this->createMeterLineItem(1300, 100.0);
+        $lineItem->setPayloadValue(DynamicPriceConstants::PAYLOAD_ROUNDING, 'quarter_m');
+
+        $this->helper->method('roundUp')->with(1300, 'quarter_m')->willReturn(1500);
+
+        $this->calculator
+            ->expects($this->once())
+            ->method('calculate')
+            ->with(
+                $this->callback(fn (QuantityPriceDefinition $def) => $def->getPrice() === 150.0),
+                $this->context,
+            )
+            ->willReturn($this->createPrice(150.0));
+
+        $this->process([$lineItem]);
+    }
+
+    public function testCalculatesPriceWithHalfMeterRounding(): void
+    {
+        $lineItem = $this->createMeterLineItem(2100, 100.0);
+        $lineItem->setPayloadValue(DynamicPriceConstants::PAYLOAD_ROUNDING, 'half_m');
+
+        $this->helper->method('roundUp')->with(2100, 'half_m')->willReturn(2500);
+
+        $this->calculator
+            ->expects($this->once())
+            ->method('calculate')
+            ->with(
+                $this->callback(fn (QuantityPriceDefinition $def) => $def->getPrice() === 250.0),
+                $this->context,
+            )
+            ->willReturn($this->createPrice(250.0));
+
+        $this->process([$lineItem]);
+    }
+
+    public function testCalculatesPriceWithCmRounding(): void
+    {
+        $lineItem = $this->createMeterLineItem(1505, 100.0);
+        $lineItem->setPayloadValue(DynamicPriceConstants::PAYLOAD_ROUNDING, 'cm');
+
+        $this->helper->method('roundUp')->with(1505, 'cm')->willReturn(1510);
+
+        $this->calculator
+            ->expects($this->once())
+            ->method('calculate')
+            ->with(
+                $this->callback(fn (QuantityPriceDefinition $def) => $def->getPrice() === 151.0),
+                $this->context,
+            )
+            ->willReturn($this->createPrice(151.0));
+
+        $this->process([$lineItem]);
+    }
+
+    public function testNoRoundingWhenModeIsNone(): void
     {
         $lineItem = $this->createMeterLineItem(4050, 100.0);
-        $lineItem->setPayloadValue(DynamicPriceConstants::PAYLOAD_ROUND_UP, false);
+        $lineItem->setPayloadValue(DynamicPriceConstants::PAYLOAD_ROUNDING, 'none');
 
-        $this->helper->expects($this->never())->method('roundUpToMeter');
+        $this->helper->method('roundUp')->with(4050, 'none')->willReturn(4050);
 
         $this->calculator
             ->expects($this->once())
@@ -193,17 +247,15 @@ final class DynamicPriceProcessorTest extends TestCase
         $this->process([$lineItem]);
     }
 
-    public function testNoRoundUpWhenFlagMissing(): void
+    public function testNoRoundingWhenModeIsMissing(): void
     {
         $lineItem = $this->createMeterLineItem(4050, 100.0);
-
-        $this->helper->expects($this->never())->method('roundUpToMeter');
 
         $this->calculator->method('calculate')->willReturn($this->createPrice(405.0));
 
         $this->process([$lineItem]);
 
-        $this->assertSame('Länge: 4.050 mm', $lineItem->getPayloadValue('rc_length_label'));
+        $this->assertSame(4050, $lineItem->getPayloadValue(DynamicPriceConstants::PAYLOAD_BILLED_LENGTH_MM));
     }
 
     public function testAcceptsLengthWithinBounds(): void
