@@ -44,6 +44,14 @@ export default class DynamicPricePlugin extends Plugin {
         this._input.addEventListener('focus', this._boundOnFocus);
         this._input.addEventListener('input', this._boundOnInput);
         this._input.addEventListener('keydown', this._boundOnKeydown);
+
+        // Generisches Suffix-Protokoll: ID neu berechnen wenn andere Plugins ihren Suffix aendern
+        this._form.addEventListener('rcColorPickerChanged', () => {
+            const mm = parseInt(this._hidden.value, 10);
+            if (mm > 0) {
+                this._updateMeterState(mm);
+            }
+        });
     }
 
     _onFocus() {
@@ -180,16 +188,38 @@ export default class DynamicPricePlugin extends Plugin {
             detail: { mm: mm, suffix: suffix },
         }));
 
-        const hasCustomFields = this._form.querySelector('[data-rc-custom-fields]');
-        if (hasCustomFields) {
+        // ID-Setzung delegieren wenn ein Plugin mit hoeherer Prioritaet vorhanden ist
+        const hasHigherPriority = this._form.querySelector('[data-rc-custom-fields]')
+            || this._form.querySelector('[data-rc-cart-splitter]');
+        if (hasHigherPriority) {
             return;
         }
 
         if (this._lineItemIdInput) {
-            this._lineItemIdInput.value = mm
-                ? (this._productId + '-' + suffix)
+            // Generisches Suffix-Protokoll: Alle rc*Suffix-Attribute einbeziehen
+            const allSuffixes = this._collectAllSuffixes();
+            this._lineItemIdInput.value = allSuffixes
+                ? (this._productId + '-' + allSuffixes)
                 : this._productId;
         }
+    }
+
+    /**
+     * Sammelt alle rc*Suffix-Data-Attribute vom Formular.
+     * Damit werden Suffixe anderer Plugins (RcColorPicker, etc.)
+     * automatisch in die ID einbezogen.
+     */
+    _collectAllSuffixes() {
+        const parts = [];
+        const dataset = this._form.dataset;
+
+        for (const key in dataset) {
+            if (key.startsWith('rc') && key.endsWith('Suffix') && dataset[key]) {
+                parts.push(dataset[key]);
+            }
+        }
+
+        return parts.sort().join('-');
     }
 
     _showRoundUpHint(inputMm, billedMm) {
