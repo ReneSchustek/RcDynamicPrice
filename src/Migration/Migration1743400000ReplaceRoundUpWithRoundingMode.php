@@ -54,7 +54,7 @@ final class Migration1743400000ReplaceRoundUpWithRoundingMode extends MigrationS
         $connection->executeStatement(
             'UPDATE `product`
              SET `custom_fields` = JSON_SET(
-                 COALESCE(`custom_fields`, CAST(\'{}\' AS JSON)),
+                 COALESCE(`custom_fields`, \'{}\'),
                  \'$."rc_meter_price_rounding"\',
                  \'full_m\'
              )
