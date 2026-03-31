@@ -51,21 +51,21 @@ final class Migration1743400000ReplaceRoundUpWithRoundingMode extends MigrationS
      */
     private function migrateExistingValues(Connection $connection): void
     {
+        // Custom Fields liegen in product_translation, nicht in product
         $connection->executeStatement(
-            'UPDATE `product`
+            'UPDATE `product_translation`
              SET `custom_fields` = JSON_SET(
                  COALESCE(`custom_fields`, \'{}\'),
-                 \'$."rc_meter_price_rounding"\',
+                 \'$.rc_meter_price_rounding\',
                  \'full_m\'
              )
-             WHERE JSON_EXTRACT(`custom_fields`, \'$."rc_meter_price_round_up_meter"\') = true'
+             WHERE JSON_EXTRACT(`custom_fields`, \'$.rc_meter_price_round_up_meter\') = true'
         );
 
-        // Altes Feld aus den JSON-Daten entfernen
         $connection->executeStatement(
-            'UPDATE `product`
-             SET `custom_fields` = JSON_REMOVE(`custom_fields`, \'$."rc_meter_price_round_up_meter"\')
-             WHERE JSON_EXTRACT(`custom_fields`, \'$."rc_meter_price_round_up_meter"\') IS NOT NULL'
+            'UPDATE `product_translation`
+             SET `custom_fields` = JSON_REMOVE(`custom_fields`, \'$.rc_meter_price_round_up_meter\')
+             WHERE JSON_EXTRACT(`custom_fields`, \'$.rc_meter_price_round_up_meter\') IS NOT NULL'
         );
     }
 
