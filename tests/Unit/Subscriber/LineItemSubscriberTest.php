@@ -54,10 +54,7 @@ final class LineItemSubscriberTest extends TestCase
 
     public function testSkipsWhenMmLengthIsZero(): void
     {
-        $request = new Request();
-        $request->request = new InputBag(['mmLength' => 0]);
-
-        $this->requestStack->method('getCurrentRequest')->willReturn($request);
+        $this->setCurrentRequest(['mmLength' => 0]);
 
         $event = $this->createMock(BeforeLineItemAddedEvent::class);
         $event->expects($this->never())->method('getLineItem');
@@ -67,128 +64,64 @@ final class LineItemSubscriberTest extends TestCase
 
     public function testSkipsWhenProductNotFound(): void
     {
-        $request = new Request();
-        $request->request = new InputBag(['mmLength' => 500]);
-        $this->requestStack->method('getCurrentRequest')->willReturn($request);
-
+        $this->setCurrentRequest(['mmLength' => 500]);
         $this->meterProductHelper->method('loadProduct')->willReturn(null);
-
-        $salesChannelContext = $this->createMock(SalesChannelContext::class);
-        $salesChannelContext->method('getContext')->willReturn(Context::createDefaultContext());
 
         $lineItem = $this->createMock(LineItem::class);
         $lineItem->method('getReferencedId')->willReturn('product-id');
         $lineItem->expects($this->never())->method('setPayloadValue');
 
-        $event = $this->createMock(BeforeLineItemAddedEvent::class);
-        $event->method('getSalesChannelContext')->willReturn($salesChannelContext);
-        $event->method('getLineItem')->willReturn($lineItem);
+        $event = $this->createEvent($lineItem);
 
         $this->subscriber->onBeforeLineItemAdded($event);
     }
 
     public function testSkipsWhenProductIsNotMeterProduct(): void
     {
-        $request = new Request();
-        $request->request = new InputBag(['mmLength' => 500]);
-        $this->requestStack->method('getCurrentRequest')->willReturn($request);
-
-        $product = new ProductEntity();
-        $this->meterProductHelper->method('loadProduct')->willReturn($product);
-        $this->meterProductHelper->method('isMeterProductEntity')->willReturn(false);
-
-        $salesChannelContext = $this->createMock(SalesChannelContext::class);
-        $salesChannelContext->method('getContext')->willReturn(Context::createDefaultContext());
+        $this->setCurrentRequest(['mmLength' => 500]);
+        $this->configureMeterProduct(isMeter: false);
 
         $lineItem = $this->createMock(LineItem::class);
         $lineItem->method('getReferencedId')->willReturn('product-id');
         $lineItem->expects($this->never())->method('setPayloadValue');
 
-        $event = $this->createMock(BeforeLineItemAddedEvent::class);
-        $event->method('getSalesChannelContext')->willReturn($salesChannelContext);
-        $event->method('getLineItem')->willReturn($lineItem);
+        $event = $this->createEvent($lineItem);
 
         $this->subscriber->onBeforeLineItemAdded($event);
     }
 
     public function testSkipsWhenMmLengthBelowProductMinimum(): void
     {
-        $request = new Request();
-        $request->request = new InputBag(['mmLength' => 500]);
-        $this->requestStack->method('getCurrentRequest')->willReturn($request);
-
-        $product = new ProductEntity();
-        $this->meterProductHelper->method('loadProduct')->willReturn($product);
-        $this->meterProductHelper->method('isMeterProductEntity')->willReturn(true);
-        $this->meterProductHelper->method('getMinLength')->willReturn(1000);
-        $this->meterProductHelper->method('getMaxLength')->willReturn(6000);
-
-        $salesChannel = $this->createMock(SalesChannelEntity::class);
-        $salesChannel->method('getId')->willReturn('sc-id');
-
-        $salesChannelContext = $this->createMock(SalesChannelContext::class);
-        $salesChannelContext->method('getSalesChannel')->willReturn($salesChannel);
-        $salesChannelContext->method('getContext')->willReturn(Context::createDefaultContext());
+        $this->setCurrentRequest(['mmLength' => 500]);
+        $this->configureMeterProduct(isMeter: true, minLength: 1000, maxLength: 6000);
 
         $lineItem = $this->createMock(LineItem::class);
         $lineItem->method('getReferencedId')->willReturn('product-id');
         $lineItem->expects($this->never())->method('setPayloadValue');
 
-        $event = $this->createMock(BeforeLineItemAddedEvent::class);
-        $event->method('getSalesChannelContext')->willReturn($salesChannelContext);
-        $event->method('getLineItem')->willReturn($lineItem);
+        $event = $this->createEvent($lineItem, 'sc-id');
 
         $this->subscriber->onBeforeLineItemAdded($event);
     }
 
     public function testSkipsWhenMmLengthAboveProductMaximum(): void
     {
-        $request = new Request();
-        $request->request = new InputBag(['mmLength' => 7000]);
-        $this->requestStack->method('getCurrentRequest')->willReturn($request);
-
-        $product = new ProductEntity();
-        $this->meterProductHelper->method('loadProduct')->willReturn($product);
-        $this->meterProductHelper->method('isMeterProductEntity')->willReturn(true);
-        $this->meterProductHelper->method('getMinLength')->willReturn(1000);
-        $this->meterProductHelper->method('getMaxLength')->willReturn(6000);
-
-        $salesChannel = $this->createMock(SalesChannelEntity::class);
-        $salesChannel->method('getId')->willReturn('sc-id');
-
-        $salesChannelContext = $this->createMock(SalesChannelContext::class);
-        $salesChannelContext->method('getSalesChannel')->willReturn($salesChannel);
-        $salesChannelContext->method('getContext')->willReturn(Context::createDefaultContext());
+        $this->setCurrentRequest(['mmLength' => 7000]);
+        $this->configureMeterProduct(isMeter: true, minLength: 1000, maxLength: 6000);
 
         $lineItem = $this->createMock(LineItem::class);
         $lineItem->method('getReferencedId')->willReturn('product-id');
         $lineItem->expects($this->never())->method('setPayloadValue');
 
-        $event = $this->createMock(BeforeLineItemAddedEvent::class);
-        $event->method('getSalesChannelContext')->willReturn($salesChannelContext);
-        $event->method('getLineItem')->willReturn($lineItem);
+        $event = $this->createEvent($lineItem, 'sc-id');
 
         $this->subscriber->onBeforeLineItemAdded($event);
     }
 
     public function testSetsPayloadForValidMeterProduct(): void
     {
-        $request = new Request();
-        $request->request = new InputBag(['mmLength' => 2000]);
-        $this->requestStack->method('getCurrentRequest')->willReturn($request);
-
-        $product = new ProductEntity();
-        $this->meterProductHelper->method('loadProduct')->willReturn($product);
-        $this->meterProductHelper->method('isMeterProductEntity')->willReturn(true);
-        $this->meterProductHelper->method('getMinLength')->willReturn(1000);
-        $this->meterProductHelper->method('getMaxLength')->willReturn(6000);
-
-        $salesChannel = $this->createMock(SalesChannelEntity::class);
-        $salesChannel->method('getId')->willReturn('sc-id');
-
-        $salesChannelContext = $this->createMock(SalesChannelContext::class);
-        $salesChannelContext->method('getSalesChannel')->willReturn($salesChannel);
-        $salesChannelContext->method('getContext')->willReturn(Context::createDefaultContext());
+        $this->setCurrentRequest(['mmLength' => 2000]);
+        $this->configureMeterProduct(isMeter: true, minLength: 1000, maxLength: 6000);
 
         $lineItem = $this->createMock(LineItem::class);
         $lineItem->method('getReferencedId')->willReturn('product-id');
@@ -206,15 +139,53 @@ final class LineItemSubscriberTest extends TestCase
                 return $lineItem;
             });
 
-        // Cart gibt dasselbe Item zurück — simuliert den Normalfall
         $cart = $this->createMock(Cart::class);
         $cart->method('get')->with('line-item-id')->willReturn($lineItem);
 
-        $event = $this->createMock(BeforeLineItemAddedEvent::class);
-        $event->method('getSalesChannelContext')->willReturn($salesChannelContext);
-        $event->method('getLineItem')->willReturn($lineItem);
-        $event->method('getCart')->willReturn($cart);
+        $event = $this->createEvent($lineItem, 'sc-id', $cart);
 
         $this->subscriber->onBeforeLineItemAdded($event);
+    }
+
+    /** Setzt einen Request mit den gegebenen POST-Parametern auf den RequestStack. */
+    private function setCurrentRequest(array $postData): void
+    {
+        $request = new Request();
+        $request->request = new InputBag($postData);
+        $this->requestStack->method('getCurrentRequest')->willReturn($request);
+    }
+
+    /** Konfiguriert den MeterProductHelper-Mock für Produkt-Lookups. */
+    private function configureMeterProduct(bool $isMeter, int $minLength = 1, int $maxLength = 10000): void
+    {
+        $product = new ProductEntity();
+        $this->meterProductHelper->method('loadProduct')->willReturn($product);
+        $this->meterProductHelper->method('isMeterProductEntity')->willReturn($isMeter);
+        $this->meterProductHelper->method('getMinLength')->willReturn($minLength);
+        $this->meterProductHelper->method('getMaxLength')->willReturn($maxLength);
+    }
+
+    /** Erstellt ein BeforeLineItemAddedEvent mit SalesChannelContext-Mock. */
+    private function createEvent(
+        LineItem $lineItem,
+        string $salesChannelId = 'sc-id',
+        ?Cart $cart = null,
+    ): BeforeLineItemAddedEvent {
+        $salesChannel = $this->createMock(SalesChannelEntity::class);
+        $salesChannel->method('getId')->willReturn($salesChannelId);
+
+        $context = $this->createMock(SalesChannelContext::class);
+        $context->method('getSalesChannel')->willReturn($salesChannel);
+        $context->method('getContext')->willReturn(Context::createDefaultContext());
+
+        $event = $this->createMock(BeforeLineItemAddedEvent::class);
+        $event->method('getSalesChannelContext')->willReturn($context);
+        $event->method('getLineItem')->willReturn($lineItem);
+
+        if ($cart !== null) {
+            $event->method('getCart')->willReturn($cart);
+        }
+
+        return $event;
     }
 }

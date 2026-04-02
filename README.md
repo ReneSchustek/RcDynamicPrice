@@ -54,7 +54,7 @@ Im Admin unter dem jeweiligen Produkt → **Individuelle Felder** → **Dynamisc
 | Meterpreis aktiv | Checkbox | Aktiviert die Längeneingabe für dieses Produkt |
 | Mindestlänge (mm) | Zahl | Produktspezifisches Minimum (leer = globaler Wert) |
 | Maximallänge (mm) | Zahl | Produktspezifisches Maximum (leer = globaler Wert) |
-| Auf vollen Meter aufrunden | Checkbox | Eingabe wird für die Preisberechnung auf den nächsten vollen Meter aufgerundet (z. B. 4050 → 5000). Die tatsächliche Schnittlänge bleibt erhalten. |
+| Rundungsmodus | Select | Legt fest, auf welche Einheit die Eingabe aufgerundet wird. Optionen: Keine Rundung, Volle Zentimeter (10 mm), Viertel Meter (250 mm), Halber Meter (500 mm), Voller Meter (1000 mm). Die tatsächliche Schnittlänge bleibt erhalten. |
 
 ## Deployment
 

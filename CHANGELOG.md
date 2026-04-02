@@ -2,6 +2,28 @@
 
 Alle nennenswerten Änderungen werden in dieser Datei dokumentiert.
 
+## [1.3.0] - 2026-04-02
+
+> **Deployment:** `bin/build-storefront.sh` erforderlich (JS geändert)
+
+### Hinzugefügt
+- Konfigurierbare Rundungsstufen: Volle cm, Viertel Meter, Halber Meter, Voller Meter (Select statt Checkbox)
+- Migration ersetzt Bool-Feld `rc_meter_price_round_up_meter` durch Select-Feld `rc_meter_price_rounding`
+- Bestehende Produkte mit Aufrundung werden automatisch auf „Voller Meter" migriert
+- Generisches Suffix-Protokoll: Verschiedene Plugin-Suffixe werden automatisch in die LineItem-ID einbezogen
+- Escape-Taste schließt das Hinweis-Modal (Barrierefreiheit)
+- Tests für RcDynamicPriceConfigStruct
+
+### Geändert
+- JS-Plugin: Duplizierter Reset-Code in `_resetInput()` extrahiert (DRY)
+- JS-Plugin: `_clearError()` entfernt jetzt beide CSS-Klassen korrekt
+- MeterProductHelper: Redundante Konstante `VALID_ROUNDING_MODES` entfernt (DRY)
+- LineItemSubscriberTest: Repetitiver Mock-Setup in Hilfsmethoden gebündelt
+- Sync-Kommentare zwischen PHP und JS auf Deutsch vereinheitlicht
+
+### Behoben
+- Vollständige i18n-Prüfung: Alle Snippets, Labels und Config-Texte in de-DE und en-GB
+
 ## [1.2.1] - 2026-03-26
 
 > **Deployment:** `bin/build-storefront.sh` erforderlich (JS + SCSS geändert)

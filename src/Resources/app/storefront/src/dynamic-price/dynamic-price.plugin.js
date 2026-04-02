@@ -87,14 +87,22 @@ export default class DynamicPricePlugin extends Plugin {
         document.body.appendChild(backdrop);
         document.body.appendChild(modal);
 
+        const onEscape = (e) => {
+            if (e.key === 'Escape') {
+                close();
+            }
+        };
+
         const close = () => {
             backdrop.remove();
             modal.remove();
+            document.removeEventListener('keydown', onEscape);
             this._input.focus();
         };
 
         modal.querySelector('.rc-dynamic-price-modal__close').addEventListener('click', close);
         backdrop.addEventListener('click', close);
+        document.addEventListener('keydown', onEscape);
     }
 
     _escapeHtml(text) {
@@ -115,9 +123,7 @@ export default class DynamicPricePlugin extends Plugin {
 
         if (raw === '') {
             this._clearError();
-            this._clearResult();
-            this._disableSubmit();
-            this._updateMeterState(null);
+            this._resetInput();
             return;
         }
 
@@ -125,9 +131,7 @@ export default class DynamicPricePlugin extends Plugin {
 
         if (mm === null) {
             this._showError(this.el.dataset.snippetErrorInteger || 'Invalid input');
-            this._clearResult();
-            this._disableSubmit();
-            this._updateMeterState(null);
+            this._resetInput();
             return;
         }
 
@@ -139,9 +143,7 @@ export default class DynamicPricePlugin extends Plugin {
             const msg = (this.el.dataset.snippetErrorMin || 'Min: %minLength% mm')
                 .replace('%minLength%', min.toLocaleString(locale));
             this._showError(msg);
-            this._clearResult();
-            this._disableSubmit();
-            this._updateMeterState(null);
+            this._resetInput();
             return;
         }
 
@@ -149,9 +151,7 @@ export default class DynamicPricePlugin extends Plugin {
             const msg = (this.el.dataset.snippetErrorMax || 'Max: %maxLength% mm')
                 .replace('%maxLength%', max.toLocaleString(locale));
             this._showError(msg);
-            this._clearResult();
-            this._disableSubmit();
-            this._updateMeterState(null);
+            this._resetInput();
             return;
         }
 
@@ -237,7 +237,7 @@ export default class DynamicPricePlugin extends Plugin {
 
     _roundUp(mm) {
         const mode = this.el.dataset.roundingMode || 'none';
-        // Sync mit MeterProductHelper::ROUNDING_STEPS
+        // Muss identisch sein mit MeterProductHelper::ROUNDING_STEPS
         const steps = { none: 0, cm: 10, quarter_m: 250, half_m: 500, full_m: 1000 };
         const step = steps[mode] || 0;
 
@@ -291,9 +291,15 @@ export default class DynamicPricePlugin extends Plugin {
 
     _clearError() {
         this._errorEl.hidden = true;
-        this._errorEl.classList.remove('text-info');
-        this._errorEl.classList.add('text-danger');
+        this._errorEl.classList.remove('text-info', 'text-danger');
         this._input.classList.remove('is-invalid');
+    }
+
+    /** Setzt Ergebnis, Submit und Meter-State zurück — gemeinsamer Pfad bei ungültiger Eingabe. */
+    _resetInput() {
+        this._clearResult();
+        this._disableSubmit();
+        this._updateMeterState(null);
     }
 
     _disableSubmit() {

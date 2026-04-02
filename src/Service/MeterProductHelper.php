@@ -17,21 +17,13 @@ final class MeterProductHelper implements MeterProductHelperInterface
     private const DEFAULT_MIN_LENGTH = 1;
     private const DEFAULT_MAX_LENGTH = 10000;
 
-    // Sync mit dynamic-price.plugin.js _roundUp()
+    // Muss identisch sein mit dynamic-price.plugin.js _roundUp()
     private const ROUNDING_STEPS = [
         DynamicPriceConstants::ROUNDING_NONE => 0,
         DynamicPriceConstants::ROUNDING_CM => 10,
         DynamicPriceConstants::ROUNDING_QUARTER_M => 250,
         DynamicPriceConstants::ROUNDING_HALF_M => 500,
         DynamicPriceConstants::ROUNDING_FULL_M => 1000,
-    ];
-
-    private const VALID_ROUNDING_MODES = [
-        DynamicPriceConstants::ROUNDING_NONE,
-        DynamicPriceConstants::ROUNDING_CM,
-        DynamicPriceConstants::ROUNDING_QUARTER_M,
-        DynamicPriceConstants::ROUNDING_HALF_M,
-        DynamicPriceConstants::ROUNDING_FULL_M,
     ];
 
     /** @param EntityRepository<ProductCollection> $productRepository */
@@ -101,7 +93,7 @@ final class MeterProductHelper implements MeterProductHelperInterface
     {
         $value = ($product->getCustomFields() ?? [])[DynamicPriceConstants::FIELD_ROUNDING] ?? null;
 
-        if (\is_string($value) && \in_array($value, self::VALID_ROUNDING_MODES, true)) {
+        if (\is_string($value) && \array_key_exists($value, self::ROUNDING_STEPS)) {
             return $value;
         }
 
