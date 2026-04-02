@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Ruhrcoder\RcDynamicPrice\Cart;
 
+use Psr\Log\LoggerInterface;
 use Ruhrcoder\RcDynamicPrice\DynamicPriceConstants;
 use Ruhrcoder\RcDynamicPrice\Service\MeterProductHelperInterface;
 use Shopware\Core\Checkout\Cart\Cart;
@@ -11,7 +12,6 @@ use Shopware\Core\Checkout\Cart\CartBehavior;
 use Shopware\Core\Checkout\Cart\CartProcessorInterface;
 use Shopware\Core\Checkout\Cart\LineItem\CartDataCollection;
 use Shopware\Core\Checkout\Cart\LineItem\LineItem;
-use Psr\Log\LoggerInterface;
 use Shopware\Core\Checkout\Cart\Price\QuantityPriceCalculator;
 use Shopware\Core\Checkout\Cart\Price\Struct\QuantityPriceDefinition;
 use Shopware\Core\System\SalesChannel\SalesChannelContext;

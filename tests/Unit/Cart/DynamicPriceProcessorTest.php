@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Ruhrcoder\RcDynamicPrice\Tests\Unit\Cart;
 
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 use Ruhrcoder\RcDynamicPrice\Cart\DynamicPriceProcessor;
 use Ruhrcoder\RcDynamicPrice\DynamicPriceConstants;
 use Ruhrcoder\RcDynamicPrice\Service\MeterProductHelperInterface;
@@ -16,7 +17,6 @@ use Shopware\Core\Checkout\Cart\Price\QuantityPriceCalculator;
 use Shopware\Core\Checkout\Cart\Price\Struct\CalculatedPrice;
 use Shopware\Core\Checkout\Cart\Price\Struct\QuantityPriceDefinition;
 use Shopware\Core\Checkout\Cart\Tax\Struct\CalculatedTaxCollection;
-use Psr\Log\LoggerInterface;
 use Shopware\Core\Checkout\Cart\Tax\Struct\TaxRuleCollection;
 use Shopware\Core\System\SalesChannel\SalesChannelContext;
 
