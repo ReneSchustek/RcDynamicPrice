@@ -189,7 +189,8 @@ export default class DynamicPricePlugin extends Plugin {
         }));
 
         // ID-Setzung delegieren wenn ein Plugin mit hoeherer Prioritaet vorhanden ist
-        const hasHigherPriority = this._form.querySelector('[data-rc-custom-fields]')
+        const hasHigherPriority = this._form.querySelector('[data-rc-id-controller]')
+            || this._form.querySelector('[data-rc-custom-fields]')
             || this._form.querySelector('[data-rc-cart-splitter]');
         if (hasHigherPriority) {
             return;
