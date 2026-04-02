@@ -14,12 +14,14 @@ use Shopware\Core\Checkout\Cart\LineItem\LineItem;
 use Shopware\Core\Checkout\Cart\Price\QuantityPriceCalculator;
 use Shopware\Core\Checkout\Cart\Price\Struct\QuantityPriceDefinition;
 use Shopware\Core\System\SalesChannel\SalesChannelContext;
+use Psr\Log\LoggerInterface;
 
 final class DynamicPriceProcessor implements CartProcessorInterface
 {
     public function __construct(
         private readonly QuantityPriceCalculator $calculator,
         private readonly MeterProductHelperInterface $meterProductHelper,
+        private readonly LoggerInterface $logger,
     ) {
     }
 
@@ -38,6 +40,10 @@ final class DynamicPriceProcessor implements CartProcessorInterface
             $mmLength = $lineItem->getPayloadValue(DynamicPriceConstants::PAYLOAD_LENGTH_MM);
 
             if (!is_int($mmLength) || $mmLength <= 0) {
+                $this->logger->warning('RcDynamicPrice: Ungueltige Laenge im LineItem', [
+                    'lineItemId' => $lineItem->getId(),
+                    'meterLengthMm' => $mmLength,
+                ]);
                 continue;
             }
 
@@ -46,15 +52,29 @@ final class DynamicPriceProcessor implements CartProcessorInterface
             $maxLength = $lineItem->getPayloadValue(DynamicPriceConstants::PAYLOAD_MAX_LENGTH);
 
             if (is_int($minLength) && $mmLength < $minLength) {
+                $this->logger->warning('RcDynamicPrice: Laenge unter Minimum', [
+                    'lineItemId' => $lineItem->getId(),
+                    'meterLengthMm' => $mmLength,
+                    'minLength' => $minLength,
+                ]);
                 continue;
             }
 
             if (is_int($maxLength) && $mmLength > $maxLength) {
+                $this->logger->warning('RcDynamicPrice: Laenge ueber Maximum', [
+                    'lineItemId' => $lineItem->getId(),
+                    'meterLengthMm' => $mmLength,
+                    'maxLength' => $maxLength,
+                ]);
                 continue;
             }
 
             $price = $lineItem->getPrice();
             if ($price === null || $price->getUnitPrice() <= 0.0) {
+                $this->logger->warning('RcDynamicPrice: Kein oder ungültiger Preis am LineItem', [
+                    'lineItemId' => $lineItem->getId(),
+                    'unitPrice' => $price?->getUnitPrice(),
+                ]);
                 continue;
             }
 

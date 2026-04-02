@@ -17,12 +17,14 @@ use Shopware\Core\Checkout\Cart\Price\Struct\CalculatedPrice;
 use Shopware\Core\Checkout\Cart\Price\Struct\QuantityPriceDefinition;
 use Shopware\Core\Checkout\Cart\Tax\Struct\CalculatedTaxCollection;
 use Shopware\Core\Checkout\Cart\Tax\Struct\TaxRuleCollection;
+use Psr\Log\LoggerInterface;
 use Shopware\Core\System\SalesChannel\SalesChannelContext;
 
 final class DynamicPriceProcessorTest extends TestCase
 {
     private QuantityPriceCalculator $calculator;
     private MeterProductHelperInterface $helper;
+    private LoggerInterface $logger;
     private DynamicPriceProcessor $processor;
     private SalesChannelContext $context;
 
@@ -30,7 +32,8 @@ final class DynamicPriceProcessorTest extends TestCase
     {
         $this->calculator = $this->createMock(QuantityPriceCalculator::class);
         $this->helper = $this->createMock(MeterProductHelperInterface::class);
-        $this->processor = new DynamicPriceProcessor($this->calculator, $this->helper);
+        $this->logger = $this->createMock(LoggerInterface::class);
+        $this->processor = new DynamicPriceProcessor($this->calculator, $this->helper, $this->logger);
         $this->context = $this->createMock(SalesChannelContext::class);
     }
 

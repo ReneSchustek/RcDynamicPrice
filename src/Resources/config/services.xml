@@ -29,6 +29,7 @@
         <service id="Ruhrcoder\RcDynamicPrice\Cart\DynamicPriceProcessor">
             <argument type="service" id="Shopware\Core\Checkout\Cart\Price\QuantityPriceCalculator"/>
             <argument type="service" id="Ruhrcoder\RcDynamicPrice\Service\MeterProductHelperInterface"/>
+            <argument type="service" id="logger"/>
             <!-- Läuft nach ProductCartProcessor (Priorität 5000) -->
             <tag name="shopware.cart.processor" priority="4800"/>
         </service>
