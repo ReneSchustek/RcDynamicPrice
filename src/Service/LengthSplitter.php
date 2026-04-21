@@ -9,14 +9,27 @@ use Ruhrcoder\RcDynamicPrice\Enum\SplitMode;
 /**
  * Berechnet die Aufteilung einer Gesamtlänge in Teilstücke.
  * Zustandslos und rein funktional — gesamte Geschäftslogik des Splittings liegt hier.
+ *
+ * Vorbedingung: $totalMm muss vom Aufrufer auf eine realistische Obergrenze begrenzt sein.
+ * Der Service akzeptiert bis 1.000.000 mm (1 km); darüber wird eine Exception geworfen,
+ * um Memory-Exhaustion durch absurd viele Teilstücke auszuschließen.
  */
 final class LengthSplitter implements LengthSplitterInterface
 {
+    /** Obergrenze für die Gesamtlänge (1 km). Schützt vor absurden Array-Allokationen. */
+    public const MAX_TOTAL_MM = 1_000_000;
+
     public function split(int $totalMm, int $maxPieceMm, int $minPieceMm, ?SplitMode $mode): array
     {
         if ($totalMm <= 0) {
             throw new \InvalidArgumentException(
                 \sprintf('Gesamtlaenge muss positiv sein, erhalten: %d', $totalMm)
+            );
+        }
+
+        if ($totalMm > self::MAX_TOTAL_MM) {
+            throw new \InvalidArgumentException(
+                \sprintf('Gesamtlaenge %d ueberschreitet unterstuetztes Maximum (%d mm)', $totalMm, self::MAX_TOTAL_MM)
             );
         }
 

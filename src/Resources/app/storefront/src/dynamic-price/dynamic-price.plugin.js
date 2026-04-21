@@ -249,8 +249,9 @@ export default class DynamicPricePlugin extends Plugin {
 
     /**
      * Sammelt alle rc*Suffix-Data-Attribute vom Formular.
-     * Damit werden Suffixe anderer Plugins (RcColorPicker, etc.)
-     * automatisch in die ID einbezogen.
+     * Damit werden Suffixe anderer Plugins (RcColorPicker, etc.) automatisch in die ID einbezogen.
+     * Sortiert wird alphabetisch auf dem Suffix-Wert (nicht auf dem Key), damit die erzeugte
+     * LineItem-ID stabil bleibt, unabhaengig von der Reihenfolge, in der Plugins ihre Suffixe setzen.
      */
     _collectAllSuffixes() {
         const parts = [];

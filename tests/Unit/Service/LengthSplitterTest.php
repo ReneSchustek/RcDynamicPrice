@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Ruhrcoder\RcDynamicPrice\Tests\Unit\Service;
 
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Ruhrcoder\RcDynamicPrice\Enum\SplitMode;
 use Ruhrcoder\RcDynamicPrice\Service\LengthSplitter;
@@ -125,6 +126,86 @@ final class LengthSplitterTest extends TestCase
         $this->expectException(\InvalidArgumentException::class);
 
         $this->splitter->split(-100, 5000, 1, SplitMode::Equal);
+    }
+
+    public function testThrowsOnTotalAboveSupportedMaximum(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessageMatches('/ueberschreitet unterstuetztes Maximum/');
+
+        $this->splitter->split(LengthSplitter::MAX_TOTAL_MM + 1, 5000, 1, SplitMode::Equal);
+    }
+
+    public function testAcceptsTotalAtExactMaximum(): void
+    {
+        // Genau der Grenzwert muss noch akzeptiert werden
+        $result = $this->splitter->split(LengthSplitter::MAX_TOTAL_MM, 5000, 1, SplitMode::Equal);
+        $this->assertNotEmpty($result);
+    }
+
+    // --- Invariante: alle Teilstuecke <= maxPiece (Datenprovider-Matrix) ---
+
+    #[DataProvider('provideEqualInvariantCases')]
+    public function testEqualPiecesNeverExceedMax(int $total, int $max): void
+    {
+        $pieces = $this->splitter->split($total, $max, 1, SplitMode::Equal);
+
+        foreach ($pieces as $piece) {
+            $this->assertLessThanOrEqual(
+                $max,
+                $piece,
+                \sprintf('Teilstueck %d darf maxPiece %d nicht ueberschreiten (total=%d)', $piece, $max, $total)
+            );
+        }
+    }
+
+    /** @return array<string, array{int, int}> */
+    public static function provideEqualInvariantCases(): array
+    {
+        return [
+            'exactly_above_max' => [10001, 5000],
+            'one_below_max' => [4999, 5000],
+            'tiny_steps' => [100, 1],
+            'very_large_small_max' => [99999, 10000],
+            'exact_double' => [10000, 5000],
+            'prime_numbers' => [7919, 1009],
+            'barely_overspill' => [10001, 10000],
+            'at_service_max' => [LengthSplitter::MAX_TOTAL_MM, 5000],
+        ];
+    }
+
+    // --- JSON-Fixture-Paritaet: dieselben Cases werden vom JS-Plugin genutzt ---
+
+    /**
+     * @param list<int> $expected
+     */
+    #[DataProvider('provideFixtureCases')]
+    public function testMatchesSharedFixture(int $total, int $maxPiece, int $min, string $mode, array $expected): void
+    {
+        $splitMode = SplitMode::tryFromString($mode);
+        $result = $this->splitter->split($total, $maxPiece, $min, $splitMode);
+
+        $this->assertSame($expected, $result);
+    }
+
+    /** @return iterable<string, array{int, int, int, string, list<int>}> */
+    public static function provideFixtureCases(): iterable
+    {
+        $fixture = json_decode(
+            (string) file_get_contents(__DIR__ . '/../../Fixtures/split-cases.json'),
+            true,
+            flags: \JSON_THROW_ON_ERROR
+        );
+
+        foreach ($fixture['cases'] as $case) {
+            yield $case['name'] => [
+                (int) $case['total'],
+                (int) $case['maxPiece'],
+                (int) $case['min'],
+                (string) $case['mode'],
+                array_map('intval', $case['expected']),
+            ];
+        }
     }
 
     // --- Enum tryFromString ---

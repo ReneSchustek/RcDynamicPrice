@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace Ruhrcoder\RcDynamicPrice\Subscriber;
 
-use Ruhrcoder\RcDynamicPrice\DynamicPriceConstants;
+use Psr\Log\LoggerInterface;
 use Ruhrcoder\RcDynamicPrice\Enum\SplitMode;
-use Ruhrcoder\RcDynamicPrice\Service\LengthSplitterInterface;
+use Ruhrcoder\RcDynamicPrice\Service\CartItemSplitAssemblerInterface;
 use Ruhrcoder\RcDynamicPrice\Service\MeterProductHelperInterface;
-use Shopware\Core\Checkout\Cart\Cart;
+use Ruhrcoder\RcDynamicPrice\Service\MeterSplittingConfig;
 use Shopware\Core\Checkout\Cart\Event\BeforeLineItemAddedEvent;
-use Shopware\Core\Checkout\Cart\LineItem\LineItem;
+use Shopware\Core\Content\Product\ProductEntity;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
@@ -18,9 +18,10 @@ use Symfony\Component\HttpFoundation\RequestStack;
 final class LineItemSubscriber implements EventSubscriberInterface
 {
     /**
-     * Marker-Keys, die andere Ruhrcoder-Plugins bei aktiven TMMS-/Custom-Field-Eingaben in den Request schreiben.
-     * Ist einer davon gesetzt, besitzt ein hoeher priorisiertes Plugin die LineItem-ID — der Auto-Split
-     * wird dann auf Hint-Verhalten reduziert, damit keine Sibling-Positionen ohne TMMS-Payload entstehen.
+     * Payload-Marker, die andere Ruhrcoder-Plugins bei aktiven TMMS-/Custom-Field-Eingaben in den Request
+     * schreiben. Ist einer davon gesetzt, besitzt ein hoeher priorisiertes Plugin die LineItem-ID — der
+     * Auto-Split wird dann auf Hint-Verhalten reduziert, damit keine Sibling-Positionen ohne deren
+     * Payload entstehen. Siehe plugin-interaction.md Sektion "Multi-LineItem-Requests".
      */
     private const FOREIGN_ID_CONTROLLER_KEYS = [
         'rcTmmsActive',
@@ -30,7 +31,8 @@ final class LineItemSubscriber implements EventSubscriberInterface
     public function __construct(
         private readonly RequestStack $requestStack,
         private readonly MeterProductHelperInterface $meterProductHelper,
-        private readonly LengthSplitterInterface $lengthSplitter,
+        private readonly CartItemSplitAssemblerInterface $splitAssembler,
+        private readonly LoggerInterface $logger,
     ) {
     }
 
@@ -48,19 +50,16 @@ final class LineItemSubscriber implements EventSubscriberInterface
             return;
         }
 
-        $rawLength = $request->request->get('mmLength', '');
-        if ($rawLength === '' || $rawLength === null) {
+        $mmLength = $this->readRequestedLength($request);
+        if ($mmLength === null) {
             return;
         }
 
-        $mmLength = (int) $rawLength;
-        if ($mmLength <= 0) {
-            return;
-        }
-
-        // referencedId ist immer die echte Produkt-ID, auch wenn die LineItem-ID den mm-Suffix enthält
         $productId = $event->getLineItem()->getReferencedId();
         if ($productId === null) {
+            $this->logger->info('RcDynamicPrice: LineItem ohne referencedId uebersprungen', [
+                'lineItemId' => $event->getLineItem()->getId(),
+            ]);
             return;
         }
 
@@ -72,35 +71,52 @@ final class LineItemSubscriber implements EventSubscriberInterface
         }
 
         $salesChannelId = $event->getSalesChannelContext()->getSalesChannel()->getId();
-        $minLength = $this->meterProductHelper->getMinLength($product, $salesChannelId);
-        $maxLength = $this->meterProductHelper->getMaxLength($product, $salesChannelId);
+        $config = $this->buildConfig($product, $salesChannelId, $productId, $request);
 
-        if ($mmLength < $minLength || $mmLength > $maxLength) {
+        if ($mmLength < $config->minLength || $mmLength > $config->maxLength) {
+            $this->logger->warning('RcDynamicPrice: Eingabe ausserhalb der erlaubten Grenzen verworfen', [
+                'productId' => $productId,
+                'mmLength' => $mmLength,
+                'minLength' => $config->minLength,
+                'maxLength' => $config->maxLength,
+            ]);
             return;
         }
 
-        $roundingMode = $this->meterProductHelper->getRoundingMode($product);
-        $splitMode = $this->effectiveSplitMode($product, $salesChannelId, $request);
-        $maxPieceLength = $this->meterProductHelper->getMaxPieceLength($product, $salesChannelId);
+        $this->splitAssembler->assemble($event->getCart(), $event->getLineItem(), $mmLength, $config);
+    }
 
-        $pieces = $this->lengthSplitter->split($mmLength, $maxPieceLength, $minLength, $splitMode);
+    /**
+     * Liest die angeforderte Laenge aus dem Request. Strenge ctype_digit-Pruefung statt blinder
+     * (int)-Konversion — verhindert, dass Eingaben wie "5000abc" oder "500.5" stillschweigend
+     * in gueltige Laengen umgewandelt werden.
+     */
+    private function readRequestedLength(Request $request): ?int
+    {
+        $raw = $request->request->get('mmLength', '');
 
-        // Immer den Cart-Eintrag nehmen: bei Merging ist das eine andere Instanz als $event->getLineItem()
-        $cartItem = $event->getCart()->get($event->getLineItem()->getId()) ?? $event->getLineItem();
-        $this->writeLineItemPayload($cartItem, $pieces[0], $roundingMode, $minLength, $maxLength);
-
-        if (\count($pieces) === 1 || $splitMode === null || $splitMode === SplitMode::Hint) {
-            return;
+        if (!\is_string($raw) || !\ctype_digit($raw)) {
+            return null;
         }
 
-        $this->appendSiblingPieces(
-            cart: $event->getCart(),
-            originalId: $cartItem->getId(),
+        $mm = (int) $raw;
+
+        return $mm > 0 ? $mm : null;
+    }
+
+    private function buildConfig(
+        ProductEntity $product,
+        string $salesChannelId,
+        string $productId,
+        Request $request,
+    ): MeterSplittingConfig {
+        return new MeterSplittingConfig(
             productId: $productId,
-            pieces: $pieces,
-            roundingMode: $roundingMode,
-            minLength: $minLength,
-            maxLength: $maxLength,
+            minLength: $this->meterProductHelper->getMinLength($product, $salesChannelId),
+            maxLength: $this->meterProductHelper->getMaxLength($product, $salesChannelId),
+            maxPieceLength: $this->meterProductHelper->getMaxPieceLength($product, $salesChannelId),
+            roundingMode: $this->meterProductHelper->getRoundingMode($product),
+            splitMode: $this->effectiveSplitMode($product, $salesChannelId, $request),
         );
     }
 
@@ -109,11 +125,8 @@ final class LineItemSubscriber implements EventSubscriberInterface
      * Wenn ein Plugin mit hoeherer ID-Prioritaet (RcCartSplitter, RcCustomFields) am Request beteiligt ist,
      * wird Auto-Split deaktiviert, um Payload-Verlust auf Sibling-LineItems zu vermeiden.
      */
-    private function effectiveSplitMode(
-        \Shopware\Core\Content\Product\ProductEntity $product,
-        string $salesChannelId,
-        Request $request,
-    ): ?SplitMode {
+    private function effectiveSplitMode(ProductEntity $product, string $salesChannelId, Request $request): ?SplitMode
+    {
         $configured = $this->meterProductHelper->getSplitMode($product, $salesChannelId);
 
         if ($configured === null || $configured === SplitMode::Hint) {
@@ -121,59 +134,12 @@ final class LineItemSubscriber implements EventSubscriberInterface
         }
 
         foreach (self::FOREIGN_ID_CONTROLLER_KEYS as $key) {
-            if ($request->request->get($key, '') !== '' && $request->request->get($key) !== null) {
+            $value = $request->request->get($key, '');
+            if ($value !== '' && $value !== null) {
                 return SplitMode::Hint;
             }
         }
 
         return $configured;
-    }
-
-    /**
-     * Haengt alle Teilstuecke ab Index 1 als neue LineItems an den Cart.
-     *
-     * @param non-empty-list<int> $pieces
-     */
-    private function appendSiblingPieces(
-        Cart $cart,
-        string $originalId,
-        string $productId,
-        array $pieces,
-        string $roundingMode,
-        int $minLength,
-        int $maxLength,
-    ): void {
-        $pieceCount = \count($pieces);
-
-        for ($i = 1; $i < $pieceCount; $i++) {
-            $sibling = new LineItem(
-                $originalId . '-piece' . $i,
-                LineItem::PRODUCT_LINE_ITEM_TYPE,
-                $productId,
-                1,
-            );
-
-            $this->writeLineItemPayload($sibling, $pieces[$i], $roundingMode, $minLength, $maxLength);
-
-            $cart->add($sibling);
-        }
-    }
-
-    /**
-     * Schreibt die validierten Laengendaten in den LineItem-Payload.
-     * Der Processor liest diese Werte, ohne das Produkt erneut laden zu muessen.
-     */
-    private function writeLineItemPayload(
-        LineItem $lineItem,
-        int $lengthMm,
-        string $roundingMode,
-        int $minLength,
-        int $maxLength,
-    ): void {
-        $lineItem->setPayloadValue(DynamicPriceConstants::PAYLOAD_LENGTH_MM, $lengthMm);
-        $lineItem->setPayloadValue(DynamicPriceConstants::PAYLOAD_METER_ACTIVE, true);
-        $lineItem->setPayloadValue(DynamicPriceConstants::PAYLOAD_ROUNDING, $roundingMode);
-        $lineItem->setPayloadValue(DynamicPriceConstants::PAYLOAD_MIN_LENGTH, $minLength);
-        $lineItem->setPayloadValue(DynamicPriceConstants::PAYLOAD_MAX_LENGTH, $maxLength);
     }
 }

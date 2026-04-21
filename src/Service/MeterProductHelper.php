@@ -157,7 +157,12 @@ final class MeterProductHelper implements MeterProductHelperInterface
         );
     }
 
-    /** Liest ein Custom Field als positive Ganzzahl, gibt null zurück wenn nicht gesetzt oder ungültig. */
+    /**
+     * Liest ein Custom Field als positive Ganzzahl.
+     * Konvention im Plugin: Werte ≤ 0 gelten als "nicht gesetzt" (null),
+     * damit Fallback-Kaskaden auf Global-Config bzw. Default greifen können.
+     * Für Felder mit gültiger 0-Semantik (z. B. kein Splitting = 0) darf dieser Helper nicht genutzt werden.
+     */
     private function getCustomFieldInt(ProductEntity $product, string $fieldName): ?int
     {
         $value = ($product->getCustomFields() ?? [])[$fieldName] ?? null;

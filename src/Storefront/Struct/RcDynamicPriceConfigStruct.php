@@ -13,6 +13,8 @@ final class RcDynamicPriceConfigStruct extends Struct
         private readonly int $minLength,
         private readonly int $maxLength,
         private readonly string $roundingMode = 'none',
+        // Als String statt SplitMode-Enum, damit Twig ohne expliziten .value-Cast auf das Data-Attribut
+        // serialisieren kann. Zentrale Quelle bleibt der Enum; die Konvertierung erfolgt im Subscriber.
         private readonly string $splitMode = '',
         private readonly int $maxPieceLength = 0,
         private readonly string $splitHintTemplate = '',

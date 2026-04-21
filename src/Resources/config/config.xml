@@ -47,6 +47,8 @@
             <helpText>Wird verwendet, wenn am Produkt kein eigener Split-Modus gesetzt ist.</helpText>
             <helpText lang="en-GB">Used when the product has no own split mode configured.</helpText>
             <options>
+                <!-- "none" ist ein UI-Platzhalter und entspricht einem nicht gesetzten Modus.
+                     Wird vom MeterProductHelper ueber SplitMode::tryFromString zu null aufgeloest. -->
                 <option>
                     <id>none</id>
                     <name>Kein Splitting</name>

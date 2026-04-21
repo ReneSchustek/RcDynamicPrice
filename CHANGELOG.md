@@ -2,6 +2,27 @@
 
 Alle nennenswerten Änderungen werden in dieser Datei dokumentiert.
 
+## [1.4.1] - 2026-04-21
+
+> **Deployment:** `php bin/console plugin:update RcDynamicPrice` (neue Repair-Migration) + `bin/build-storefront.sh` (JS-Kommentar geändert) + `cache:clear`
+
+### Geändert
+- Architektur: Split-Orchestrierung in neuen Service `CartItemSplitAssembler` ausgelagert, Subscriber enthält nur noch Event-Handling und Delegation
+- Neues Value Object `MeterSplittingConfig` kapselt die Produkt-/Channel-spezifischen Split-Parameter
+- `LineItemSubscriber` injiziert jetzt einen Logger und protokolliert Skip-Pfade (info) bzw. Bounds-Verletzungen (warning)
+- `mmLength`-Eingabe wird streng mit `ctype_digit` validiert, blockiert Eingaben wie `5000abc` oder `500.5`
+- `LengthSplitter` dokumentiert die Obergrenze `MAX_TOTAL_MM = 1.000.000` und wirft bei Überschreitung eine Exception
+
+### Hinzugefügt
+- Repair-Migration `1745400000EnsureSplittingFieldsExist`: wirft eine `RuntimeException`, wenn das CustomFieldSet fehlt, und legt ansonsten fehlende Splitting-Felder idempotent an
+- Gemeinsame JSON-Fixture `tests/Fixtures/split-cases.json` für PHP-/JS-Parität der Split-Mathematik
+- Matrix-Test `testEqualPiecesNeverExceedMax` stellt sicher, dass kein Teilstück `maxPiece` überschreitet
+- Tests für PHP_INT_MAX-Obergrenze, `referencedId === null`, paradox `minLength > maxPieceLength`, ID-Controller-Fallback
+
+### Dokumentation
+- PHPDoc-Ergänzungen: `getCustomFieldInt`-Semantik, `splitMode`-String-Konvention im Struct, `_collectAllSuffixes`-Sortierregel
+- `config.xml`: Kommentar zum Magic-String `"none"`-Platzhalter
+
 ## [1.4.0] - 2026-04-21
 
 > **Deployment:** `bin/build-storefront.sh` erforderlich (JS geändert) + `php bin/console plugin:update RcDynamicPrice` (neue Migration) + `cache:clear`
