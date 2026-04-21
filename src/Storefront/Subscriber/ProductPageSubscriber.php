@@ -44,9 +44,21 @@ final class ProductPageSubscriber implements EventSubscriberInterface
         $maxLength = $this->meterProductHelper->getMaxLength($product, $salesChannelId);
         $roundingMode = $this->meterProductHelper->getRoundingMode($product);
 
+        $splitMode = $this->meterProductHelper->getSplitMode($product, $salesChannelId);
+        $maxPieceLength = $this->meterProductHelper->getMaxPieceLength($product, $salesChannelId);
+        $splitHintTemplate = $this->meterProductHelper->getSplitHintTemplate($product, $salesChannelId);
+
         $event->getPage()->addExtension(
             'rcDynamicPriceConfig',
-            new RcDynamicPriceConfigStruct($hintText, $minLength, $maxLength, $roundingMode)
+            new RcDynamicPriceConfigStruct(
+                hintText: $hintText,
+                minLength: $minLength,
+                maxLength: $maxLength,
+                roundingMode: $roundingMode,
+                splitMode: $splitMode?->value ?? '',
+                maxPieceLength: $maxPieceLength,
+                splitHintTemplate: $splitHintTemplate,
+            )
         );
     }
 }

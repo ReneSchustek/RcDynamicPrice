@@ -35,4 +35,56 @@
             <helpText lang="en-GB">Largest allowed input in millimetres.</helpText>
         </input-field>
     </card>
+
+    <card>
+        <title>Längen-Splitting (Standardwerte)</title>
+        <title lang="en-GB">Length splitting (defaults)</title>
+
+        <input-field type="single-select">
+            <name>splitMode</name>
+            <label>Standard-Split-Modus</label>
+            <label lang="en-GB">Default split mode</label>
+            <helpText>Wird verwendet, wenn am Produkt kein eigener Split-Modus gesetzt ist.</helpText>
+            <helpText lang="en-GB">Used when the product has no own split mode configured.</helpText>
+            <options>
+                <option>
+                    <id>none</id>
+                    <name>Kein Splitting</name>
+                    <name lang="en-GB">No splitting</name>
+                </option>
+                <option>
+                    <id>equal</id>
+                    <name>Gleichmäßig aufteilen</name>
+                    <name lang="en-GB">Split equally</name>
+                </option>
+                <option>
+                    <id>max_rest</id>
+                    <name>Volle Stücke plus Rest</name>
+                    <name lang="en-GB">Full pieces plus remainder</name>
+                </option>
+                <option>
+                    <id>hint</id>
+                    <name>Nur Hinweis (Kunde teilt selbst auf)</name>
+                    <name lang="en-GB">Hint only (customer splits manually)</name>
+                </option>
+            </options>
+            <defaultValue>none</defaultValue>
+        </input-field>
+
+        <input-field type="int">
+            <name>maxPieceLength</name>
+            <label>Max. Teilstücklänge (mm)</label>
+            <label lang="en-GB">Max. piece length (mm)</label>
+            <helpText>Eingaben über diesem Wert werden aufgeteilt oder führen zum Hinweistext. Leer/0 = kein Splitting.</helpText>
+            <helpText lang="en-GB">Inputs above this value are split or trigger the hint. Empty/0 = no splitting.</helpText>
+        </input-field>
+
+        <input-field type="textarea">
+            <name>splitHintTemplate</name>
+            <label>Hinweistext-Vorlage</label>
+            <label lang="en-GB">Hint text template</label>
+            <helpText>Platzhalter: {length}, {maxPiece}, {pieces}, {pieceLength}, {remainder}. Leer = Snippet-Default.</helpText>
+            <helpText lang="en-GB">Placeholders: {length}, {maxPiece}, {pieces}, {pieceLength}, {remainder}. Empty = snippet default.</helpText>
+        </input-field>
+    </card>
 </config>

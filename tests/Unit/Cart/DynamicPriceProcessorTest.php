@@ -272,6 +272,39 @@ final class DynamicPriceProcessorTest extends TestCase
         $this->process([$lineItem]);
     }
 
+    public function testRoundingAppliesPerSiblingWhenCartHasSplitItems(): void
+    {
+        // Szenario BRIEF16: 3x 4750 mm landen im Cart (vom Subscriber erzeugt), full_m rundet pro Teilstueck auf 5000 mm.
+        $primary = $this->createMeterLineItemWithId('primary-id', 4750, 100.0);
+        $primary->setPayloadValue(DynamicPriceConstants::PAYLOAD_ROUNDING, 'full_m');
+
+        $sibling1 = $this->createMeterLineItemWithId('primary-id-piece1', 4750, 100.0);
+        $sibling1->setPayloadValue(DynamicPriceConstants::PAYLOAD_ROUNDING, 'full_m');
+
+        $sibling2 = $this->createMeterLineItemWithId('primary-id-piece2', 4750, 100.0);
+        $sibling2->setPayloadValue(DynamicPriceConstants::PAYLOAD_ROUNDING, 'full_m');
+
+        $this->helper->method('roundUp')->with(4750, 'full_m')->willReturn(5000);
+        $this->calculator->method('calculate')->willReturn($this->createPrice(500.0));
+
+        $this->process([$primary, $sibling1, $sibling2]);
+
+        // Jeder LineItem wird unabhaengig gerundet und behaelt seine eigene billed_length
+        $this->assertSame(5000, $primary->getPayloadValue(DynamicPriceConstants::PAYLOAD_BILLED_LENGTH_MM));
+        $this->assertSame(5000, $sibling1->getPayloadValue(DynamicPriceConstants::PAYLOAD_BILLED_LENGTH_MM));
+        $this->assertSame(5000, $sibling2->getPayloadValue(DynamicPriceConstants::PAYLOAD_BILLED_LENGTH_MM));
+    }
+
+    private function createMeterLineItemWithId(string $id, int $mm, float $unitPrice): LineItem
+    {
+        $lineItem = new LineItem($id, LineItem::PRODUCT_LINE_ITEM_TYPE);
+        $lineItem->setPayloadValue(DynamicPriceConstants::PAYLOAD_METER_ACTIVE, true);
+        $lineItem->setPayloadValue(DynamicPriceConstants::PAYLOAD_LENGTH_MM, $mm);
+        $lineItem->setPrice($this->createPrice($unitPrice));
+
+        return $lineItem;
+    }
+
     private function createMeterLineItem(int $mm, float $unitPrice): LineItem
     {
         $lineItem = new LineItem('item-1', LineItem::PRODUCT_LINE_ITEM_TYPE);

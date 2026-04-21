@@ -2,6 +2,26 @@
 
 Alle nennenswerten Änderungen werden in dieser Datei dokumentiert.
 
+## [1.4.0] - 2026-04-21
+
+> **Deployment:** `bin/build-storefront.sh` erforderlich (JS geändert) + `php bin/console plugin:update RcDynamicPrice` (neue Migration) + `cache:clear`
+
+### Hinzugefügt
+- Längen-Splitting: Eingaben oberhalb einer konfigurierbaren Teilstücklänge werden entweder gleichmäßig, als volle Stücke plus Rest, oder nur mit Hinweistext behandelt
+- Drei neue produktspezifische Custom Fields: `rc_meter_price_split_mode`, `rc_meter_price_max_piece_length`, `rc_meter_price_split_hint`
+- Drei neue globale Plugin-Config-Felder als Fallback (Standard-Modus, Max-Teilstücklänge, Hinweistext-Vorlage)
+- Neuer Service `LengthSplitter` mit rein funktionaler Split-Mathematik
+- `SplitMode`-Enum mit toleranter `tryFromString`-Konvertierung
+- Backend-Split im `LineItemSubscriber`: eingehendes LineItem wird auf erstes Teilstück reduziert, weitere Stücke als Sibling-LineItems an den Cart angehängt
+- Frontend-Vorschau: JS rendert pro Eingabe die zu erwartende Aufteilung mit Platzhalter-Ersetzung
+- Neue Snippets für Default-Hinweistexte in allen drei Modi (de-DE + en-GB)
+
+### Geändert
+- `MeterProductHelper` um drei Getter für Split-Konfiguration erweitert
+- `LineItemSubscriber` refaktoriert: Payload-Schreiblogik in private Methode extrahiert
+- `RcDynamicPriceConfigStruct` enthält jetzt Split-Konfiguration mit Validierung
+- `plugin-interaction.md` ergänzt um Hinweis zu Multi-LineItem-Requests bei Auto-Split
+
 ## [1.3.0] - 2026-04-02
 
 > **Deployment:** `bin/build-storefront.sh` erforderlich (JS geändert)

@@ -7,9 +7,13 @@
         "errorIntegerOnly": "Please enter positive whole numbers only.",
         "errorMinLength": "Minimum length: %minLength% mm",
         "errorMaxLength": "Maximum length: %maxLength% mm",
+        "errorMaxPieceLength": "Please split the length into pieces of no more than {maxPiece} mm.",
         "roundUpHint": "Input %input% mm → billed as %billed% mm (rounded)",
         "hintModalButton": "Got it",
         "cartLengthLabel": "Length: %length% mm",
-        "cartBilledLabel": "(calculated: %billed% mm)"
+        "cartBilledLabel": "(calculated: %billed% mm)",
+        "splitHintEqual": "Your length {length} mm will be split into {pieces} equal pieces of {pieceLength} mm each.",
+        "splitHintMaxRest": "Your length {length} mm will be split into full pieces of {maxPiece} mm plus a remainder of {remainder} mm ({pieces} positions).",
+        "splitHintManual": "The entered length {length} mm exceeds the maximum piece length of {maxPiece} mm. Please split the length yourself (e.g. {pieces} × {pieceLength} mm) and add each piece separately to the cart."
     }
 }

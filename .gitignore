@@ -15,6 +15,7 @@
 /node_modules/
 /public/
 /.pnpm-store/
+src/Resources/app/storefront/dist/
 
 # ============================================================
 # Shopware Cache / Runtime

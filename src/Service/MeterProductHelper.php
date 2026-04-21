@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Ruhrcoder\RcDynamicPrice\Service;
 
 use Ruhrcoder\RcDynamicPrice\DynamicPriceConstants;
+use Ruhrcoder\RcDynamicPrice\Enum\SplitMode;
 use Shopware\Core\Content\Product\ProductCollection;
 use Shopware\Core\Content\Product\ProductEntity;
 use Shopware\Core\Framework\Context;
@@ -110,6 +111,50 @@ final class MeterProductHelper implements MeterProductHelperInterface
         }
 
         return (int) (ceil($mm / $step) * $step);
+    }
+
+    public function getSplitMode(ProductEntity $product, string $salesChannelId): ?SplitMode
+    {
+        $productValue = ($product->getCustomFields() ?? [])[DynamicPriceConstants::FIELD_SPLIT_MODE] ?? null;
+        $fromProduct = SplitMode::tryFromString($productValue);
+        if ($fromProduct !== null) {
+            return $fromProduct;
+        }
+
+        $global = $this->systemConfigService->getString(
+            'RcDynamicPrice.config.splitMode',
+            $salesChannelId
+        );
+
+        return SplitMode::tryFromString($global);
+    }
+
+    public function getMaxPieceLength(ProductEntity $product, string $salesChannelId): int
+    {
+        $productValue = $this->getCustomFieldInt($product, DynamicPriceConstants::FIELD_MAX_PIECE_LENGTH);
+        if ($productValue !== null) {
+            return $productValue;
+        }
+
+        $global = $this->systemConfigService->getInt(
+            'RcDynamicPrice.config.maxPieceLength',
+            $salesChannelId
+        );
+
+        return $global > 0 ? $global : 0;
+    }
+
+    public function getSplitHintTemplate(ProductEntity $product, string $salesChannelId): string
+    {
+        $productValue = ($product->getCustomFields() ?? [])[DynamicPriceConstants::FIELD_SPLIT_HINT] ?? null;
+        if (\is_string($productValue) && $productValue !== '') {
+            return $productValue;
+        }
+
+        return $this->systemConfigService->getString(
+            'RcDynamicPrice.config.splitHintTemplate',
+            $salesChannelId
+        );
     }
 
     /** Liest ein Custom Field als positive Ganzzahl, gibt null zurück wenn nicht gesetzt oder ungültig. */

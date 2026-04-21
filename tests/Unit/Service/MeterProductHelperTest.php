@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Ruhrcoder\RcDynamicPrice\Tests\Unit\Service;
 
 use PHPUnit\Framework\TestCase;
+use Ruhrcoder\RcDynamicPrice\Enum\SplitMode;
 use Ruhrcoder\RcDynamicPrice\Service\MeterProductHelper;
 use Shopware\Core\Content\Product\ProductEntity;
 use Shopware\Core\Framework\Context;
@@ -310,5 +311,128 @@ final class MeterProductHelperTest extends TestCase
     public function testRoundUpUnknownModeReturnsExactValue(): void
     {
         $this->assertSame(4050, $this->helper->roundUp(4050, 'invalid'));
+    }
+
+    // --- Split-Modus ---
+
+    public function testGetSplitModeReturnsProductValueWhenSet(): void
+    {
+        $product = new ProductEntity();
+        $product->setCustomFields(['rc_meter_price_split_mode' => 'equal']);
+
+        $this->assertSame(SplitMode::Equal, $this->helper->getSplitMode($product, 'sc-id'));
+    }
+
+    public function testGetSplitModeFallsBackToGlobalConfig(): void
+    {
+        $product = new ProductEntity();
+        $product->setCustomFields([]);
+
+        $this->systemConfig->method('getString')->willReturn('max_rest');
+
+        $this->assertSame(SplitMode::MaxRest, $this->helper->getSplitMode($product, 'sc-id'));
+    }
+
+    public function testGetSplitModeReturnsNullWhenEverythingEmpty(): void
+    {
+        $product = new ProductEntity();
+        $product->setCustomFields([]);
+
+        $this->systemConfig->method('getString')->willReturn('');
+
+        $this->assertNull($this->helper->getSplitMode($product, 'sc-id'));
+    }
+
+    public function testGetSplitModeReturnsNullForUnknownGlobalValue(): void
+    {
+        $product = new ProductEntity();
+        $product->setCustomFields([]);
+
+        $this->systemConfig->method('getString')->willReturn('none');
+
+        $this->assertNull($this->helper->getSplitMode($product, 'sc-id'));
+    }
+
+    public function testGetSplitModeIgnoresUnknownProductValueAndFallsBack(): void
+    {
+        $product = new ProductEntity();
+        $product->setCustomFields(['rc_meter_price_split_mode' => 'bogus']);
+
+        $this->systemConfig->method('getString')->willReturn('hint');
+
+        $this->assertSame(SplitMode::Hint, $this->helper->getSplitMode($product, 'sc-id'));
+    }
+
+    // --- Max Teilstuecklaenge ---
+
+    public function testGetMaxPieceLengthReturnsProductValueWhenSet(): void
+    {
+        $product = new ProductEntity();
+        $product->setCustomFields(['rc_meter_price_max_piece_length' => 5000]);
+
+        $this->assertSame(5000, $this->helper->getMaxPieceLength($product, 'sc-id'));
+    }
+
+    public function testGetMaxPieceLengthFallsBackToGlobalConfig(): void
+    {
+        $product = new ProductEntity();
+        $product->setCustomFields([]);
+
+        $this->systemConfig->method('getInt')->willReturn(6000);
+
+        $this->assertSame(6000, $this->helper->getMaxPieceLength($product, 'sc-id'));
+    }
+
+    public function testGetMaxPieceLengthReturnsZeroWhenEverythingEmpty(): void
+    {
+        $product = new ProductEntity();
+        $product->setCustomFields([]);
+
+        $this->systemConfig->method('getInt')->willReturn(0);
+
+        $this->assertSame(0, $this->helper->getMaxPieceLength($product, 'sc-id'));
+    }
+
+    public function testGetMaxPieceLengthIgnoresNegativeProductValue(): void
+    {
+        $product = new ProductEntity();
+        $product->setCustomFields(['rc_meter_price_max_piece_length' => -500]);
+
+        $this->systemConfig->method('getInt')->willReturn(4000);
+
+        $this->assertSame(4000, $this->helper->getMaxPieceLength($product, 'sc-id'));
+    }
+
+    // --- Split-Hinweis-Template ---
+
+    public function testGetSplitHintTemplateReturnsProductValueWhenSet(): void
+    {
+        $product = new ProductEntity();
+        $product->setCustomFields(['rc_meter_price_split_hint' => 'Bitte {pieces} Teile bestellen.']);
+
+        $this->assertSame(
+            'Bitte {pieces} Teile bestellen.',
+            $this->helper->getSplitHintTemplate($product, 'sc-id')
+        );
+    }
+
+    public function testGetSplitHintTemplateFallsBackToGlobalConfig(): void
+    {
+        $product = new ProductEntity();
+        $product->setCustomFields([]);
+
+        $this->systemConfig->method('getString')->willReturn('Global hint');
+
+        $this->assertSame('Global hint', $this->helper->getSplitHintTemplate($product, 'sc-id'));
+    }
+
+    public function testGetSplitHintTemplateReturnsEmptyStringWhenNothingConfigured(): void
+    {
+        $product = new ProductEntity();
+        $product->setCustomFields([]);
+
+        $this->systemConfig->method('getString')->willReturn('');
+
+        $this->assertSame('', $this->helper->getSplitHintTemplate($product, 'sc-id'));
     }
 }

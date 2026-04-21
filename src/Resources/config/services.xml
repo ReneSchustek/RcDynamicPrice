@@ -14,6 +14,11 @@
         <service id="Ruhrcoder\RcDynamicPrice\Service\MeterProductHelperInterface"
                  alias="Ruhrcoder\RcDynamicPrice\Service\MeterProductHelper"/>
 
+        <service id="Ruhrcoder\RcDynamicPrice\Service\LengthSplitter"/>
+
+        <service id="Ruhrcoder\RcDynamicPrice\Service\LengthSplitterInterface"
+                 alias="Ruhrcoder\RcDynamicPrice\Service\LengthSplitter"/>
+
         <service id="Ruhrcoder\RcDynamicPrice\Storefront\Subscriber\ProductPageSubscriber">
             <argument type="service" id="Shopware\Core\System\SystemConfig\SystemConfigService"/>
             <argument type="service" id="Ruhrcoder\RcDynamicPrice\Service\MeterProductHelperInterface"/>
@@ -23,6 +28,7 @@
         <service id="Ruhrcoder\RcDynamicPrice\Subscriber\LineItemSubscriber">
             <argument type="service" id="request_stack"/>
             <argument type="service" id="Ruhrcoder\RcDynamicPrice\Service\MeterProductHelperInterface"/>
+            <argument type="service" id="Ruhrcoder\RcDynamicPrice\Service\LengthSplitterInterface"/>
             <tag name="kernel.event_subscriber"/>
         </service>
 

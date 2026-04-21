@@ -7,9 +7,13 @@
         "errorIntegerOnly": "Bitte nur positive ganze Zahlen eingeben.",
         "errorMinLength": "Mindestlänge: %minLength% mm",
         "errorMaxLength": "Maximallänge: %maxLength% mm",
+        "errorMaxPieceLength": "Bitte teilen Sie die Länge in Stücke von maximal {maxPiece} mm auf.",
         "roundUpHint": "Eingabe %input% mm → berechnet werden %billed% mm (gerundet)",
         "hintModalButton": "Verstanden",
         "cartLengthLabel": "Länge: %length% mm",
-        "cartBilledLabel": "(berechnet: %billed% mm)"
+        "cartBilledLabel": "(berechnet: %billed% mm)",
+        "splitHintEqual": "Ihre Länge {length} mm wird auf {pieces} gleichmäßige Teilstücke à {pieceLength} mm aufgeteilt.",
+        "splitHintMaxRest": "Ihre Länge {length} mm wird aufgeteilt in volle Stücke à {maxPiece} mm plus ein Reststück von {remainder} mm ({pieces} Positionen).",
+        "splitHintManual": "Die eingegebene Länge {length} mm überschreitet die maximale Teilstücklänge von {maxPiece} mm. Bitte teilen Sie die Länge selbst auf (z. B. {pieces} × {pieceLength} mm) und legen Sie jedes Teilstück separat in den Warenkorb."
     }
 }

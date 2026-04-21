@@ -13,10 +13,19 @@ final class RcDynamicPriceConfigStruct extends Struct
         private readonly int $minLength,
         private readonly int $maxLength,
         private readonly string $roundingMode = 'none',
+        private readonly string $splitMode = '',
+        private readonly int $maxPieceLength = 0,
+        private readonly string $splitHintTemplate = '',
     ) {
         if ($this->minLength > $this->maxLength) {
             throw new \InvalidArgumentException(
                 sprintf('minLength (%d) darf maxLength (%d) nicht ueberschreiten', $this->minLength, $this->maxLength)
+            );
+        }
+
+        if ($this->maxPieceLength < 0) {
+            throw new \InvalidArgumentException(
+                sprintf('maxPieceLength (%d) darf nicht negativ sein', $this->maxPieceLength)
             );
         }
     }
@@ -39,5 +48,20 @@ final class RcDynamicPriceConfigStruct extends Struct
     public function getRoundingMode(): string
     {
         return $this->roundingMode;
+    }
+
+    public function getSplitMode(): string
+    {
+        return $this->splitMode;
+    }
+
+    public function getMaxPieceLength(): int
+    {
+        return $this->maxPieceLength;
+    }
+
+    public function getSplitHintTemplate(): string
+    {
+        return $this->splitHintTemplate;
     }
 }

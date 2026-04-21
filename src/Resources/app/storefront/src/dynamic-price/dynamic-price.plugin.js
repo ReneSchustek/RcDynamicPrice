@@ -6,6 +6,7 @@ export default class DynamicPricePlugin extends Plugin {
         this._input       = this.el.querySelector('.rc-dynamic-price__input');
         this._hidden      = this.el.querySelector('.rc-dynamic-price__hidden');
         this._errorEl     = this.el.querySelector('.rc-dynamic-price__error');
+        this._splitInfoEl = this.el.querySelector('.rc-dynamic-price__split-info');
         this._resultEl    = this.el.querySelector('.rc-dynamic-price__result');
         this._resultPrice = this.el.querySelector('.rc-dynamic-price__result-price');
         this._form        = this.el.closest('form');
@@ -123,6 +124,7 @@ export default class DynamicPricePlugin extends Plugin {
 
         if (raw === '') {
             this._clearError();
+            this._clearSplitInfo();
             this._resetInput();
             return;
         }
@@ -131,6 +133,7 @@ export default class DynamicPricePlugin extends Plugin {
 
         if (mm === null) {
             this._showError(this.el.dataset.snippetErrorInteger || 'Invalid input');
+            this._clearSplitInfo();
             this._resetInput();
             return;
         }
@@ -143,6 +146,7 @@ export default class DynamicPricePlugin extends Plugin {
             const msg = (this.el.dataset.snippetErrorMin || 'Min: %minLength% mm')
                 .replace('%minLength%', min.toLocaleString(locale));
             this._showError(msg);
+            this._clearSplitInfo();
             this._resetInput();
             return;
         }
@@ -151,11 +155,49 @@ export default class DynamicPricePlugin extends Plugin {
             const msg = (this.el.dataset.snippetErrorMax || 'Max: %maxLength% mm')
                 .replace('%maxLength%', max.toLocaleString(locale));
             this._showError(msg);
+            this._clearSplitInfo();
+            this._resetInput();
+            return;
+        }
+
+        const configuredSplitMode = this.el.dataset.splitMode || '';
+        const maxPiece = parseInt(this.el.dataset.maxPieceLength, 10) || 0;
+
+        // Wenn ein Plugin mit hoeherer ID-Prioritaet am Form ist, laeuft Auto-Split
+        // nicht sauber durch (Siblings dispatchen kein eigenes BeforeLineItemAdded-Event,
+        // TMMS-/Custom-Field-Payload wuerde verloren gehen). Fallback: Hint-Verhalten.
+        const hasForeignIdController = this._form
+            && (this._form.querySelector('[data-rc-custom-fields]')
+                || this._form.querySelector('[data-rc-cart-splitter]'));
+
+        const splitMode = (hasForeignIdController && (configuredSplitMode === 'equal' || configuredSplitMode === 'max_rest'))
+            ? 'hint'
+            : configuredSplitMode;
+
+        // Hint-Modus: Eingabe oberhalb maxPiece wird abgewiesen, Kunde muss selbst aufteilen
+        if (splitMode === 'hint' && maxPiece > 0 && mm > maxPiece) {
+            const template = this.el.dataset.splitHintTemplate
+                || this.el.dataset.snippetErrorMaxPiece
+                || 'Max piece length: %maxPiece% mm';
+            const preview = this._previewSplit(mm, maxPiece, min, 'equal');
+            this._clearError();
+            this._showBlockingInfo(this._renderSplitText(template, mm, maxPiece, preview));
             this._resetInput();
             return;
         }
 
         this._clearError();
+
+        // Auto-Split-Vorschau als Info, wenn eine Teilstueckgrenze greift
+        if ((splitMode === 'equal' || splitMode === 'max_rest') && maxPiece > 0 && mm > maxPiece) {
+            const preview = this._previewSplit(mm, maxPiece, min, splitMode);
+            const template = this.el.dataset.splitHintTemplate || '';
+            if (template) {
+                this._showSplitInfo(this._renderSplitText(template, mm, maxPiece, preview));
+            }
+        } else {
+            this._clearSplitInfo();
+        }
 
         this._hidden.value = mm;
         this._updateMeterState(mm);
@@ -247,6 +289,86 @@ export default class DynamicPricePlugin extends Plugin {
         }
 
         return Math.ceil(mm / step) * step;
+    }
+
+    /**
+     * Berechnet die Teilstuecke analog zum serverseitigen LengthSplitter.
+     * Muss identisch bleiben mit Service\LengthSplitter — rein numerische Logik.
+     */
+    _previewSplit(total, maxPiece, min, mode) {
+        if (maxPiece <= 0 || total <= maxPiece) {
+            return [total];
+        }
+
+        if (mode === 'equal') {
+            const n = Math.ceil(total / maxPiece);
+            const piece = Math.ceil(total / n);
+            return Array(n).fill(piece);
+        }
+
+        if (mode === 'max_rest') {
+            const fullPieces = Math.floor(total / maxPiece);
+            const rest = total - fullPieces * maxPiece;
+            const pieces = Array(fullPieces).fill(maxPiece);
+            if (rest > 0) {
+                pieces.push(Math.max(rest, Math.max(min, 1)));
+            }
+            return pieces;
+        }
+
+        return [total];
+    }
+
+    /**
+     * Ersetzt die Platzhalter im Hinweis-Template durch die berechneten Werte.
+     * Platzhalter: {length}, {maxPiece}, {pieces}, {pieceLength}, {remainder}
+     */
+    _renderSplitText(template, length, maxPiece, pieces) {
+        const locale = document.documentElement.lang || 'de-DE';
+        const pieceLength = pieces.length > 0 ? pieces[0] : 0;
+        const remainder = pieces.length > 1 ? pieces[pieces.length - 1] : 0;
+
+        return template
+            .replace(/\{length\}/g, length.toLocaleString(locale))
+            .replace(/\{maxPiece\}/g, maxPiece.toLocaleString(locale))
+            .replace(/\{pieces\}/g, String(pieces.length))
+            .replace(/\{pieceLength\}/g, pieceLength.toLocaleString(locale))
+            .replace(/\{remainder\}/g, remainder.toLocaleString(locale));
+    }
+
+    _showSplitInfo(html) {
+        if (!this._splitInfoEl) {
+            return;
+        }
+
+        this._splitInfoEl.textContent = html;
+        this._splitInfoEl.classList.remove('alert-warning');
+        this._splitInfoEl.classList.add('alert-info');
+        this._splitInfoEl.hidden = false;
+    }
+
+    /**
+     * Blockierender Hinweis (Kunde muss aktiv handeln), aber kein Fehler-Stil.
+     * Wird im Hint-Modus genutzt, damit der Kunde nicht denkt, er habe etwas falsch gemacht.
+     */
+    _showBlockingInfo(html) {
+        if (!this._splitInfoEl) {
+            return;
+        }
+
+        this._splitInfoEl.textContent = html;
+        this._splitInfoEl.classList.remove('alert-info');
+        this._splitInfoEl.classList.add('alert-warning');
+        this._splitInfoEl.hidden = false;
+    }
+
+    _clearSplitInfo() {
+        if (!this._splitInfoEl) {
+            return;
+        }
+
+        this._splitInfoEl.textContent = '';
+        this._splitInfoEl.hidden = true;
     }
 
     _updatePrice(mm) {

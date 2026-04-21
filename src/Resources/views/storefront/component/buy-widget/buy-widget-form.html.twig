@@ -7,6 +7,16 @@
         {% set hintText = rcConfig.hintText %}
         {% set minLength = rcConfig.minLength %}
         {% set maxLength = rcConfig.maxLength %}
+        {% set splitMode = rcConfig.splitMode %}
+        {% set maxPieceLength = rcConfig.maxPieceLength %}
+        {% set splitHintTemplate = rcConfig.splitHintTemplate %}
+
+        {% set defaultSplitHint = splitMode == 'hint'
+            ? 'rc-dynamic-price.splitHintManual'|trans
+            : (splitMode == 'max_rest'
+                ? 'rc-dynamic-price.splitHintMaxRest'|trans
+                : 'rc-dynamic-price.splitHintEqual'|trans) %}
+        {% set effectiveSplitHint = splitHintTemplate ?: defaultSplitHint %}
 
         <div class="col-12 rc-dynamic-price"
              data-dynamic-price="true"
@@ -17,9 +27,13 @@
              data-currency="{{ context.currency.isoCode|default('EUR') }}"
              data-product-id="{{ product.id }}"
              data-rounding-mode="{{ rcConfig.roundingMode|e('html_attr') }}"
+             data-split-mode="{{ splitMode|e('html_attr') }}"
+             data-max-piece-length="{{ maxPieceLength }}"
+             data-split-hint-template="{{ effectiveSplitHint|e('html_attr') }}"
              data-snippet-error-integer="{{ 'rc-dynamic-price.errorIntegerOnly'|trans|e('html_attr') }}"
              data-snippet-error-min="{{ 'rc-dynamic-price.errorMinLength'|trans|e('html_attr') }}"
              data-snippet-error-max="{{ 'rc-dynamic-price.errorMaxLength'|trans|e('html_attr') }}"
+             data-snippet-error-max-piece="{{ 'rc-dynamic-price.errorMaxPieceLength'|trans|e('html_attr') }}"
              data-snippet-round-up="{{ 'rc-dynamic-price.roundUpHint'|trans|e('html_attr') }}"
              data-snippet-modal-button="{{ 'rc-dynamic-price.hintModalButton'|trans|e('html_attr') }}">
 
@@ -38,6 +52,7 @@
                     <span class="input-group-text">{{ 'rc-dynamic-price.unit'|trans }}</span>
                 </div>
                 <div class="rc-dynamic-price__error text-danger small mt-1" hidden></div>
+                <div class="rc-dynamic-price__split-info alert alert-info py-2 mt-2 small" hidden></div>
             </div>
 
             <div class="rc-dynamic-price__result alert alert-success py-2 mb-3" hidden>

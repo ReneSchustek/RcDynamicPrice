@@ -20,6 +20,15 @@ final class DynamicPriceConstants
     /** Rundungsmodus (none, cm, quarter_m, half_m, full_m) */
     public const FIELD_ROUNDING = 'rc_meter_price_rounding';
 
+    /** Split-Modus fuer Langstuecke (equal, max_rest, hint; leer = kein Split) */
+    public const FIELD_SPLIT_MODE = 'rc_meter_price_split_mode';
+
+    /** Maximallaenge pro Teilstueck in mm — Schwelle fuer Splitting */
+    public const FIELD_MAX_PIECE_LENGTH = 'rc_meter_price_max_piece_length';
+
+    /** Kundenspezifischer Hinweistext mit Platzhaltern, wenn mehr als maxPieceLength eingegeben wurde */
+    public const FIELD_SPLIT_HINT = 'rc_meter_price_split_hint';
+
     // --- Payload-Schlüssel (LineItem) ---
 
     /** Validierte Länge in Millimetern */

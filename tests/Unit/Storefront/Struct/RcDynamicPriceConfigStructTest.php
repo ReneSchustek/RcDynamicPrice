@@ -47,4 +47,46 @@ final class RcDynamicPriceConfigStructTest extends TestCase
 
         $this->assertSame('', $struct->getHintText());
     }
+
+    // --- Split-Felder ---
+
+    public function testSplitGettersReturnDefaults(): void
+    {
+        $struct = new RcDynamicPriceConfigStruct('Hinweis', 1, 10000);
+
+        $this->assertSame('', $struct->getSplitMode());
+        $this->assertSame(0, $struct->getMaxPieceLength());
+        $this->assertSame('', $struct->getSplitHintTemplate());
+    }
+
+    public function testSplitGettersReturnConstructorValues(): void
+    {
+        $struct = new RcDynamicPriceConfigStruct(
+            hintText: 'Text',
+            minLength: 1,
+            maxLength: 10000,
+            roundingMode: 'none',
+            splitMode: 'equal',
+            maxPieceLength: 5000,
+            splitHintTemplate: 'Bitte {pieces} Teile',
+        );
+
+        $this->assertSame('equal', $struct->getSplitMode());
+        $this->assertSame(5000, $struct->getMaxPieceLength());
+        $this->assertSame('Bitte {pieces} Teile', $struct->getSplitHintTemplate());
+    }
+
+    public function testThrowsExceptionWhenMaxPieceLengthIsNegative(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+
+        new RcDynamicPriceConfigStruct(
+            hintText: 'Text',
+            minLength: 1,
+            maxLength: 10000,
+            roundingMode: 'none',
+            splitMode: 'equal',
+            maxPieceLength: -1,
+        );
+    }
 }

@@ -7,4 +7,31 @@ parameters:
     bootstrapFiles:
         - vendor/autoload.php
     ignoreErrors: []
-    checkMissingIterableValueType: true
+
+    # Security-Gate (security.md) — erfordert phpstan/phpstan-banned-code
+    # composer require --dev phpstan/phpstan-banned-code
+    # Danach diesen Block einkommentieren:
+    # bannedCode:
+    #     functions:
+    #         - { function: 'eval', message: 'eval() verboten (security.md — Code-Injection)' }
+    #         - { function: 'unserialize', message: 'unserialize() verboten (security.md). Nutze json_decode().' }
+    #         - { function: 'var_dump', message: 'var_dump() verboten (general.md — Debug-Ausgabe)' }
+    #         - { function: 'print_r', message: 'print_r() verboten (general.md — Debug-Ausgabe)' }
+    #         - { function: 'dd', message: 'dd() verboten (general.md — Debug-Ausgabe)' }
+    #         - { function: 'dump', message: 'dump() verboten (general.md — Debug-Ausgabe)' }
+    #         - { function: 'error_log', message: 'error_log() verboten. Nutze PSR-3 Logger.' }
+    #         - { function: 'exec', message: 'exec() verboten (security.md — Command-Injection)' }
+    #         - { function: 'shell_exec', message: 'shell_exec() verboten (security.md)' }
+    #         - { function: 'system', message: 'system() verboten (security.md)' }
+    #         - { function: 'passthru', message: 'passthru() verboten (security.md)' }
+    #         - { function: 'extract', message: 'extract() verboten — unkontrollierte Variablen' }
+    #         - { function: 'md5', message: 'md5() fuer Security verboten (security.md). Nutze password_hash().' }
+    #         - { function: 'sha1', message: 'sha1() fuer Security verboten (security.md).' }
+    #         - { function: 'rand', message: 'rand() nicht kryptographisch sicher. Nutze random_int().' }
+    #         - { function: 'mt_rand', message: 'mt_rand() nicht kryptographisch sicher. Nutze random_int().' }
+
+includes:
+    # Einkommentieren nach Installation:
+    # - vendor/phpstan/phpstan-banned-code/extension.neon
+    # - vendor/phpstan/phpstan-strict-rules/rules.neon
+    # - vendor/phpstan/phpstan-deprecation-rules/rules.neon
