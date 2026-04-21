@@ -2,6 +2,13 @@
 
 Alle nennenswerten Änderungen werden in dieser Datei dokumentiert.
 
+## [1.4.2] - 2026-04-21
+
+> **Deployment:** kein Shop-Deployment nötig (nur CI-Infrastruktur)
+
+### Hinzugefügt
+- GitHub-Actions-CI-Pipeline `.github/workflows/ci.yml`: Security-Audit (nur Prod-Deps), PHP CS Fixer, PHPStan Level 8 und PHPUnit laufen bei jedem Push auf `main` und bei Pull Requests
+
 ## [1.4.1] - 2026-04-21
 
 > **Deployment:** `php bin/console plugin:update RcDynamicPrice` (neue Repair-Migration) + `bin/build-storefront.sh` (JS-Kommentar geändert) + `cache:clear`
