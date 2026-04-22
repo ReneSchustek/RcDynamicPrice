@@ -1,0 +1,19 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Ruhrcoder\RcDynamicPrice\Service;
+
+use Shopware\Core\Framework\Context;
+
+interface CategoryChainLoaderInterface
+{
+    /**
+     * Laedt die Kategorie-Kette einer Primaerkategorie von der Kategorie selbst
+     * bis zur Wurzel (deepest first). Pro Eintrag wird `id` und `customFields`
+     * geliefert — Reihenfolge bestimmt die Gewinner-Logik im Resolver.
+     *
+     * @return list<array{id: string, customFields: array<string, mixed>}>
+     */
+    public function loadChain(string $primaryCategoryId, Context $context): array;
+}

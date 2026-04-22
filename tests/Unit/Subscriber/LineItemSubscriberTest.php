@@ -8,8 +8,11 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use Ruhrcoder\RcDynamicPrice\Enum\SplitMode;
 use Ruhrcoder\RcDynamicPrice\Service\CartItemSplitAssemblerInterface;
+use Ruhrcoder\RcDynamicPrice\Service\ConfigScope;
+use Ruhrcoder\RcDynamicPrice\Service\MeterConfigResolverInterface;
 use Ruhrcoder\RcDynamicPrice\Service\MeterProductHelperInterface;
 use Ruhrcoder\RcDynamicPrice\Service\MeterSplittingConfig;
+use Ruhrcoder\RcDynamicPrice\Service\ResolvedMeterConfig;
 use Ruhrcoder\RcDynamicPrice\Subscriber\LineItemSubscriber;
 use Shopware\Core\Checkout\Cart\Cart;
 use Shopware\Core\Checkout\Cart\Event\BeforeLineItemAddedEvent;
@@ -26,6 +29,7 @@ final class LineItemSubscriberTest extends TestCase
 {
     private RequestStack $requestStack;
     private MeterProductHelperInterface $meterProductHelper;
+    private MeterConfigResolverInterface $configResolver;
     private CartItemSplitAssemblerInterface $assembler;
     private LineItemSubscriber $subscriber;
 
@@ -33,10 +37,12 @@ final class LineItemSubscriberTest extends TestCase
     {
         $this->requestStack = $this->createMock(RequestStack::class);
         $this->meterProductHelper = $this->createMock(MeterProductHelperInterface::class);
+        $this->configResolver = $this->createMock(MeterConfigResolverInterface::class);
         $this->assembler = $this->createMock(CartItemSplitAssemblerInterface::class);
         $this->subscriber = new LineItemSubscriber(
             $this->requestStack,
             $this->meterProductHelper,
+            $this->configResolver,
             $this->assembler,
             new NullLogger(),
         );
@@ -110,7 +116,6 @@ final class LineItemSubscriberTest extends TestCase
         $this->assembler->expects($this->never())->method('assemble');
 
         $lineItem = new LineItem('line-id', LineItem::PRODUCT_LINE_ITEM_TYPE);
-        // referencedId absichtlich nicht gesetzt
         $event = $this->createEvent($lineItem);
 
         $this->subscriber->onBeforeLineItemAdded($event);
@@ -120,6 +125,7 @@ final class LineItemSubscriberTest extends TestCase
     {
         $this->setCurrentRequest(['mmLength' => '500']);
         $this->meterProductHelper->method('loadProduct')->willReturn(null);
+        $this->configResolver->expects($this->never())->method('resolveForProduct');
         $this->assembler->expects($this->never())->method('assemble');
 
         $lineItem = new LineItem('line-id', LineItem::PRODUCT_LINE_ITEM_TYPE, 'product-id');
@@ -128,10 +134,13 @@ final class LineItemSubscriberTest extends TestCase
         $this->subscriber->onBeforeLineItemAdded($event);
     }
 
-    public function testSkipsWhenProductIsNotMeterProduct(): void
+    public function testSkipsWhenResolverReportsInactive(): void
     {
         $this->setCurrentRequest(['mmLength' => '500']);
-        $this->configureMeterProduct(isMeter: false);
+        $this->meterProductHelper->method('loadProduct')->willReturn(new ProductEntity());
+        $this->configResolver->method('resolveForProduct')->willReturn(
+            ResolvedMeterConfig::disabled(ConfigScope::Product),
+        );
         $this->assembler->expects($this->never())->method('assemble');
 
         $lineItem = new LineItem('line-id', LineItem::PRODUCT_LINE_ITEM_TYPE, 'product-id');
@@ -140,40 +149,48 @@ final class LineItemSubscriberTest extends TestCase
         $this->subscriber->onBeforeLineItemAdded($event);
     }
 
-    public function testSkipsWhenMmLengthBelowProductMinimum(): void
+    public function testSkipsWhenMmLengthBelowResolvedMin(): void
     {
         $this->setCurrentRequest(['mmLength' => '500']);
-        $this->configureMeterProduct(isMeter: true, minLength: 1000, maxLength: 6000);
+        $this->meterProductHelper->method('loadProduct')->willReturn(new ProductEntity());
+        $this->configResolver->method('resolveForProduct')->willReturn($this->activeResolved(
+            minLength: 1000,
+            maxLength: 6000,
+        ));
         $this->assembler->expects($this->never())->method('assemble');
 
         $lineItem = new LineItem('line-id', LineItem::PRODUCT_LINE_ITEM_TYPE, 'product-id');
-        $event = $this->createEvent($lineItem, 'sc-id');
+        $event = $this->createEvent($lineItem);
 
         $this->subscriber->onBeforeLineItemAdded($event);
     }
 
-    public function testSkipsWhenMmLengthAboveProductMaximum(): void
+    public function testSkipsWhenMmLengthAboveResolvedMax(): void
     {
         $this->setCurrentRequest(['mmLength' => '7000']);
-        $this->configureMeterProduct(isMeter: true, minLength: 1000, maxLength: 6000);
+        $this->meterProductHelper->method('loadProduct')->willReturn(new ProductEntity());
+        $this->configResolver->method('resolveForProduct')->willReturn($this->activeResolved(
+            minLength: 1000,
+            maxLength: 6000,
+        ));
         $this->assembler->expects($this->never())->method('assemble');
 
         $lineItem = new LineItem('line-id', LineItem::PRODUCT_LINE_ITEM_TYPE, 'product-id');
-        $event = $this->createEvent($lineItem, 'sc-id');
+        $event = $this->createEvent($lineItem);
 
         $this->subscriber->onBeforeLineItemAdded($event);
     }
 
-    public function testDelegatesToAssemblerWithConfigWhenInputIsValid(): void
+    public function testDelegatesToAssemblerWithConfig(): void
     {
         $this->setCurrentRequest(['mmLength' => '2000']);
-        $this->configureMeterProduct(
-            isMeter: true,
+        $this->meterProductHelper->method('loadProduct')->willReturn(new ProductEntity());
+        $this->configResolver->method('resolveForProduct')->willReturn($this->activeResolved(
             minLength: 1000,
             maxLength: 6000,
             splitMode: SplitMode::Equal,
             maxPieceLength: 5000,
-        );
+        ));
 
         $lineItem = new LineItem('line-id', LineItem::PRODUCT_LINE_ITEM_TYPE, 'product-id');
         $cart = new Cart('test-token');
@@ -202,15 +219,14 @@ final class LineItemSubscriberTest extends TestCase
 
     public function testReducesSplitModeToHintWhenForeignIdControllerMarkerIsPresent(): void
     {
-        // rcTmmsActive im Request -> Auto-Split muss auf Hint fallen, damit TMMS-Felder nicht verloren gehen
         $this->setCurrentRequest(['mmLength' => '8000', 'rcTmmsActive' => '1']);
-        $this->configureMeterProduct(
-            isMeter: true,
+        $this->meterProductHelper->method('loadProduct')->willReturn(new ProductEntity());
+        $this->configResolver->method('resolveForProduct')->willReturn($this->activeResolved(
             minLength: 1,
             maxLength: 10000,
             splitMode: SplitMode::Equal,
             maxPieceLength: 5000,
-        );
+        ));
 
         $lineItem = new LineItem('line-id', LineItem::PRODUCT_LINE_ITEM_TYPE, 'product-id');
 
@@ -235,21 +251,29 @@ final class LineItemSubscriberTest extends TestCase
         $this->requestStack->method('getCurrentRequest')->willReturn($request);
     }
 
-    private function configureMeterProduct(
-        bool $isMeter,
+    private function activeResolved(
         int $minLength = 1,
         int $maxLength = 10000,
         ?SplitMode $splitMode = null,
         int $maxPieceLength = 0,
-    ): void {
-        $product = new ProductEntity();
-        $this->meterProductHelper->method('loadProduct')->willReturn($product);
-        $this->meterProductHelper->method('isMeterProductEntity')->willReturn($isMeter);
-        $this->meterProductHelper->method('getMinLength')->willReturn($minLength);
-        $this->meterProductHelper->method('getMaxLength')->willReturn($maxLength);
-        $this->meterProductHelper->method('getRoundingMode')->willReturn('none');
-        $this->meterProductHelper->method('getSplitMode')->willReturn($splitMode);
-        $this->meterProductHelper->method('getMaxPieceLength')->willReturn($maxPieceLength);
+        string $roundingMode = 'none',
+    ): ResolvedMeterConfig {
+        return new ResolvedMeterConfig(
+            active: true,
+            activeScope: ConfigScope::Product,
+            minLength: $minLength,
+            minLengthScope: ConfigScope::Product,
+            maxLength: $maxLength,
+            maxLengthScope: ConfigScope::Product,
+            roundingMode: $roundingMode,
+            roundingModeScope: ConfigScope::Product,
+            splitMode: $splitMode,
+            splitModeScope: ConfigScope::Product,
+            maxPieceLength: $maxPieceLength,
+            maxPieceLengthScope: ConfigScope::Product,
+            splitHintTemplate: '',
+            splitHintTemplateScope: ConfigScope::Default,
+        );
     }
 
     private function createEvent(

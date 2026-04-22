@@ -14,6 +14,15 @@
         <title lang="de-DE">Dynamischer Meterpreis</title>
         <title lang="en-GB">Dynamic Meter Price</title>
 
+        <input-field type="bool">
+            <name>applyToAllProducts</name>
+            <label lang="de-DE">Meterpreis global fuer alle Produkte aktivieren</label>
+            <label lang="en-GB">Enable meter price globally for all products</label>
+            <defaultValue>false</defaultValue>
+            <helpText lang="de-DE">Aktiviert den Meterpreis fuer alle Produkte, die am Produkt auf "Vererben" stehen und deren Kategorien keinen Override setzen. Produkte mit "Inaktiv" bleiben immer deaktiviert.</helpText>
+            <helpText lang="en-GB">Enables the meter price for all products set to "Inherit" at product level whose categories do not override. Products explicitly set to "Inactive" stay disabled.</helpText>
+        </input-field>
+
         <input-field type="textarea">
             <name>hintText</name>
             <label lang="de-DE">Hinweistext im Eingabe-Modal</label>

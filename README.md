@@ -16,7 +16,8 @@ Produkte (z. B. Kabel, Stoffe, Profile) werden nach Meterlänge verkauft. Der Gr
 - Berechneter Preis wird verbindlich in den Warenkorb übernommen
 - Verschiedene Längen erzeugen separate Warenkorbpositionen
 - Länge wird im Warenkorb, im Checkout und in Bestellungen angezeigt
-- Per Produkt aktivierbar über das Custom Field `rc_meter_price_active`
+- Aktivierbar pro Produkt, pro Kategorie (inklusive Tree-Walk zur Wurzel) oder global für alle Produkte
+- Tri-State pro Produkt: **Vererben** / **Aktiv** / **Inaktiv** (Custom Field `rc_meter_price_active`)
 - Kompatibel mit RcCartSplitter und TmmsProductCustomerInputs
 - Theme-kompatibel (BEM-Klassen, SCSS in `base.scss`)
 
@@ -48,6 +49,29 @@ Im Admin unter **Einstellungen → Plugins → Dynamischer Meterpreis**:
 | Standard-Split-Modus | Fallback, wenn am Produkt kein eigener Modus gesetzt ist (`equal`, `max_rest`, `hint` oder `none`) | none |
 | Max. Teilstücklänge (mm) | Schwellwert für das Splitting (Fallback) | 0 (kein Splitting) |
 | Hinweistext-Vorlage | Template mit Platzhaltern `{length}`, `{maxPiece}`, `{pieces}`, `{pieceLength}`, `{remainder}` | leer (Snippet-Default) |
+| Meterpreis global fuer alle Produkte aktivieren | Aktiviert den Meterpreis für alle Produkte, die am Produkt auf **Vererben** stehen und deren Kategorie-Kette keinen Override setzt. Produkte mit **Inaktiv** bleiben immer deaktiviert. | aus |
+
+## Konfigurations-Scope (BRIEF19)
+
+Der Meterpreis kann auf drei Ebenen konfiguriert werden; die Prioritäten werden strikt eingehalten:
+
+| Priorität | Ebene | Wirkung |
+|-----------|-------|---------|
+| 1 (höchste) | Produkt | Produktfelder überschreiben alles. `Aktiv` erzwingt, `Inaktiv` schaltet ab (Kurzschluss), `Vererben` reicht die Entscheidung weiter. |
+| 2 | Kategorie (Primärkategorie → Wurzel, Tree-Walk) | Erster Treffer mit `Aktiv`/`Inaktiv` in der Ahnenkette entscheidet. Numerische Felder werden pro Feld aus der nächstgelegenen Kategorie gezogen, die das Feld gesetzt hat. |
+| 3 | Plugin-Global (`applyToAllProducts`) | Aktiviert alle Produkte, die auf `Vererben` stehen und keinen Kategorie-Override haben. Numerische Fallbacks kommen aus der Plugin-Konfiguration. |
+| 4 (niedrigste) | Default | `min = 1`, `max = 10000`, `rounding = none`, `splitMode = null`. Greift nur, wenn keine höhere Ebene einen Wert liefert. |
+
+**Beispiele:**
+
+- Produkt `Inaktiv` → Meterpreis immer aus, auch bei Kategorie `Aktiv` und Global `Aktiv`.
+- Produkt `Vererben`, Kategorie `Aktiv` → Meterpreis an, Werte aus Kategorie/Global-Fallback.
+- Produkt `Vererben`, Kategorie-Kette alle `Vererben`, Global `applyToAllProducts = true` → Meterpreis an, Werte aus Global.
+- Produkt `Vererben`, Kategorie `Inaktiv`, Global `Aktiv` → Meterpreis aus (Kategorie gewinnt gegen Global).
+
+### Kategorie-Custom-Fields
+
+Im Admin am Kategorie-Eintrag → **Individuelle Felder** → **Dynamischer Meterpreis (Kategorie)**. Dieselben Felder wie am Produkt, jeweils leer = „vererben / nicht setzen". Untergeordnete Kategorien erben von der Elternkette.
 
 ### Produktspezifische Custom Fields
 
@@ -55,7 +79,7 @@ Im Admin unter dem jeweiligen Produkt → **Individuelle Felder** → **Dynamisc
 
 | Feld | Typ | Beschreibung |
 |------|-----|-------------|
-| Meterpreis aktiv | Checkbox | Aktiviert die Längeneingabe für dieses Produkt |
+| Meterpreis | Select (Vererben / Aktiv / Inaktiv) | Steuert die Aktivierung. **Vererben** reicht an Kategorie und Plugin-Global weiter, **Inaktiv** deaktiviert das Produkt unter allen Umständen. |
 | Mindestlänge (mm) | Zahl | Produktspezifisches Minimum (leer = globaler Wert) |
 | Maximallänge (mm) | Zahl | Produktspezifisches Maximum (leer = globaler Wert) |
 | Rundungsmodus | Select | Legt fest, auf welche Einheit die Eingabe aufgerundet wird. Optionen: Keine Rundung, Volle Zentimeter (10 mm), Viertel Meter (250 mm), Halber Meter (500 mm), Voller Meter (1000 mm). Die tatsächliche Schnittlänge bleibt erhalten. |

@@ -6,10 +6,39 @@ namespace Ruhrcoder\RcDynamicPrice;
 
 final class DynamicPriceConstants
 {
-    // --- Custom-Field-Namen am Produkt ---
+    // --- Custom-Field-Set-Namen ---
 
-    /** Steuert ob das Meterartikel-Widget angezeigt wird */
+    /** Custom-Field-Set am Produkt */
+    public const SET_PRODUCT = 'rc_dynamic_price';
+
+    /** Custom-Field-Set an der Kategorie (BRIEF19) */
+    public const SET_CATEGORY = 'rc_dynamic_price_category';
+
+    // --- Custom-Field-Namen am Produkt und an der Kategorie ---
+
+    /** Steuert ob das Meterartikel-Widget angezeigt wird (Tri-State: inherit/on/off) */
     public const FIELD_METER_ACTIVE = 'rc_meter_price_active';
+
+    // --- Active-Zustaende (Tri-State seit BRIEF19) ---
+
+    public const ACTIVE_INHERIT = 'inherit';
+    public const ACTIVE_ON = 'on';
+    public const ACTIVE_OFF = 'off';
+
+    // --- Plugin-Config-Schluessel ---
+
+    public const CONFIG_APPLY_TO_ALL_PRODUCTS = 'RcDynamicPrice.config.applyToAllProducts';
+    public const CONFIG_MIN_LENGTH = 'RcDynamicPrice.config.minLength';
+    public const CONFIG_MAX_LENGTH = 'RcDynamicPrice.config.maxLength';
+    public const CONFIG_SPLIT_MODE = 'RcDynamicPrice.config.splitMode';
+    public const CONFIG_MAX_PIECE_LENGTH = 'RcDynamicPrice.config.maxPieceLength';
+    public const CONFIG_SPLIT_HINT_TEMPLATE = 'RcDynamicPrice.config.splitHintTemplate';
+    public const CONFIG_HINT_TEXT = 'RcDynamicPrice.config.hintText';
+
+    // --- Cache-Tags (BRIEF19) ---
+
+    public const CACHE_TAG_GLOBAL = 'rc-dynamic-price-global';
+    public const CACHE_TAG_CATEGORY_PREFIX = 'rc-dynamic-price-category-';
 
     /** Produktspezifische Mindestlänge in mm */
     public const FIELD_MIN_LENGTH = 'rc_meter_price_min_length';

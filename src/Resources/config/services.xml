@@ -8,11 +8,25 @@
 
         <service id="Ruhrcoder\RcDynamicPrice\Service\MeterProductHelper">
             <argument type="service" id="product.repository"/>
-            <argument type="service" id="Shopware\Core\System\SystemConfig\SystemConfigService"/>
         </service>
 
         <service id="Ruhrcoder\RcDynamicPrice\Service\MeterProductHelperInterface"
                  alias="Ruhrcoder\RcDynamicPrice\Service\MeterProductHelper"/>
+
+        <service id="Ruhrcoder\RcDynamicPrice\Service\CategoryChainLoader">
+            <argument type="service" id="category.repository"/>
+        </service>
+
+        <service id="Ruhrcoder\RcDynamicPrice\Service\CategoryChainLoaderInterface"
+                 alias="Ruhrcoder\RcDynamicPrice\Service\CategoryChainLoader"/>
+
+        <service id="Ruhrcoder\RcDynamicPrice\Service\MeterConfigResolver">
+            <argument type="service" id="Ruhrcoder\RcDynamicPrice\Service\CategoryChainLoaderInterface"/>
+            <argument type="service" id="Shopware\Core\System\SystemConfig\SystemConfigService"/>
+        </service>
+
+        <service id="Ruhrcoder\RcDynamicPrice\Service\MeterConfigResolverInterface"
+                 alias="Ruhrcoder\RcDynamicPrice\Service\MeterConfigResolver"/>
 
         <service id="Ruhrcoder\RcDynamicPrice\Service\LengthSplitter"/>
 
@@ -29,15 +43,26 @@
 
         <service id="Ruhrcoder\RcDynamicPrice\Storefront\Subscriber\ProductPageSubscriber">
             <argument type="service" id="Shopware\Core\System\SystemConfig\SystemConfigService"/>
-            <argument type="service" id="Ruhrcoder\RcDynamicPrice\Service\MeterProductHelperInterface"/>
+            <argument type="service" id="Ruhrcoder\RcDynamicPrice\Service\MeterConfigResolverInterface"/>
+            <argument type="service" id="request_stack"/>
+            <tag name="kernel.event_subscriber"/>
+        </service>
+
+        <service id="Ruhrcoder\RcDynamicPrice\Storefront\Subscriber\StorefrontResponseSubscriber">
             <tag name="kernel.event_subscriber"/>
         </service>
 
         <service id="Ruhrcoder\RcDynamicPrice\Subscriber\LineItemSubscriber">
             <argument type="service" id="request_stack"/>
             <argument type="service" id="Ruhrcoder\RcDynamicPrice\Service\MeterProductHelperInterface"/>
+            <argument type="service" id="Ruhrcoder\RcDynamicPrice\Service\MeterConfigResolverInterface"/>
             <argument type="service" id="Ruhrcoder\RcDynamicPrice\Service\CartItemSplitAssemblerInterface"/>
             <argument type="service" id="logger"/>
+            <tag name="kernel.event_subscriber"/>
+        </service>
+
+        <service id="Ruhrcoder\RcDynamicPrice\Subscriber\CacheInvalidationSubscriber">
+            <argument type="service" id="Shopware\Core\Framework\Adapter\Cache\CacheInvalidator"/>
             <tag name="kernel.event_subscriber"/>
         </service>
 
@@ -45,7 +70,7 @@
             <argument type="service" id="Shopware\Core\Checkout\Cart\Price\QuantityPriceCalculator"/>
             <argument type="service" id="Ruhrcoder\RcDynamicPrice\Service\MeterProductHelperInterface"/>
             <argument type="service" id="logger"/>
-            <!-- Läuft nach ProductCartProcessor (Priorität 5000) -->
+            <!-- Laeuft nach ProductCartProcessor (Prioritaet 5000) -->
             <tag name="shopware.cart.processor" priority="4800"/>
         </service>
 

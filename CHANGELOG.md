@@ -2,6 +2,26 @@
 
 Alle nennenswerten Änderungen werden in dieser Datei dokumentiert.
 
+## [1.5.0] - 2026-04-22
+
+> **Deployment:** `php bin/console plugin:update RcDynamicPrice` (zwei neue Migrations) + `php bin/console cache:clear`. Nach Update alle HTTP-Caches verwerfen, da sich der Cache-Tag-Schema veraendert hat.
+
+### Hinzugefuegt
+- Konfigurations-Scope auf drei Ebenen: Produkt > Kategorie (Tree-Walk ueber Primaerkategorie bis zur Wurzel) > Plugin-Global (neues Feld `applyToAllProducts`) > Default
+- Neues Custom-Field-Set `rc_dynamic_price_category` an der `category`-Entity mit identischen Feldern wie am Produkt
+- Service `MeterConfigResolver` (plus Interface) loesen die finale Config zentral auf und liefern pro Feld die Herkunft (`ConfigScope::Product|Category|Global|Default`)
+- `CategoryChainLoader` laedt die Primaerkategorie samt Ahnenkette ohne N+1 (ein DAL-Call ueber `category.path`)
+- `CacheInvalidationSubscriber` invalidiert gezielt `rc-dynamic-price-category-{id}` bei Kategorie-Writes und `rc-dynamic-price-global` bei Aenderungen an einer Plugin-Config, die in den Resolver einfliesst
+- `StorefrontResponseSubscriber` haengt die Meterpreis-Cache-Tags als `sw-cache-tags`-Header an Produktseiten
+
+### Geaendert
+- Produkt-Feld `rc_meter_price_active` wurde von `bool` (Checkbox) auf `select` mit den Werten `inherit` / `on` / `off` (Default `inherit`) umgebaut. Daten-Backfill: `true -> on`, `false -> inherit`. Eine Verifikations-Query bricht die Migration ab, falls nach dem Backfill noch bool-/int-Werte auftauchen.
+- `MeterProductHelper` ist auf die zwei Utility-Methoden `loadProduct` (inkl. Kategorie-Assoziation) und `roundUp` geschrumpft. Scope-sensitive Config-Leser liegen komplett im neuen Resolver.
+- `LineItemSubscriber`, `DynamicPriceProcessor`-Kette und `ProductPageSubscriber` greifen nicht mehr direkt auf `product.customFields` zu, sondern konsumieren `ResolvedMeterConfig`.
+
+### Hinweis fuer Integrationen (Breaking)
+- Fremde Integrationen, die `customFields.rc_meter_price_active === true` direkt pruefen, **brechen**. Ersatz: `MeterConfigResolverInterface::resolveForProduct(...)` oder `=== 'on'`-Check.
+
 ## [1.4.3] - 2026-04-22
 
 > **Deployment:** `php bin/console cache:clear` (nur `config.xml` geaendert, keine Migration noetig)
