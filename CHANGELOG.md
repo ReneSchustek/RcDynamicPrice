@@ -2,6 +2,14 @@
 
 Alle nennenswerten Änderungen werden in dieser Datei dokumentiert.
 
+## [1.5.1] - 2026-04-22
+
+> **Deployment:** kein Shop-Deployment noetig (nur Tests + Regel-Doku).
+
+### Hinzugefuegt
+- Regression-Guard `AdminLabelCleanlinessTest`: prueft `config.xml` (Card-Titles, Labels, HelpTexts, Placeholders, Option-Names) und alle Migration-Label-Maps gegen technische Strings (`Rc `-Prefix, `rc_`-Prefix, `Custom Field`/`Custom Fields`-Platzhalter)
+- Regel `.ai/rules/shopware.md` -> neuer Abschnitt "Admin-Sichtbarkeit": sprachlich passende Bezeichnungen sind Pflicht, technische Feldnamen bleiben stabil
+
 ## [1.5.0] - 2026-04-22
 
 > **Deployment:** `php bin/console plugin:update RcDynamicPrice` (zwei neue Migrations) + `php bin/console cache:clear`. Nach Update alle HTTP-Caches verwerfen, da sich der Cache-Tag-Schema veraendert hat.
