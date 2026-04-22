@@ -2,6 +2,15 @@
 
 Alle nennenswerten Änderungen werden in dieser Datei dokumentiert.
 
+## [1.5.2] - 2026-04-22
+
+> **Deployment:** kein Shop-Deployment noetig (Dev-Tooling).
+
+### Geaendert
+- Dev-Dependencies aktualisiert: `composer/composer` auf 2.9.7, `phpseclib/phpseclib` auf 3.0.51, `friendsofphp/php-cs-fixer` auf 3.95.1. Alle bisher gemeldeten HIGH/LOW-CVEs in Dev-Deps sind damit behoben.
+- Lokales Gate-Script `.ai/checker/brief-done-gate.sh` zieht `composer audit` auf `--no-dev` (analog CI) und fuehrt den Vollaudit separat und informativ aus — BRIEF-Abschluss haengt nicht mehr am Dev-Dep-Audit.
+- `composer.lock` wird wieder committed, damit Lock-State zwischen lokal und CI/DevBox eindeutig ist.
+
 ## [1.5.1] - 2026-04-22
 
 > **Deployment:** kein Shop-Deployment noetig (nur Tests + Regel-Doku).
