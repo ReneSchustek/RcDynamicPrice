@@ -2,6 +2,17 @@
 
 Alle nennenswerten Änderungen werden in dieser Datei dokumentiert.
 
+## [1.4.3] - 2026-04-22
+
+> **Deployment:** `php bin/console cache:clear` (nur `config.xml` geaendert, keine Migration noetig)
+
+### Behoben
+- Plugin-Konfiguration im Admin-Backend erschien fuer deutsche Admin-User komplett in Englisch. Ursache: `config.xml`-Elemente ohne `lang`-Attribut werden von Shopware als `en-GB`-Default interpretiert und von nachgezogenen `lang="en-GB"`-Eintraegen ueberschrieben — es existierte kein `lang="de-DE"`-Eintrag. Alle `<title>`, `<label>`, `<helpText>`, `<placeholder>` und `<option><name>` fuehren jetzt beide Locales explizit.
+
+### Hinzugefügt
+- Regressionstest `LocalizationCompletenessTest` parst `config.xml` und alle Migration-JSON-Payloads und erzwingt, dass jedes uebersetzbare Label sowohl `de-DE` als auch `en-GB` pflegt
+- README-Abschnitt „Backend-Sprache" dokumentiert Fallback-Ordnung und Admin-Locale-Bindung
+
 ## [1.4.2] - 2026-04-21
 
 > **Deployment:** kein Shop-Deployment nötig (nur CI-Infrastruktur)

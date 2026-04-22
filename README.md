@@ -73,6 +73,16 @@ Im Admin unter dem jeweiligen Produkt → **Individuelle Felder** → **Dynamisc
 
 Die Rundungsstufe wirkt **pro Teilstück**. Beispiel: 3 × 4 750 mm im Modus `Voller Meter` wird als 3 × 5 000 mm berechnet.
 
+## Backend-Sprache
+
+Die Plugin-Konfiguration im Admin und die Custom-Fields am Produkt folgen beide der Admin-User-Locale:
+
+1. Admin-User-Locale (z. B. `de-DE`)
+2. System-Default-Locale
+3. `en-GB` (Shopware-Fallback)
+
+Wer die Ausgabesprache umschalten moechte, aendert die eigene Admin-User-Sprache (Rechts oben → Nutzerprofil → Sprache). Das Plugin pflegt aktuell `de-DE` und `en-GB`. Weitere Sprachen muessen im Schema und in allen Migrations gleichzeitig ergaenzt werden, sonst faellt das Backend still auf einen der gepflegten Locales zurueck.
+
 ## Deployment
 
 | Änderung | Befehl |

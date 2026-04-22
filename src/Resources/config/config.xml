@@ -2,71 +2,79 @@
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/shopware/shopware/trunk/src/Core/System/SystemConfig/Schema/config.xsd">
 
+    <!--
+        Hinweis zu Uebersetzungen:
+        Shopware interpretiert Elemente ohne `lang`-Attribut als en-GB-Default.
+        Um sowohl de-DE als auch en-GB sauber zu bedienen, ist jedes Label/HelpText/
+        Placeholder/Option-Name hier explizit mit `lang="de-DE"` und `lang="en-GB"` gepflegt.
+        Siehe `.ai/context/context.md` Abschnitt "Backend-Sprache".
+    -->
+
     <card>
-        <title>Dynamischer Meterpreis</title>
+        <title lang="de-DE">Dynamischer Meterpreis</title>
         <title lang="en-GB">Dynamic Meter Price</title>
 
         <input-field type="textarea">
             <name>hintText</name>
-            <label>Hinweistext im Eingabe-Modal</label>
+            <label lang="de-DE">Hinweistext im Eingabe-Modal</label>
             <label lang="en-GB">Hint text in input modal</label>
-            <placeholder>Bitte Länge in Millimetern eingeben – z. B. 1500 für 1,5 m</placeholder>
+            <placeholder lang="de-DE">Bitte Länge in Millimetern eingeben – z. B. 1500 für 1,5 m</placeholder>
             <placeholder lang="en-GB">Please enter the length in millimetres – e.g. 1500 for 1.5 m</placeholder>
             <defaultValue>Bitte Länge in Millimetern eingeben – z. B. 1500 für 1,5 m</defaultValue>
-            <helpText>Wird angezeigt, wenn der Kunde das Längenfeld fokussiert.</helpText>
+            <helpText lang="de-DE">Wird angezeigt, wenn der Kunde das Längenfeld fokussiert.</helpText>
             <helpText lang="en-GB">Displayed when the customer focuses the length input field.</helpText>
         </input-field>
 
         <input-field type="int">
             <name>minLength</name>
-            <label>Mindestlänge (mm)</label>
+            <label lang="de-DE">Mindestlänge (mm)</label>
             <label lang="en-GB">Minimum length (mm)</label>
             <defaultValue>1</defaultValue>
-            <helpText>Kleinste erlaubte Eingabe in Millimetern.</helpText>
+            <helpText lang="de-DE">Kleinste erlaubte Eingabe in Millimetern.</helpText>
             <helpText lang="en-GB">Smallest allowed input in millimetres.</helpText>
         </input-field>
 
         <input-field type="int">
             <name>maxLength</name>
-            <label>Maximallänge (mm)</label>
+            <label lang="de-DE">Maximallänge (mm)</label>
             <label lang="en-GB">Maximum length (mm)</label>
             <defaultValue>10000</defaultValue>
-            <helpText>Größte erlaubte Eingabe in Millimetern.</helpText>
+            <helpText lang="de-DE">Größte erlaubte Eingabe in Millimetern.</helpText>
             <helpText lang="en-GB">Largest allowed input in millimetres.</helpText>
         </input-field>
     </card>
 
     <card>
-        <title>Längen-Splitting (Standardwerte)</title>
+        <title lang="de-DE">Längen-Splitting (Standardwerte)</title>
         <title lang="en-GB">Length splitting (defaults)</title>
 
         <input-field type="single-select">
             <name>splitMode</name>
-            <label>Standard-Split-Modus</label>
+            <label lang="de-DE">Standard-Split-Modus</label>
             <label lang="en-GB">Default split mode</label>
-            <helpText>Wird verwendet, wenn am Produkt kein eigener Split-Modus gesetzt ist.</helpText>
+            <helpText lang="de-DE">Wird verwendet, wenn am Produkt kein eigener Split-Modus gesetzt ist.</helpText>
             <helpText lang="en-GB">Used when the product has no own split mode configured.</helpText>
             <options>
                 <!-- "none" ist ein UI-Platzhalter und entspricht einem nicht gesetzten Modus.
                      Wird vom MeterProductHelper ueber SplitMode::tryFromString zu null aufgeloest. -->
                 <option>
                     <id>none</id>
-                    <name>Kein Splitting</name>
+                    <name lang="de-DE">Kein Splitting</name>
                     <name lang="en-GB">No splitting</name>
                 </option>
                 <option>
                     <id>equal</id>
-                    <name>Gleichmäßig aufteilen</name>
+                    <name lang="de-DE">Gleichmäßig aufteilen</name>
                     <name lang="en-GB">Split equally</name>
                 </option>
                 <option>
                     <id>max_rest</id>
-                    <name>Volle Stücke plus Rest</name>
+                    <name lang="de-DE">Volle Stücke plus Rest</name>
                     <name lang="en-GB">Full pieces plus remainder</name>
                 </option>
                 <option>
                     <id>hint</id>
-                    <name>Nur Hinweis (Kunde teilt selbst auf)</name>
+                    <name lang="de-DE">Nur Hinweis (Kunde teilt selbst auf)</name>
                     <name lang="en-GB">Hint only (customer splits manually)</name>
                 </option>
             </options>
@@ -75,17 +83,17 @@
 
         <input-field type="int">
             <name>maxPieceLength</name>
-            <label>Max. Teilstücklänge (mm)</label>
+            <label lang="de-DE">Max. Teilstücklänge (mm)</label>
             <label lang="en-GB">Max. piece length (mm)</label>
-            <helpText>Eingaben über diesem Wert werden aufgeteilt oder führen zum Hinweistext. Leer/0 = kein Splitting.</helpText>
+            <helpText lang="de-DE">Eingaben über diesem Wert werden aufgeteilt oder führen zum Hinweistext. Leer/0 = kein Splitting.</helpText>
             <helpText lang="en-GB">Inputs above this value are split or trigger the hint. Empty/0 = no splitting.</helpText>
         </input-field>
 
         <input-field type="textarea">
             <name>splitHintTemplate</name>
-            <label>Hinweistext-Vorlage</label>
+            <label lang="de-DE">Hinweistext-Vorlage</label>
             <label lang="en-GB">Hint text template</label>
-            <helpText>Platzhalter: {length}, {maxPiece}, {pieces}, {pieceLength}, {remainder}. Leer = Snippet-Default.</helpText>
+            <helpText lang="de-DE">Platzhalter: {length}, {maxPiece}, {pieces}, {pieceLength}, {remainder}. Leer = Snippet-Default.</helpText>
             <helpText lang="en-GB">Placeholders: {length}, {maxPiece}, {pieces}, {pieceLength}, {remainder}. Empty = snippet default.</helpText>
         </input-field>
     </card>
