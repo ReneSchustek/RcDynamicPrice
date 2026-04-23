@@ -11,7 +11,11 @@ Alle nennenswerten Änderungen werden in dieser Datei dokumentiert.
 
 ## [1.6.0] - 2026-04-23
 
-> **Deployment:** `bin/build-storefront.sh` (JS + Twig geändert) und `php bin/console cache:clear`. Keine Datenbank-Migration.
+> **Deployment:** `php bin/console cache:clear` **zwingend** (ohne Container-Rebuild bleibt der neue Monolog-Channel unaufgelöst → `ServiceNotFoundException` beim ersten Request), `bin/build-storefront.sh` (JS und Twig geändert). Keine Datenbank-Migration.
+>
+> **Breaking für externe Integrationen:** Die neue Plugin-Exception-Klasse erbt von `\RuntimeException`, nicht von `\LogicException`. Bestehende `catch (\InvalidArgumentException)`-Blöcke auf `LengthSplitter::split` oder den `RcDynamicPriceConfigStruct`-Konstruktor fangen die Exception nicht mehr — auf `catch (DynamicPriceException)` oder `catch (\RuntimeException)` umstellen.
+>
+> **Hinweis für 1.6.0:** In dieser Version war die Channel-Registrierung nur über `packages/monolog.yaml` deklariert, was in Shopware-Plugins nicht ausgewertet wird. 1.6.1 behebt das — direkt auf 1.6.1 aktualisieren.
 
 ### Hinzugefügt
 - **Accessibility (BFSG-Compliance):** Buy-Widget-Form trägt jetzt `aria-describedby`, `aria-invalid`, `role="alert"`/`aria-live="assertive"` am Fehler-Container, `aria-live="polite"` an Split-Info und Ergebnis. Der Hinweis-Modal nutzt `role="dialog"`, `aria-modal="true"`, `aria-labelledby` sowie Focus-Trap und Focus-Restauration beim Schließen.

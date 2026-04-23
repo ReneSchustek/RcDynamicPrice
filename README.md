@@ -117,9 +117,89 @@ Wer die Ausgabesprache umschalten möchte, ändert die eigene Admin-User-Sprache
 
 Siehe CHANGELOG.md für den Deployment-Hinweis pro Version.
 
+## Update / Live-Gang
+
+Beim Update auf eine neue Plugin-Version gelten diese Schritte pro Shop-Instanz. **Die Reihenfolge ist nicht optional** — `plugin:update` ohne anschließenden `cache:clear` lässt neue DI-Services (z. B. den Monolog-Channel seit 1.6.0) nicht auflösen und produziert `ServiceNotFoundException` beim ersten Request.
+
+### Pflicht-Sequenz
+
+```bash
+# 1. Sicherheitsnetz: DB-Snapshot vor jedem Minor- oder Major-Sprung
+mysqldump "$DATABASE_URL" > backup_pre_<neue-version>.sql
+
+# 2. Neue Plugin-Version ziehen
+composer require ruhrcoder/rc-dynamic-price:^<neue-version>
+php bin/console plugin:refresh
+
+# 3. Migrations und Container-Cache — zwingend in dieser Reihenfolge
+php bin/console plugin:update RcDynamicPrice
+php bin/console cache:clear
+
+# 4. Storefront-Assets, wenn JS oder Twig geändert wurde (siehe CHANGELOG pro Version)
+bin/build-storefront.sh
+
+# 5. Theme, wenn SCSS geändert wurde
+php bin/console theme:compile
+
+# 6. HTTP-Cache verwerfen — greift auch Cache-Tag-Schema-Änderungen ab 1.5.0
+php bin/console http:cache:clear
+```
+
+### Staging-Smoke-Test
+
+Vor dem Produktions-Rollout auf einer Staging-Instanz durchspielen:
+
+- [ ] Admin-Backend lädt, Plugin-Config öffnet ohne Exception
+- [ ] Produkt-Edit → Individuelle Felder → Meterpreis: erwartete Optionen vorhanden (ab 1.5.x: Vererben / Aktiv / Inaktiv)
+- [ ] Storefront-PDP eines aktiven Meterproduktes lädt, Längeneingabe funktioniert, Live-Preis aktualisiert
+- [ ] Cart: Längen-LineItem mit korrektem Preis; bei aktiviertem Splitting entstehen Sibling-Positionen
+- [ ] Screenreader (ab 1.6.0): Hinweis-Modal hat Fokus beim Öffnen, Escape schließt, Fokus kehrt zum Input zurück; Validierungsfehler werden angesagt
+- [ ] Logs: Plugin-Events erscheinen unter dem Channel `rc_dynamic_price` (ab 1.6.0)
+
+### Was pro Versions-Sprung neu ist
+
+| Sprung | Neu | Zusätzliche Schritte / Besonderheiten |
+|--------|-----|---------------------------------------|
+| 1.4.x → 1.5.0 | Tri-State-`rc_meter_price_active`, Kategorie-CustomFieldSet, Cache-Tag-Schema | `plugin:update` führt zwei Migrations aus; HTTP-Cache verwerfen. **Breaking:** Integrationen mit `customFields.rc_meter_price_active === true` müssen auf `=== 'on'` umstellen. |
+| 1.5.0 → 1.5.3 | Migration-Batch-Atomarität, Cache-Invalidation bei Kategorie-Delete | Nur `cache:clear`, keine neuen Migrations. |
+| 1.5.x → 1.6.0 | Monolog-Channel, `DynamicPriceException`, BFSG-Accessibility, Integration-Tests | **`cache:clear` zwingend** (Container-Rebuild registriert den Channel). `bin/build-storefront.sh` (JS und Twig geändert). **Breaking:** `catch (\InvalidArgumentException)` auf Plugin-Aufrufe bricht — neue Exception erbt von `\RuntimeException`. |
+| 1.6.0 → 1.6.1 | Monolog-Channel-Registrierung via `Plugin::build()` | `cache:clear` (Container-Rebuild). Ohne 1.6.1-Fix tritt in 1.6.0 `ServiceNotFoundException` beim ersten Request auf. |
+
+### Log-Aggregation anpassen
+
+Seit 1.6.0 schreibt das Plugin strukturierte Events auf den Monolog-Channel `rc_dynamic_price`:
+
+- `info` beim Add-to-Cart mit der aufgelösten Scope-Herkunft pro Feld (`activeScope`, `minLengthScope`, …). Hilft bei Support-Fällen „warum ist der Preis X?".
+- `warning` beim Verwerfen ungültiger Eingaben (Bounds, Format).
+- `info` beim Auslösen eines Splits mit Teilstück-Vektor.
+
+Wenn Ops Log-Filter (Graylog, ELK, Loki, CloudWatch Insights etc.) pflegt, den Channel `rc_dynamic_price` dort ergänzen — sonst laufen die Events nur im Default-Channel auf und fallen im gefilterten View weg.
+
+### Multi-Shop-Hinweis
+
+Wird das Plugin in mehreren Instanzen betrieben (Staging, Live, evtl. weitere Mandanten), ist die obige Sequenz **pro Instanz** zu durchlaufen. `plugin:update` greift auf die DB der jeweiligen Instanz — `cache:clear` betrifft das Filesystem der jeweiligen Instanz.
+
 ## Rollback
 
 Falls ein Release zurückgerollt werden muss, gelten diese Schritte. Vorab **DB-Snapshot** und einen kurzen Storefront-Test auf Staging einplanen.
+
+### Rollback 1.6.x → 1.5.x
+
+1. **Plugin-Version herunterziehen**
+   ```bash
+   composer require ruhrcoder/rc-dynamic-price:^1.5.3
+   php bin/console plugin:refresh
+   php bin/console plugin:update RcDynamicPrice
+   ```
+2. **Keine Datenbank-Rückmigration nötig.** 1.6.x hat keine Migrations hinzugefügt — die Änderungen betrafen Exception-API, Monolog-Channel, Accessibility-Templates und Integration-Tests.
+3. **Externe Integrationen prüfen.** Falls ein externer Consumer auf `DynamicPriceException::getErrorCode()` umgebaut wurde, existiert die Methode nach dem Rollback nicht mehr. Rückfall auf `\RuntimeException` oder `\InvalidArgumentException` (1.5.x-Verhalten).
+4. **Log-Aggregation:** Der Channel `rc_dynamic_price` verschwindet. Wenn Filter für diesen Channel gepflegt wurden, wieder auf den Default-Channel umhängen, sonst werden Plugin-Logs nicht mehr eingesammelt.
+5. **Caches verwerfen und Storefront neu bauen** (die a11y-Attribute im Twig und im JS fallen weg, JS-Bundles ändern sich):
+   ```bash
+   bin/build-storefront.sh
+   php bin/console cache:clear
+   php bin/console http:cache:clear
+   ```
 
 ### Rollback 1.5.x → 1.4.x
 
