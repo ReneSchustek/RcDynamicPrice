@@ -86,6 +86,45 @@ final class LineItemSubscriberIntegrationTest extends TestCase
         self::assertSame(3000, $sibling->getPayloadValue(DynamicPriceConstants::PAYLOAD_LENGTH_MM));
     }
 
+    public function testAddedMeterProductWithSplitProducesRemovableSiblings(): void
+    {
+        $request = new Request();
+        $request->request->set('mmLength', '15000');
+
+        $cart = new Cart('token');
+        $lineItem = new LineItem('primary-id', LineItem::PRODUCT_LINE_ITEM_TYPE, self::PRODUCT_ID);
+        $cart->add($lineItem);
+
+        $this->buildSubscriber(
+            productCustomFields: [
+                DynamicPriceConstants::FIELD_METER_ACTIVE => 'on',
+                DynamicPriceConstants::FIELD_SPLIT_MODE => 'equal',
+                DynamicPriceConstants::FIELD_MAX_PIECE_LENGTH => 5000,
+                DynamicPriceConstants::FIELD_MAX_LENGTH => 20000,
+            ],
+            splitMode: 'equal',
+            request: $request,
+        )->onBeforeLineItemAdded(
+            $this->event($cart, $lineItem)
+        );
+
+        // 15000 bei maxPiece=5000 -> 3 gleichgrosse Teilstuecke
+        self::assertSame(3, $cart->getLineItems()->count());
+
+        foreach (['primary-id-piece1', 'primary-id-piece2'] as $siblingId) {
+            $sibling = $cart->get($siblingId);
+            self::assertNotNull($sibling, \sprintf('Sibling %s fehlt', $siblingId));
+            self::assertTrue(
+                $sibling->isRemovable(),
+                \sprintf('Sibling %s muss removable=true tragen, damit der X-Button in der Storefront erscheint', $siblingId),
+            );
+            self::assertTrue(
+                $sibling->isStackable(),
+                \sprintf('Sibling %s muss stackable=true tragen, damit Mengen-Controls erscheinen', $siblingId),
+            );
+        }
+    }
+
     public function testRejectsLengthOutsideResolvedBounds(): void
     {
         $request = new Request();

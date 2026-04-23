@@ -120,6 +120,53 @@ final class CartItemSplitAssemblerTest extends TestCase
         $this->assertSame(10000, $sibling->getPayloadValue(DynamicPriceConstants::PAYLOAD_MAX_LENGTH));
     }
 
+    public function testEqualSplitSiblingsAreRemovableAndStackable(): void
+    {
+        // Originalposition durchläuft in Produktion den regulären Add-Pfad + ProductCartProcessor-Enrichment,
+        // Flags werden dort gesetzt. Hier wird nur die Sibling-Konstruktion im Assembler gepruft.
+        $cart = $this->cartWithSingleItem('primary-id');
+        $this->assembler->assemble(
+            $cart,
+            $cart->get('primary-id'),
+            15000,
+            $this->config(splitMode: SplitMode::Equal, maxPieceLength: 5000),
+        );
+
+        // Originalposition + 2 Siblings
+        $this->assertCount(3, $cart->getLineItems());
+
+        foreach (['primary-id-piece1', 'primary-id-piece2'] as $siblingId) {
+            $sibling = $cart->get($siblingId);
+            $this->assertNotNull($sibling, \sprintf('Erwartetes Sibling "%s" fehlt im Cart', $siblingId));
+            $this->assertTrue(
+                $sibling->isRemovable(),
+                \sprintf('Sibling "%s" muss removable sein, sonst fehlt das X im Warenkorb', $siblingId),
+            );
+            $this->assertTrue(
+                $sibling->isStackable(),
+                \sprintf('Sibling "%s" muss stackable sein, damit Mengen-Controls sichtbar bleiben', $siblingId),
+            );
+        }
+    }
+
+    public function testMaxRestSplitSiblingsAreRemovableAndStackable(): void
+    {
+        $cart = $this->cartWithSingleItem('primary-id');
+        $this->assembler->assemble(
+            $cart,
+            $cart->get('primary-id'),
+            8000,
+            $this->config(splitMode: SplitMode::MaxRest, maxPieceLength: 5000),
+        );
+
+        $this->assertCount(2, $cart->getLineItems());
+
+        $sibling = $cart->get('primary-id-piece1');
+        $this->assertNotNull($sibling);
+        $this->assertTrue($sibling->isRemovable(), 'Sibling muss removable sein');
+        $this->assertTrue($sibling->isStackable(), 'Sibling muss stackable sein');
+    }
+
     public function testParadoxMinExceedingMaxPieceBumpsRemainderInMaxRest(): void
     {
         // minLength > maxPieceLength ist fachlich absurd, aber der Splitter muss nicht abstürzen.

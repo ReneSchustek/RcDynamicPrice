@@ -69,6 +69,13 @@ final class CartItemSplitAssembler implements CartItemSplitAssemblerInterface
                 1,
             );
 
+            // Shopware-LineItem-Defaults sind removable=false/stackable=false. Der reguläre Add-Pfad
+            // setzt die Flags im Product-Enrichment; Siblings, die mitten im BeforeLineItemAddedEvent
+            // per $cart->add() eingeschleust werden, erreichen den Enrichment-Pass nicht zuverlässig
+            // und landen sonst ohne X-Button beim Kunden im Warenkorb.
+            $sibling->setRemovable(true);
+            $sibling->setStackable(true);
+
             $this->writePayload($sibling, $pieces[$i], $config);
 
             $cart->add($sibling);
