@@ -35,7 +35,7 @@ final class MeterConfigResolverTest extends TestCase
         $this->stubApplyToAllProducts(true);
         $config = $this->resolver->resolve(
             ['rc_meter_price_active' => 'off'],
-            [$this->category(['rc_meter_price_active' => 'on'])],
+            [$this->category(['rc_meter_price_cat_active' => 'on'])],
             'sc-id',
         );
 
@@ -71,7 +71,7 @@ final class MeterConfigResolverTest extends TestCase
     public function testProductInheritCategoryOnBeatsGlobalOff(): void
     {
         $this->stubApplyToAllProducts(false);
-        $chain = [$this->category(['rc_meter_price_active' => 'on'])];
+        $chain = [$this->category(['rc_meter_price_cat_active' => 'on'])];
         $config = $this->resolver->resolve(['rc_meter_price_active' => 'inherit'], $chain, 'sc-id');
 
         $this->assertTrue($config->active);
@@ -81,7 +81,7 @@ final class MeterConfigResolverTest extends TestCase
     public function testProductInheritCategoryOffBeatsGlobalOn(): void
     {
         $this->stubApplyToAllProducts(true);
-        $chain = [$this->category(['rc_meter_price_active' => 'off'])];
+        $chain = [$this->category(['rc_meter_price_cat_active' => 'off'])];
         $config = $this->resolver->resolve(['rc_meter_price_active' => 'inherit'], $chain, 'sc-id');
 
         $this->assertFalse($config->active);
@@ -91,9 +91,9 @@ final class MeterConfigResolverTest extends TestCase
     public function testNearestCategoryWinsOverRoot(): void
     {
         $chain = [
-            $this->category(['rc_meter_price_active' => 'inherit']),      // leaf
-            $this->category(['rc_meter_price_active' => 'on']),           // mid
-            $this->category(['rc_meter_price_active' => 'off']),          // root — ignoriert, weil mid gewonnen hat
+            $this->category(['rc_meter_price_cat_active' => 'inherit']),      // leaf
+            $this->category(['rc_meter_price_cat_active' => 'on']),           // mid
+            $this->category(['rc_meter_price_cat_active' => 'off']),          // root — ignoriert, weil mid gewonnen hat
         ];
 
         $config = $this->resolver->resolve(['rc_meter_price_active' => 'inherit'], $chain, 'sc-id');
@@ -105,8 +105,8 @@ final class MeterConfigResolverTest extends TestCase
     public function testAllInheritFallsBackToGlobalOrDefault(): void
     {
         $chain = [
-            $this->category(['rc_meter_price_active' => 'inherit']),
-            $this->category(['rc_meter_price_active' => 'inherit']),
+            $this->category(['rc_meter_price_cat_active' => 'inherit']),
+            $this->category(['rc_meter_price_cat_active' => 'inherit']),
         ];
         $this->stubApplyToAllProducts(false);
 
@@ -130,7 +130,7 @@ final class MeterConfigResolverTest extends TestCase
     {
         $config = $this->activeConfig(
             productFields: ['rc_meter_price_active' => 'on', 'rc_meter_price_min_length' => 500],
-            chain: [$this->category(['rc_meter_price_min_length' => 999])],
+            chain: [$this->category(['rc_meter_price_cat_min_length' => 999])],
             salesChannelId: 'sc-id',
         );
 
@@ -142,8 +142,8 @@ final class MeterConfigResolverTest extends TestCase
     {
         $chain = [
             $this->category([]),                                    // leaf: kein Wert
-            $this->category(['rc_meter_price_min_length' => 250]),  // mid: setzt Wert
-            $this->category(['rc_meter_price_min_length' => 750]),  // root: ignoriert
+            $this->category(['rc_meter_price_cat_min_length' => 250]),  // mid: setzt Wert
+            $this->category(['rc_meter_price_cat_min_length' => 750]),  // root: ignoriert
         ];
 
         $config = $this->activeConfig(
@@ -214,7 +214,7 @@ final class MeterConfigResolverTest extends TestCase
     {
         $config = $this->activeConfig(
             ['rc_meter_price_active' => 'on', 'rc_meter_price_rounding' => 'quarter_m'],
-            [$this->category(['rc_meter_price_rounding' => 'full_m'])],
+            [$this->category(['rc_meter_price_cat_rounding' => 'full_m'])],
             'sc-id',
         );
 
@@ -226,7 +226,7 @@ final class MeterConfigResolverTest extends TestCase
     {
         $config = $this->activeConfig(
             ['rc_meter_price_active' => 'on'],
-            [$this->category(['rc_meter_price_rounding' => 'full_m'])],
+            [$this->category(['rc_meter_price_cat_rounding' => 'full_m'])],
             'sc-id',
         );
 
@@ -246,7 +246,7 @@ final class MeterConfigResolverTest extends TestCase
     {
         $config = $this->activeConfig(
             ['rc_meter_price_active' => 'on', 'rc_meter_price_rounding' => 'bogus'],
-            [$this->category(['rc_meter_price_rounding' => 'half_m'])],
+            [$this->category(['rc_meter_price_cat_rounding' => 'half_m'])],
             'sc-id',
         );
 
@@ -260,7 +260,7 @@ final class MeterConfigResolverTest extends TestCase
     {
         $config = $this->activeConfig(
             ['rc_meter_price_active' => 'on', 'rc_meter_price_split_mode' => 'equal'],
-            [$this->category(['rc_meter_price_split_mode' => 'max_rest'])],
+            [$this->category(['rc_meter_price_cat_split_mode' => 'max_rest'])],
             'sc-id',
         );
 
@@ -272,7 +272,7 @@ final class MeterConfigResolverTest extends TestCase
     {
         $config = $this->activeConfig(
             ['rc_meter_price_active' => 'on'],
-            [$this->category(['rc_meter_price_split_mode' => 'hint'])],
+            [$this->category(['rc_meter_price_cat_split_mode' => 'hint'])],
             'sc-id',
         );
 

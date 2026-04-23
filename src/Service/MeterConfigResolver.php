@@ -63,6 +63,7 @@ final class MeterConfigResolver implements MeterConfigResolverInterface
             $productFields,
             $categoryChain,
             DynamicPriceConstants::FIELD_MIN_LENGTH,
+            DynamicPriceConstants::CAT_FIELD_MIN_LENGTH,
             DynamicPriceConstants::CONFIG_MIN_LENGTH,
             $salesChannelId,
             self::DEFAULT_MIN_LENGTH,
@@ -72,6 +73,7 @@ final class MeterConfigResolver implements MeterConfigResolverInterface
             $productFields,
             $categoryChain,
             DynamicPriceConstants::FIELD_MAX_LENGTH,
+            DynamicPriceConstants::CAT_FIELD_MAX_LENGTH,
             DynamicPriceConstants::CONFIG_MAX_LENGTH,
             $salesChannelId,
             self::DEFAULT_MAX_LENGTH,
@@ -85,6 +87,7 @@ final class MeterConfigResolver implements MeterConfigResolverInterface
             $productFields,
             $categoryChain,
             DynamicPriceConstants::FIELD_MAX_PIECE_LENGTH,
+            DynamicPriceConstants::CAT_FIELD_MAX_PIECE_LENGTH,
             DynamicPriceConstants::CONFIG_MAX_PIECE_LENGTH,
             $salesChannelId,
             0,
@@ -95,6 +98,7 @@ final class MeterConfigResolver implements MeterConfigResolverInterface
             $productFields,
             $categoryChain,
             DynamicPriceConstants::FIELD_SPLIT_HINT,
+            DynamicPriceConstants::CAT_FIELD_SPLIT_HINT,
             DynamicPriceConstants::CONFIG_SPLIT_HINT_TEMPLATE,
             $salesChannelId,
         );
@@ -138,7 +142,7 @@ final class MeterConfigResolver implements MeterConfigResolverInterface
 
         // Produkt = inherit: Tree-Walk, erster expliziter Treffer gewinnt.
         foreach ($categoryChain as $entry) {
-            $state = ActiveState::fromMixed($entry['customFields'][DynamicPriceConstants::FIELD_METER_ACTIVE] ?? null);
+            $state = ActiveState::fromMixed($entry['customFields'][DynamicPriceConstants::CAT_FIELD_METER_ACTIVE] ?? null);
             if ($state === ActiveState::On) {
                 return [true, ConfigScope::Category];
             }
@@ -168,19 +172,20 @@ final class MeterConfigResolver implements MeterConfigResolverInterface
     private function resolveInt(
         array $productFields,
         array $categoryChain,
-        string $fieldName,
+        string $productFieldName,
+        string $categoryFieldName,
         string $systemConfigKey,
         string $salesChannelId,
         int $default,
         bool $allowZeroFromGlobal = false,
     ): array {
-        $productValue = $this->positiveInt($productFields[$fieldName] ?? null);
+        $productValue = $this->positiveInt($productFields[$productFieldName] ?? null);
         if ($productValue !== null) {
             return [$productValue, ConfigScope::Product];
         }
 
         foreach ($categoryChain as $entry) {
-            $categoryValue = $this->positiveInt($entry['customFields'][$fieldName] ?? null);
+            $categoryValue = $this->positiveInt($entry['customFields'][$categoryFieldName] ?? null);
             if ($categoryValue !== null) {
                 return [$categoryValue, ConfigScope::Category];
             }
@@ -207,17 +212,18 @@ final class MeterConfigResolver implements MeterConfigResolverInterface
     private function resolveString(
         array $productFields,
         array $categoryChain,
-        string $fieldName,
+        string $productFieldName,
+        string $categoryFieldName,
         string $systemConfigKey,
         string $salesChannelId,
     ): array {
-        $productValue = $productFields[$fieldName] ?? null;
+        $productValue = $productFields[$productFieldName] ?? null;
         if (\is_string($productValue) && $productValue !== '') {
             return [$productValue, ConfigScope::Product];
         }
 
         foreach ($categoryChain as $entry) {
-            $value = $entry['customFields'][$fieldName] ?? null;
+            $value = $entry['customFields'][$categoryFieldName] ?? null;
             if (\is_string($value) && $value !== '') {
                 return [$value, ConfigScope::Category];
             }
@@ -245,7 +251,7 @@ final class MeterConfigResolver implements MeterConfigResolverInterface
         }
 
         foreach ($categoryChain as $entry) {
-            $value = $entry['customFields'][DynamicPriceConstants::FIELD_ROUNDING] ?? null;
+            $value = $entry['customFields'][DynamicPriceConstants::CAT_FIELD_ROUNDING] ?? null;
             if (\is_string($value) && \in_array($value, self::VALID_ROUNDING_MODES, true)) {
                 return [$value, ConfigScope::Category];
             }
@@ -268,7 +274,7 @@ final class MeterConfigResolver implements MeterConfigResolverInterface
         }
 
         foreach ($categoryChain as $entry) {
-            $value = SplitMode::tryFromString($entry['customFields'][DynamicPriceConstants::FIELD_SPLIT_MODE] ?? null);
+            $value = SplitMode::tryFromString($entry['customFields'][DynamicPriceConstants::CAT_FIELD_SPLIT_MODE] ?? null);
             if ($value !== null) {
                 return [$value, ConfigScope::Category];
             }

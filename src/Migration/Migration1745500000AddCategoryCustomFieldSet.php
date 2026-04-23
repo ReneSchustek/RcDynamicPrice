@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Ruhrcoder\RcDynamicPrice\Migration;
 
 use Doctrine\DBAL\Connection;
+use Ruhrcoder\RcDynamicPrice\DynamicPriceConstants;
 use Shopware\Core\Framework\Migration\MigrationStep;
 use Shopware\Core\Framework\Uuid\Uuid;
 
@@ -17,13 +18,13 @@ use Shopware\Core\Framework\Uuid\Uuid;
  */
 final class Migration1745500000AddCategoryCustomFieldSet extends MigrationStep
 {
-    private const SET_NAME = 'rc_dynamic_price_category';
+    private const SET_NAME = DynamicPriceConstants::SET_CATEGORY;
 
     /** @return array<string, array{type: string, config: array<string, mixed>}> */
     private static function fields(): array
     {
         return [
-            'rc_meter_price_active' => [
+            DynamicPriceConstants::CAT_FIELD_METER_ACTIVE => [
                 'type' => 'select',
                 'config' => [
                     'label' => [
@@ -54,7 +55,7 @@ final class Migration1745500000AddCategoryCustomFieldSet extends MigrationStep
                     ],
                 ],
             ],
-            'rc_meter_price_min_length' => [
+            DynamicPriceConstants::CAT_FIELD_MIN_LENGTH => [
                 'type' => 'int',
                 'config' => [
                     'label' => ['de-DE' => 'Mindestlaenge (mm)', 'en-GB' => 'Minimum length (mm)'],
@@ -69,7 +70,7 @@ final class Migration1745500000AddCategoryCustomFieldSet extends MigrationStep
                     'customFieldPosition' => 2,
                 ],
             ],
-            'rc_meter_price_max_length' => [
+            DynamicPriceConstants::CAT_FIELD_MAX_LENGTH => [
                 'type' => 'int',
                 'config' => [
                     'label' => ['de-DE' => 'Maximallaenge (mm)', 'en-GB' => 'Maximum length (mm)'],
@@ -84,7 +85,7 @@ final class Migration1745500000AddCategoryCustomFieldSet extends MigrationStep
                     'customFieldPosition' => 3,
                 ],
             ],
-            'rc_meter_price_rounding' => [
+            DynamicPriceConstants::CAT_FIELD_ROUNDING => [
                 'type' => 'select',
                 'config' => [
                     'label' => ['de-DE' => 'Rundungsmodus', 'en-GB' => 'Rounding mode'],
@@ -105,7 +106,7 @@ final class Migration1745500000AddCategoryCustomFieldSet extends MigrationStep
                     ],
                 ],
             ],
-            'rc_meter_price_split_mode' => [
+            DynamicPriceConstants::CAT_FIELD_SPLIT_MODE => [
                 'type' => 'select',
                 'config' => [
                     'label' => ['de-DE' => 'Split-Modus', 'en-GB' => 'Split mode'],
@@ -124,7 +125,7 @@ final class Migration1745500000AddCategoryCustomFieldSet extends MigrationStep
                     ],
                 ],
             ],
-            'rc_meter_price_max_piece_length' => [
+            DynamicPriceConstants::CAT_FIELD_MAX_PIECE_LENGTH => [
                 'type' => 'int',
                 'config' => [
                     'label' => ['de-DE' => 'Max. Teilstuecklaenge (mm)', 'en-GB' => 'Max. piece length (mm)'],
@@ -139,7 +140,7 @@ final class Migration1745500000AddCategoryCustomFieldSet extends MigrationStep
                     'customFieldPosition' => 6,
                 ],
             ],
-            'rc_meter_price_split_hint' => [
+            DynamicPriceConstants::CAT_FIELD_SPLIT_HINT => [
                 'type' => 'text',
                 'config' => [
                     'label' => ['de-DE' => 'Hinweistext fuer Splitting', 'en-GB' => 'Hint text for splitting'],

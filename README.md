@@ -164,6 +164,7 @@ Vor dem Produktions-Rollout auf einer Staging-Instanz durchspielen:
 | 1.5.0 → 1.5.3 | Migration-Batch-Atomarität, Cache-Invalidation bei Kategorie-Delete | Nur `cache:clear`, keine neuen Migrations. |
 | 1.5.x → 1.6.0 | Monolog-Channel, `DynamicPriceException`, BFSG-Accessibility, Integration-Tests | **`cache:clear` zwingend** (Container-Rebuild registriert den Channel). `bin/build-storefront.sh` (JS und Twig geändert). **Breaking:** `catch (\InvalidArgumentException)` auf Plugin-Aufrufe bricht — neue Exception erbt von `\RuntimeException`. |
 | 1.6.0 → 1.6.1 | Monolog-Channel-Registrierung via `Plugin::build()` | `cache:clear` (Container-Rebuild). Ohne 1.6.1-Fix tritt in 1.6.0 `ServiceNotFoundException` beim ersten Request auf. |
+| 1.6.1 → 1.6.2 | Kategorie-Custom-Fields mit eigenem Namespace `rc_meter_price_cat_*` | `plugin:update` registriert das Kategorie-CustomFieldSet (in 1.5.0/1.6.x scheiterte die Migration silent mit `UniqueConstraintViolation`). Keine Datenaktion nötig. **Breaking:** Integrationen, die Kategorie-Felder lesen oder schreiben, auf `rc_meter_price_cat_*`-Namen umstellen. |
 
 ### Log-Aggregation anpassen
 

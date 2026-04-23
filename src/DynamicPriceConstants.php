@@ -14,7 +14,7 @@ final class DynamicPriceConstants
     /** Custom-Field-Set an der Kategorie (Scope-Override auf Kategorie-Ebene) */
     public const SET_CATEGORY = 'rc_dynamic_price_category';
 
-    // --- Custom-Field-Namen am Produkt und an der Kategorie ---
+    // --- Custom-Field-Namen am Produkt ---
 
     /** Steuert ob das Meterartikel-Widget angezeigt wird (Tri-State: inherit/on/off) */
     public const FIELD_METER_ACTIVE = 'rc_meter_price_active';
@@ -57,6 +57,31 @@ final class DynamicPriceConstants
 
     /** Kundenspezifischer Hinweistext mit Platzhaltern, wenn mehr als maxPieceLength eingegeben wurde */
     public const FIELD_SPLIT_HINT = 'rc_meter_price_split_hint';
+
+    // --- Kategorie-Custom-Field-Namen ---
+    // Shopware erzwingt globales UNIQUE auf `custom_field.name` — Kategorie-Felder brauchen
+    // einen eigenen Namespace. `_cat`-Suffix hält den Zusammenhang zum Produktpendant sichtbar.
+
+    /** Kategorie-Ebene: Tri-State analog zum Produktfeld */
+    public const CAT_FIELD_METER_ACTIVE = 'rc_meter_price_cat_active';
+
+    /** Kategorie-Ebene: Mindestlaenge-Fallback fuer Produkte dieser Kategorie */
+    public const CAT_FIELD_MIN_LENGTH = 'rc_meter_price_cat_min_length';
+
+    /** Kategorie-Ebene: Maximallaenge-Fallback */
+    public const CAT_FIELD_MAX_LENGTH = 'rc_meter_price_cat_max_length';
+
+    /** Kategorie-Ebene: Rundungsmodus-Fallback */
+    public const CAT_FIELD_ROUNDING = 'rc_meter_price_cat_rounding';
+
+    /** Kategorie-Ebene: Split-Modus-Fallback */
+    public const CAT_FIELD_SPLIT_MODE = 'rc_meter_price_cat_split_mode';
+
+    /** Kategorie-Ebene: Maximale Teilstuecklaenge-Fallback */
+    public const CAT_FIELD_MAX_PIECE_LENGTH = 'rc_meter_price_cat_max_piece_length';
+
+    /** Kategorie-Ebene: Split-Hint-Template-Fallback */
+    public const CAT_FIELD_SPLIT_HINT = 'rc_meter_price_cat_split_hint';
 
     // --- Payload-Schlüssel (LineItem) ---
 

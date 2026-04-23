@@ -2,6 +2,21 @@
 
 Alle nennenswerten Änderungen werden in dieser Datei dokumentiert.
 
+## [1.6.2] - 2026-04-23
+
+> **Deployment:** `php bin/console plugin:update RcDynamicPrice` (registriert das Kategorie-CustomFieldSet) + `php bin/console cache:clear`. Keine Datenmigration notwendig — es gab bisher keine gespeicherten Kategorie-Werte, weil die Migration auf keiner Instanz erfolgreich gelaufen war.
+
+### Behoben
+- `Migration1745500000AddCategoryCustomFieldSet` scheiterte mit `UniqueConstraintViolationException` auf `custom_field.name`, weil die Kategorie-Felder dieselben Namen wie die Produktfelder trugen. Shopware erzwingt `custom_field.name` global unique — Set-Zugehörigkeit rettet nicht. Die Migration ist auf keiner bekannten Instanz erfolgreich durchgelaufen, die Kategorie-Konfiguration aus 1.5.0/1.6.x war deshalb de facto ungenutzt.
+
+### Geändert
+- Kategorie-Custom-Fields bekommen einen eigenen Namensraum: `rc_meter_price_cat_active`, `rc_meter_price_cat_min_length`, `rc_meter_price_cat_max_length`, `rc_meter_price_cat_rounding`, `rc_meter_price_cat_split_mode`, `rc_meter_price_cat_max_piece_length`, `rc_meter_price_cat_split_hint`.
+- `MeterConfigResolver` liest bei Kategorie-Lookups die neuen `CAT_FIELD_*`-Konstanten. Produkt-Feldnamen bleiben stabil (`rc_meter_price_active` etc.).
+- `DynamicPriceConstants` trägt die sieben neuen `CAT_FIELD_*`-Konstanten.
+
+### Breaking für Integrationen
+- Integrationen, die Kategorie-Custom-Fields schreiben oder lesen, müssen auf die `rc_meter_price_cat_*`-Namen umstellen. Da die Migration vor 1.6.2 nirgends erfolgreich war, gibt es real keinen bestehenden Daten-Bestand — Umstellung ist reine Code-Änderung.
+
 ## [1.6.1] - 2026-04-23
 
 > **Deployment:** `php bin/console cache:clear`. Keine Migration.
