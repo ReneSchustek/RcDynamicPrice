@@ -2,6 +2,13 @@
 
 Alle nennenswerten Änderungen werden in dieser Datei dokumentiert.
 
+## [1.6.1] - 2026-04-23
+
+> **Deployment:** `php bin/console cache:clear`. Keine Migration.
+
+### Behoben
+- `ServiceNotFoundException` beim Container-Build: der Monolog-Channel `rc_dynamic_price` war nur über `src/Resources/config/packages/monolog.yaml` deklariert, was in Shopware-Plugins nicht ausgewertet wird. Registrierung jetzt per `RcDynamicPrice::build(ContainerBuilder)` via `prependExtensionConfig('monolog', ['channels' => ['rc_dynamic_price']])`. `services.xml`-Verweise auf `monolog.logger.rc_dynamic_price` werden damit auflösbar.
+
 ## [1.6.0] - 2026-04-23
 
 > **Deployment:** `bin/build-storefront.sh` (JS + Twig geändert) und `php bin/console cache:clear`. Keine Datenbank-Migration.
