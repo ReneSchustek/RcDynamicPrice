@@ -19,13 +19,13 @@ use Shopware\Core\Framework\Migration\MigrationStep;
  *   fehlend -> bleibt fehlend (wird im Resolver als "inherit" behandelt)
  *
  * Idempotent: bricht ab, sobald der `custom_field`-Row-Type bereits `select` ist
- * und kein `bool`-Rest mehr in `product.custom_fields` vorliegt. Verifikations-Query
- * am Ende wirft, falls nach dem Backfill noch Boolesche Werte existieren.
+ * und kein `bool`-Rest mehr in `product_translation.custom_fields` vorliegt.
+ * Verifikations-Query am Ende wirft, falls nach dem Backfill noch boolesche
+ * Werte existieren.
  */
 final class Migration1745600000ConvertActiveFieldToTriState extends MigrationStep
 {
     private const FIELD_NAME = 'rc_meter_price_active';
-    private const BATCH_SIZE = 500;
 
     public function getCreationTimestamp(): int
     {
@@ -84,89 +84,48 @@ final class Migration1745600000ConvertActiveFieldToTriState extends MigrationSte
         );
     }
 
+    /**
+     * Backfill via Single-Statement-UPDATE gegen `product_translation` (dort liegen die
+     * Custom-Fields — Tabelle `product` selbst hat keine `custom_fields`-Spalte).
+     * Zwei separate UPDATEs, weil MySQL/MariaDB keinen direkten CASE-über-JSON-Typ
+     * kennt und beide Mappings ohnehin disjunkt sind.
+     */
     private function backfillProductCustomFields(Connection $connection): void
     {
-        $lastId = null;
-        do {
-            $query = 'SELECT LOWER(HEX(`id`)) AS id_hex, `custom_fields` FROM `product`
-                      WHERE `custom_fields` IS NOT NULL
-                        AND JSON_EXTRACT(`custom_fields`, :jsonPath) IS NOT NULL';
+        $jsonPath = '$.' . self::FIELD_NAME;
 
-            $parameters = ['jsonPath' => '$.' . self::FIELD_NAME];
-
-            if ($lastId !== null) {
-                $query .= ' AND LOWER(HEX(`id`)) > :lastId';
-                $parameters['lastId'] = $lastId;
-            }
-
-            $query .= ' ORDER BY LOWER(HEX(`id`)) ASC LIMIT ' . self::BATCH_SIZE;
-
-            /** @var list<array{id_hex: string, custom_fields: string}> $rows */
-            $rows = $connection->fetchAllAssociative($query, $parameters);
-
-            if ($rows === []) {
-                break;
-            }
-
-            // Batch atomar schreiben: Cursor rückt erst nach erfolgreichem Commit vor.
-            // Bricht ein Batch ab, bleibt `$lastId` auf dem letzten erfolgreichen Batch —
-            // ein Re-Run der Migration nimmt denselben Batch nochmal und überspringt ihn nicht.
-            $batchLastId = $connection->transactional(function (Connection $tx) use ($rows): string {
-                $batchLastId = '';
-                foreach ($rows as $row) {
-                    $this->rewriteRow($tx, 'product', $row['id_hex'], $row['custom_fields']);
-                    $batchLastId = $row['id_hex'];
-                }
-
-                return $batchLastId;
-            });
-
-            $lastId = $batchLastId;
-        } while (\count($rows) === self::BATCH_SIZE);
-    }
-
-    private function rewriteRow(Connection $connection, string $table, string $idHex, string $rawJson): void
-    {
-        try {
-            /** @var array<string, mixed>|null $customFields */
-            $customFields = json_decode($rawJson, true, 512, \JSON_THROW_ON_ERROR);
-        } catch (\JsonException) {
-            // Defekte JSON überspringen — würde im Admin sonst ohnehin nicht ladbar sein.
-            return;
-        }
-
-        if (!\is_array($customFields) || !\array_key_exists(self::FIELD_NAME, $customFields)) {
-            return;
-        }
-
-        $raw = $customFields[self::FIELD_NAME];
-
-        $mapped = match (true) {
-            $raw === true, $raw === 1, $raw === '1' => 'on',
-            $raw === false, $raw === 0, $raw === '0' => 'inherit',
-            \is_string($raw) && \in_array(strtolower($raw), ['inherit', 'on', 'off'], true) => strtolower($raw),
-            default => 'inherit',
-        };
-
-        if ($customFields[self::FIELD_NAME] === $mapped) {
-            return;
-        }
-
-        $customFields[self::FIELD_NAME] = $mapped;
-
+        // true / 1 / "1" -> "on"
         $connection->executeStatement(
-            \sprintf('UPDATE `%s` SET `custom_fields` = :json, `updated_at` = NOW() WHERE `id` = UNHEX(:id)', $table),
-            [
-                'json' => json_encode($customFields, \JSON_THROW_ON_ERROR | \JSON_UNESCAPED_UNICODE | \JSON_UNESCAPED_SLASHES),
-                'id'   => $idHex,
-            ]
+            'UPDATE `product_translation`
+             SET `custom_fields` = JSON_SET(`custom_fields`, :jsonPath, :newValue)
+             WHERE JSON_EXTRACT(`custom_fields`, :jsonPath) IS NOT NULL
+               AND (
+                   JSON_EXTRACT(`custom_fields`, :jsonPath) = true
+                   OR JSON_EXTRACT(`custom_fields`, :jsonPath) = 1
+                   OR JSON_UNQUOTE(JSON_EXTRACT(`custom_fields`, :jsonPath)) = "1"
+               )',
+            ['jsonPath' => $jsonPath, 'newValue' => 'on']
+        );
+
+        // false / 0 / "0" -> "inherit" (1.4.x kannte kein "off"; nicht-aktive Bool-Werte
+        // entsprechen "vererben" an die neue Entscheidungskette)
+        $connection->executeStatement(
+            'UPDATE `product_translation`
+             SET `custom_fields` = JSON_SET(`custom_fields`, :jsonPath, :newValue)
+             WHERE JSON_EXTRACT(`custom_fields`, :jsonPath) IS NOT NULL
+               AND (
+                   JSON_EXTRACT(`custom_fields`, :jsonPath) = false
+                   OR JSON_EXTRACT(`custom_fields`, :jsonPath) = 0
+                   OR JSON_UNQUOTE(JSON_EXTRACT(`custom_fields`, :jsonPath)) = "0"
+               )',
+            ['jsonPath' => $jsonPath, 'newValue' => 'inherit']
         );
     }
 
     private function verifyNoBooleanValuesRemain(Connection $connection): void
     {
         $booleanLeftovers = $connection->fetchOne(
-            'SELECT COUNT(*) FROM `product`
+            'SELECT COUNT(*) FROM `product_translation`
              WHERE JSON_EXTRACT(`custom_fields`, :jsonPath) IS NOT NULL
                AND JSON_TYPE(JSON_EXTRACT(`custom_fields`, :jsonPath)) IN ("BOOLEAN", "INTEGER")',
             ['jsonPath' => '$.' . self::FIELD_NAME]

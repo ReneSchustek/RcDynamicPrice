@@ -2,6 +2,14 @@
 
 Alle nennenswerten Änderungen werden in dieser Datei dokumentiert.
 
+## [1.6.3] - 2026-04-23
+
+> **Deployment:** `php bin/console plugin:update RcDynamicPrice` (konvertiert `rc_meter_price_active` in `product_translation` auf Tri-State) + `php bin/console cache:clear`.
+
+### Behoben
+- `Migration1745600000ConvertActiveFieldToTriState` griff auf die Tabelle `product` zu, dort existiert die Spalte `custom_fields` aber nicht. Shopware hält Product-Custom-Fields in `product_translation` vor. In 1.6.2 lief die Migration deshalb ins `Unknown column 'custom_fields'`-Exception und blieb auf jeder Instanz hängen.
+- Migration ist jetzt auf `product_translation` umgestellt und macht den Bool→Tri-State-Backfill als zwei Single-Statement-UPDATEs (true/1/"1" → "on", false/0/"0" → "inherit"). PHP-seitige Batch-/Cursor-Logik entfällt, weil der DB-Server das atomar erledigt.
+
 ## [1.6.2] - 2026-04-23
 
 > **Deployment:** `php bin/console plugin:update RcDynamicPrice` (registriert das Kategorie-CustomFieldSet) + `php bin/console cache:clear`. Keine Datenmigration notwendig — es gab bisher keine gespeicherten Kategorie-Werte, weil die Migration auf keiner Instanz erfolgreich gelaufen war.
