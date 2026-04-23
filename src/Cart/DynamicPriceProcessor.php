@@ -40,7 +40,7 @@ final class DynamicPriceProcessor implements CartProcessorInterface
             $mmLength = $lineItem->getPayloadValue(DynamicPriceConstants::PAYLOAD_LENGTH_MM);
 
             if (!is_int($mmLength) || $mmLength <= 0) {
-                $this->logger->warning('RcDynamicPrice: Ungueltige Laenge im LineItem', [
+                $this->logger->warning('RcDynamicPrice: Ungültige Länge im LineItem', [
                     'lineItemId' => $lineItem->getId(),
                     'meterLengthMm' => $mmLength,
                 ]);
@@ -52,7 +52,7 @@ final class DynamicPriceProcessor implements CartProcessorInterface
             $maxLength = $lineItem->getPayloadValue(DynamicPriceConstants::PAYLOAD_MAX_LENGTH);
 
             if (is_int($minLength) && $mmLength < $minLength) {
-                $this->logger->warning('RcDynamicPrice: Laenge unter Minimum', [
+                $this->logger->warning('RcDynamicPrice: Länge unter Minimum', [
                     'lineItemId' => $lineItem->getId(),
                     'meterLengthMm' => $mmLength,
                     'minLength' => $minLength,
@@ -61,7 +61,7 @@ final class DynamicPriceProcessor implements CartProcessorInterface
             }
 
             if (is_int($maxLength) && $mmLength > $maxLength) {
-                $this->logger->warning('RcDynamicPrice: Laenge ueber Maximum', [
+                $this->logger->warning('RcDynamicPrice: Länge über Maximum', [
                     'lineItemId' => $lineItem->getId(),
                     'meterLengthMm' => $mmLength,
                     'maxLength' => $maxLength,

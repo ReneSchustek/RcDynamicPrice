@@ -9,8 +9,8 @@ use Shopware\Core\Framework\Migration\MigrationStep;
 use Shopware\Core\Framework\Uuid\Uuid;
 
 /**
- * BRIEF19: Legt das Custom-Field-Set `rc_dynamic_price_category` an und
- * relationiert es an `category`. Enthaelt dieselben Felder wie am Produkt,
+ * Legt das Custom-Field-Set `rc_dynamic_price_category` an und
+ * relationiert es an `category`. Enthält dieselben Felder wie am Produkt,
  * inklusive Active-Select (inherit/on/off, Default inherit).
  *
  * Idempotent: Set/Relation/Felder werden nur angelegt, wenn sie fehlen.

@@ -7,12 +7,11 @@ namespace Ruhrcoder\RcDynamicPrice\Tests\Unit\Resources;
 use PHPUnit\Framework\TestCase;
 
 /**
- * BRIEF21 Regression-Guard: im Admin-Backend sichtbare Labels duerfen keine technischen
+ * Regression-Guard: im Admin-Backend sichtbare Labels dürfen keine technischen
  * Prefixe wie "Rc " oder "rc_" tragen und keinen Platzhalter "Custom Field"/"Custom Fields"
- * stehen lassen. Der Nutzer formulierte: "Bei allen Plugins sollte in den Backend-Feldern
- * auch nicht Rc Custom Fields stehen, sondern immer eine sprachlich passende Bezeichnung".
+ * stehen lassen. Im Admin muss immer eine sprachlich passende Bezeichnung stehen.
  *
- * Geprueft werden:
+ * Geprüft werden:
  * - `config.xml` (Card-Title, Input-Labels, HelpText, Placeholder, Option-Names)
  * - Alle Migrations (`label`/`helpText`-JSON-Maps in `custom_field_set` und `custom_field`)
  */

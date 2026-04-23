@@ -3,7 +3,7 @@
         xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/shopware/shopware/trunk/src/Core/System/SystemConfig/Schema/config.xsd">
 
     <!--
-        Hinweis zu Uebersetzungen:
+        Hinweis zu Übersetzungen:
         Shopware interpretiert Elemente ohne `lang`-Attribut als en-GB-Default.
         Um sowohl de-DE als auch en-GB sauber zu bedienen, ist jedes Label/HelpText/
         Placeholder/Option-Name hier explizit mit `lang="de-DE"` und `lang="en-GB"` gepflegt.
@@ -16,10 +16,10 @@
 
         <input-field type="bool">
             <name>applyToAllProducts</name>
-            <label lang="de-DE">Meterpreis global fuer alle Produkte aktivieren</label>
+            <label lang="de-DE">Meterpreis global für alle Produkte aktivieren</label>
             <label lang="en-GB">Enable meter price globally for all products</label>
             <defaultValue>false</defaultValue>
-            <helpText lang="de-DE">Aktiviert den Meterpreis fuer alle Produkte, die am Produkt auf "Vererben" stehen und deren Kategorien keinen Override setzen. Produkte mit "Inaktiv" bleiben immer deaktiviert.</helpText>
+            <helpText lang="de-DE">Aktiviert den Meterpreis für alle Produkte, die am Produkt auf "Vererben" stehen und deren Kategorien keinen Override setzen. Produkte mit "Inaktiv" bleiben immer deaktiviert.</helpText>
             <helpText lang="en-GB">Enables the meter price for all products set to "Inherit" at product level whose categories do not override. Products explicitly set to "Inactive" stay disabled.</helpText>
         </input-field>
 
@@ -65,7 +65,7 @@
             <helpText lang="en-GB">Used when the product has no own split mode configured.</helpText>
             <options>
                 <!-- "none" ist ein UI-Platzhalter und entspricht einem nicht gesetzten Modus.
-                     Wird vom MeterProductHelper ueber SplitMode::tryFromString zu null aufgeloest. -->
+                     Wird vom MeterProductHelper über SplitMode::tryFromString zu null aufgelöst. -->
                 <option>
                     <id>none</id>
                     <name lang="de-DE">Kein Splitting</name>

@@ -11,8 +11,8 @@ use Shopware\Core\Framework\DataAbstractionLayer\EntityRepository;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\Criteria;
 
 /**
- * Laedt die Kette einer Primaerkategorie plus aller Eltern in einem einzigen
- * DAL-Aufruf. Der Shopware-Kern haelt den kompletten Pfad bereits als
+ * Lädt die Kette einer Primärkategorie plus aller Eltern in einem einzigen
+ * DAL-Aufruf. Der Shopware-Kern hält den kompletten Pfad bereits als
  * `category.path` (|parent1|parent2|...) vor — daraus ergibt sich die
  * Vorfahren-Menge ohne N+1.
  */
@@ -39,7 +39,7 @@ final class CategoryChainLoader implements CategoryChainLoaderInterface
         $ancestors = $this->loadCategories($ancestorIds, $context);
 
         $chain = [$this->toEntry($primary)];
-        // Pfad ist von Root zu Blatt — wir wollen "naechste zuerst", also umkehren.
+        // Pfad ist von Root zu Blatt — wir wollen "nächste zuerst", also umkehren.
         foreach (array_reverse($ancestorIds) as $ancestorId) {
             $entity = $ancestors[$ancestorId] ?? null;
             if ($entity instanceof CategoryEntity) {
@@ -72,7 +72,7 @@ final class CategoryChainLoader implements CategoryChainLoaderInterface
         }
 
         $criteria = new Criteria($ids);
-        // Kategorie-Baeume sind in Shopware typischerweise unter 10 Ebenen tief; explizites Limit verhindert Ausrutscher.
+        // Kategorie-Bäume sind in Shopware typischerweise unter 10 Ebenen tief; explizites Limit verhindert Ausrutscher.
         $criteria->setLimit(\count($ids));
 
         $result = $this->categoryRepository->search($criteria, $context);

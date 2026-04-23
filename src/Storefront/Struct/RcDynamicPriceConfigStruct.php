@@ -21,7 +21,7 @@ final class RcDynamicPriceConfigStruct extends Struct
     ) {
         if ($this->minLength > $this->maxLength) {
             throw new \InvalidArgumentException(
-                sprintf('minLength (%d) darf maxLength (%d) nicht ueberschreiten', $this->minLength, $this->maxLength)
+                sprintf('minLength (%d) darf maxLength (%d) nicht überschreiten', $this->minLength, $this->maxLength)
             );
         }
 

@@ -298,7 +298,7 @@ final class MeterConfigResolverTest extends TestCase
             'sc-id',
         );
 
-        // minLength darf maxLength nicht ueberschreiten; maxLength wird angehoben.
+        // minLength darf maxLength nicht überschreiten; maxLength wird angehoben.
         $this->assertLessThanOrEqual($config->maxLength, $config->minLength);
     }
 
@@ -327,7 +327,7 @@ final class MeterConfigResolverTest extends TestCase
         $config = $this->resolver->resolve(['rc_meter_price_active' => 'inherit'], $chain, 'sc-id');
 
         $this->assertFalse($config->active);
-        // Auch auf inaktiven Seiten braucht es Invalidierungs-Tags, damit Kategorie-Aenderungen dort greifen.
+        // Auch auf inaktiven Seiten braucht es Invalidierungs-Tags, damit Kategorie-Änderungen dort greifen.
         $this->assertContains('rc-dynamic-price-category-cat-id', $config->cacheTags);
     }
 

@@ -20,7 +20,7 @@ final class LineItemSubscriber implements EventSubscriberInterface
 {
     /**
      * Payload-Marker, die andere Ruhrcoder-Plugins bei aktiven TMMS-/Custom-Field-Eingaben in den Request
-     * schreiben. Ist einer davon gesetzt, besitzt ein hoeher priorisiertes Plugin die LineItem-ID — der
+     * schreiben. Ist einer davon gesetzt, besitzt ein höher priorisiertes Plugin die LineItem-ID — der
      * Auto-Split wird dann auf Hint-Verhalten reduziert, damit keine Sibling-Positionen ohne deren
      * Payload entstehen. Siehe plugin-interaction.md Sektion "Multi-LineItem-Requests".
      */
@@ -59,7 +59,7 @@ final class LineItemSubscriber implements EventSubscriberInterface
 
         $productId = $event->getLineItem()->getReferencedId();
         if ($productId === null) {
-            $this->logger->info('RcDynamicPrice: LineItem ohne referencedId uebersprungen', [
+            $this->logger->info('RcDynamicPrice: LineItem ohne referencedId übersprungen', [
                 'lineItemId' => $event->getLineItem()->getId(),
             ]);
             return;
@@ -80,7 +80,7 @@ final class LineItemSubscriber implements EventSubscriberInterface
         }
 
         if ($mmLength < $resolved->minLength || $mmLength > $resolved->maxLength) {
-            $this->logger->warning('RcDynamicPrice: Eingabe ausserhalb der erlaubten Grenzen verworfen', [
+            $this->logger->warning('RcDynamicPrice: Eingabe außerhalb der erlaubten Grenzen verworfen', [
                 'productId' => $productId,
                 'mmLength' => $mmLength,
                 'minLength' => $resolved->minLength,
@@ -95,9 +95,9 @@ final class LineItemSubscriber implements EventSubscriberInterface
     }
 
     /**
-     * Liest die angeforderte Laenge aus dem Request. Strenge ctype_digit-Pruefung statt blinder
+     * Liest die angeforderte Länge aus dem Request. Strenge ctype_digit-Prüfung statt blinder
      * (int)-Konversion — verhindert, dass Eingaben wie "5000abc" oder "500.5" stillschweigend
-     * in gueltige Laengen umgewandelt werden.
+     * in gültige Längen umgewandelt werden.
      */
     private function readRequestedLength(Request $request): ?int
     {
@@ -128,7 +128,7 @@ final class LineItemSubscriber implements EventSubscriberInterface
     }
 
     /**
-     * Liefert den anwendbaren Split-Modus. Hat ein Plugin mit hoeherer ID-Prioritaet (RcCartSplitter,
+     * Liefert den anwendbaren Split-Modus. Hat ein Plugin mit höherer ID-Priorität (RcCartSplitter,
      * RcCustomFields) den Request mitgestaltet, wird Auto-Split auf Hint reduziert, damit keine
      * Sibling-LineItems ohne deren Payload entstehen.
      */

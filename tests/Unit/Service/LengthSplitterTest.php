@@ -91,13 +91,13 @@ final class LengthSplitterTest extends TestCase
 
     public function testMaxRestBumpsRemainderToMinWhenBelowMinLength(): void
     {
-        // 6000 / 5000 = 1 Stueck + 1000 mm Rest; Min ist 2000 → Rest wird auf 2000 angehoben
+        // 6000 / 5000 = 1 Stück + 1000 mm Rest; Min ist 2000 → Rest wird auf 2000 angehoben
         $this->assertSame([5000, 2000], $this->splitter->split(6000, 5000, 2000, SplitMode::MaxRest));
     }
 
     public function testMaxRestDoesNotBumpRemainderAboveItsNaturalValue(): void
     {
-        // Rest 3000 >= Min 1000 → unveraendert
+        // Rest 3000 >= Min 1000 → unverändert
         $this->assertSame([5000, 3000], $this->splitter->split(8000, 5000, 1000, SplitMode::MaxRest));
     }
 
@@ -108,11 +108,11 @@ final class LengthSplitterTest extends TestCase
 
     public function testMaxRestUsesAtLeastOneAsMinimumFloor(): void
     {
-        // Absurder Min-Wert 0 darf nicht zu einem 0-Rest fuehren
+        // Absurder Min-Wert 0 darf nicht zu einem 0-Rest führen
         $this->assertSame([5000, 1000], $this->splitter->split(6000, 5000, 0, SplitMode::MaxRest));
     }
 
-    // --- Fehlerfaelle ---
+    // --- Fehlerfälle ---
 
     public function testThrowsOnZeroTotal(): void
     {
@@ -131,7 +131,7 @@ final class LengthSplitterTest extends TestCase
     public function testThrowsOnTotalAboveSupportedMaximum(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessageMatches('/ueberschreitet unterstuetztes Maximum/');
+        $this->expectExceptionMessageMatches('/überschreitet unterstütztes Maximum/');
 
         $this->splitter->split(LengthSplitter::MAX_TOTAL_MM + 1, 5000, 1, SplitMode::Equal);
     }
@@ -143,7 +143,7 @@ final class LengthSplitterTest extends TestCase
         $this->assertNotEmpty($result);
     }
 
-    // --- Invariante: alle Teilstuecke <= maxPiece (Datenprovider-Matrix) ---
+    // --- Invariante: alle Teilstücke <= maxPiece (Datenprovider-Matrix) ---
 
     #[DataProvider('provideEqualInvariantCases')]
     public function testEqualPiecesNeverExceedMax(int $total, int $max): void
@@ -154,7 +154,7 @@ final class LengthSplitterTest extends TestCase
             $this->assertLessThanOrEqual(
                 $max,
                 $piece,
-                \sprintf('Teilstueck %d darf maxPiece %d nicht ueberschreiten (total=%d)', $piece, $max, $total)
+                \sprintf('Teilstück %d darf maxPiece %d nicht überschreiten (total=%d)', $piece, $max, $total)
             );
         }
     }
@@ -174,7 +174,7 @@ final class LengthSplitterTest extends TestCase
         ];
     }
 
-    // --- JSON-Fixture-Paritaet: dieselben Cases werden vom JS-Plugin genutzt ---
+    // --- JSON-Fixture-Parität: dieselben Cases werden vom JS-Plugin genutzt ---
 
     /**
      * @param list<int> $expected

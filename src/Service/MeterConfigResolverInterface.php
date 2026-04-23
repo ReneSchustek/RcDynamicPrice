@@ -10,13 +10,13 @@ use Shopware\Core\Framework\Context;
 interface MeterConfigResolverInterface
 {
     /**
-     * Loest die Meterpreis-Konfiguration fuer ein Produkt auf.
-     * Priorisierung: Produkt > Kategorie-Tree (Primaerkategorie -> Wurzel) > Plugin-Global > Default.
+     * Löst die Meterpreis-Konfiguration für ein Produkt auf.
+     * Priorisierung: Produkt > Kategorie-Tree (Primärkategorie -> Wurzel) > Plugin-Global > Default.
      *
      * Active-Logik:
      * - Produkt `off`  -> immer deaktiv.
      * - Produkt `on`   -> aktiv, Produktwerte dominieren numerische Felder.
-     * - Produkt `inherit` + Kategorie `on`/`off` (naechstgelegene gewinnt) -> diese entscheidet.
+     * - Produkt `inherit` + Kategorie `on`/`off` (nächstgelegene gewinnt) -> diese entscheidet.
      * - Produkt und Kategorie-Kette `inherit` + `applyToAllProducts = true` -> aktiv aus Plugin-Global.
      * - Sonst deaktiv.
      */
@@ -24,7 +24,7 @@ interface MeterConfigResolverInterface
 
     /**
      * Testbare Reinform ohne DAL-Zugriff.
-     * Die Kategorie-Kette muss bereits sortiert sein (naechstgelegene zuerst).
+     * Die Kategorie-Kette muss bereits sortiert sein (nächstgelegene zuerst).
      *
      * @param array<string, mixed>                                          $productFields
      * @param list<array{id: string, customFields: array<string, mixed>}>   $categoryChain

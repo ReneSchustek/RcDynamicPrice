@@ -36,7 +36,7 @@ final class CartItemSplitAssembler implements CartItemSplitAssemblerInterface
             $config->splitMode,
         );
 
-        // Bei Merging liefert Shopware eine abweichende Instanz ueber Cart::get() — immer den Cart-Stand verwenden
+        // Bei Merging liefert Shopware eine abweichende Instanz über Cart::get() — immer den Cart-Stand verwenden
         $cartItem = $cart->get($incoming->getId()) ?? $incoming;
         $this->writePayload($cartItem, $pieces[0], $config);
 
@@ -44,7 +44,7 @@ final class CartItemSplitAssembler implements CartItemSplitAssemblerInterface
             return;
         }
 
-        $this->logger->info('RcDynamicPrice: LineItem wird in Teilstuecke aufgeteilt', [
+        $this->logger->info('RcDynamicPrice: LineItem wird in Teilstücke aufgeteilt', [
             'lineItemId' => $cartItem->getId(),
             'productId' => $config->productId,
             'splitMode' => $config->splitMode->value,

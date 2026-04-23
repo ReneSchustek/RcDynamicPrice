@@ -15,9 +15,9 @@ use Symfony\Component\HttpFoundation\RequestStack;
 final class ProductPageSubscriber implements EventSubscriberInterface
 {
     /**
-     * Attributname, unter dem Shopware-Storefront Cache-Tags fuer den aktuellen Request sammelt.
+     * Attributname, unter dem Shopware-Storefront Cache-Tags für den aktuellen Request sammelt.
      * Der Storefront-Response-Subscriber liest die Liste und setzt sie als HTTP-Cache-Tags,
-     * sodass gezielte Invalidierung ueber `CacheInvalidator::invalidate()` greift.
+     * sodass gezielte Invalidierung über `CacheInvalidator::invalidate()` greift.
      */
     private const CACHE_TAGS_REQUEST_ATTRIBUTE = '_rc_dynamic_price_cache_tags';
 
@@ -71,7 +71,7 @@ final class ProductPageSubscriber implements EventSubscriberInterface
     /**
      * Merkt die Cache-Tags am aktuellen Request vor, damit der StorefrontResponse-Subscriber
      * sie auf die HTTP-Antwort setzen kann. Ohne aktiven Request (z. B. CLI-Aufruf) wird
-     * still uebersprungen — HTTP-Cache ist im CLI-Pfad irrelevant.
+     * still übersprungen — HTTP-Cache ist im CLI-Pfad irrelevant.
      *
      * @param list<string> $tags
      */
@@ -93,7 +93,7 @@ final class ProductPageSubscriber implements EventSubscriberInterface
         $request->attributes->set(self::CACHE_TAGS_REQUEST_ATTRIBUTE, $merged);
     }
 
-    /** Wird vom StorefrontResponseSubscriber gelesen — keine Geschaeftslogik. */
+    /** Wird vom StorefrontResponseSubscriber gelesen — keine Geschäftslogik. */
     public static function getCacheTagsRequestAttribute(): string
     {
         return self::CACHE_TAGS_REQUEST_ATTRIBUTE;

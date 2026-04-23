@@ -5,28 +5,29 @@ declare(strict_types=1);
 namespace Ruhrcoder\RcDynamicPrice\Subscriber;
 
 use Ruhrcoder\RcDynamicPrice\DynamicPriceConstants;
-use Shopware\Core\Content\Category\CategoryDefinition;
+use Shopware\Core\Content\Category\CategoryEvents;
 use Shopware\Core\Framework\Adapter\Cache\CacheInvalidator;
-use Shopware\Core\Framework\DataAbstractionLayer\Event\EntityWrittenContainerEvent;
+use Shopware\Core\Framework\DataAbstractionLayer\Event\EntityWrittenEvent;
 use Shopware\Core\System\SystemConfig\Event\SystemConfigChangedEvent;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 
 /**
- * Haelt den Meterpreis-bezogenen HTTP-Cache konsistent.
- * - Aenderungen an Kategorien invalidieren den `rc-dynamic-price-category-{id}`-Tag.
- * - Aenderungen an Plugin-Config-Werten, die in die Resolver-Kette einfliessen,
+ * Hält den Meterpreis-bezogenen HTTP-Cache konsistent.
+ * - Änderungen und Löschungen an Kategorien invalidieren den
+ *   `rc-dynamic-price-category-{id}`-Tag.
+ * - Änderungen an Plugin-Config-Werten, die in die Resolver-Kette einfließen,
  *   invalidieren den globalen `rc-dynamic-price-global`-Tag.
  *
- * Produkte, die ihre Konfiguration aus dem Resolver ziehen, lagern diese Tags
- * auf ihre Produktseiten an (siehe ProductPageSubscriber). Gezielte Invalidierung
- * verhindert Vollinvalidierung des gesamten HTTP-Caches.
+ * Produkte, die ihre Konfiguration aus dem Resolver ziehen, hängen diese Tags
+ * an ihre Produktseiten an (siehe ProductPageSubscriber). Gezielte Invalidierung
+ * verhindert eine Vollinvalidierung des gesamten HTTP-Caches.
  */
 final class CacheInvalidationSubscriber implements EventSubscriberInterface
 {
     /**
-     * Plugin-Config-Keys, die eine globale Invalidierung ausloesen.
-     * Nur die Keys, die wirklich in Resolver-Ergebnisse einfliessen — andere
-     * Plugin-Einstellungen (z. B. reine UI-Texte) bleiben unberuehrt.
+     * Plugin-Config-Keys, die eine globale Invalidierung auslösen.
+     * Nur die Keys, die wirklich in Resolver-Ergebnisse einfließen — andere
+     * Plugin-Einstellungen (z. B. reine UI-Texte) bleiben unberührt.
      */
     private const INVALIDATING_CONFIG_KEYS = [
         DynamicPriceConstants::CONFIG_APPLY_TO_ALL_PRODUCTS,
@@ -44,21 +45,20 @@ final class CacheInvalidationSubscriber implements EventSubscriberInterface
 
     public static function getSubscribedEvents(): array
     {
+        // Write- und Delete-Event getrennt abonnieren, damit das Entfernen einer Kategorie
+        // ihre Meterpreis-Cache-Tags zuverlässig invalidiert. `EntityWrittenContainerEvent`
+        // allein deckt Delete nicht in allen Shopware-Versionen ab.
         return [
-            EntityWrittenContainerEvent::class => 'onEntityWritten',
+            CategoryEvents::CATEGORY_WRITTEN_EVENT => 'onCategoryWritten',
+            CategoryEvents::CATEGORY_DELETED_EVENT => 'onCategoryWritten',
             SystemConfigChangedEvent::class => 'onSystemConfigChanged',
         ];
     }
 
-    public function onEntityWritten(EntityWrittenContainerEvent $event): void
+    public function onCategoryWritten(EntityWrittenEvent $event): void
     {
-        $categoryEvent = $event->getEventByEntityName(CategoryDefinition::ENTITY_NAME);
-        if ($categoryEvent === null) {
-            return;
-        }
-
         $tags = [];
-        foreach ($categoryEvent->getIds() as $id) {
+        foreach ($event->getIds() as $id) {
             $tags[] = DynamicPriceConstants::CACHE_TAG_CATEGORY_PREFIX . $id;
         }
 

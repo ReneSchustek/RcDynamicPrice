@@ -7,13 +7,13 @@ namespace Ruhrcoder\RcDynamicPrice\Tests\Unit\Resources;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Stellt sicher, dass jedes uebersetzbare Feld im Plugin-Schema sowohl de-DE als auch
- * en-GB pflegt — sonst faellt das Admin-Backend still auf den anderen Locale zurueck.
+ * Stellt sicher, dass jedes übersetzbare Feld im Plugin-Schema sowohl de-DE als auch
+ * en-GB pflegt — sonst fällt das Admin-Backend still auf den anderen Locale zurück.
  *
  * Shopware interpretiert Elemente in `config.xml` ohne `lang`-Attribut als en-GB.
  * Fehlt ein expliziter de-DE-Eintrag, sieht ein deutscher Admin englischen Text.
- * Die Custom-Field-Migrations speichern die Uebersetzungen als JSON-Map
- * (`['de-DE' => ..., 'en-GB' => ...]`); beide Keys muessen vorhanden sein.
+ * Die Custom-Field-Migrations speichern die Übersetzungen als JSON-Map
+ * (`['de-DE' => ..., 'en-GB' => ...]`); beide Keys müssen vorhanden sein.
  */
 final class LocalizationCompletenessTest extends TestCase
 {
@@ -34,7 +34,7 @@ final class LocalizationCompletenessTest extends TestCase
         $missing = array_merge($missing, $this->findOptionNameGaps($document));
 
         self::assertSame([], $missing, \sprintf(
-            "In config.xml fehlen Uebersetzungen:\n%s",
+            "In config.xml fehlen Übersetzungen:\n%s",
             implode("\n", $missing)
         ));
     }
@@ -66,7 +66,7 @@ final class LocalizationCompletenessTest extends TestCase
         }
 
         self::assertSame([], $missing, \sprintf(
-            "In Migrations fehlen Uebersetzungen:\n%s",
+            "In Migrations fehlen Übersetzungen:\n%s",
             implode("\n", $missing)
         ));
     }
@@ -94,7 +94,7 @@ final class LocalizationCompletenessTest extends TestCase
                 }
             }
 
-            // Nur Pruefung pro Gruppe (erste Fundstelle reicht, Duplikate ueberspringen)
+            // Nur Prüfung pro Gruppe (erste Fundstelle reicht, Duplikate überspringen)
             $isFirstSibling = $this->isFirstOfTag($node, $tag);
             if (!$isFirstSibling) {
                 continue;

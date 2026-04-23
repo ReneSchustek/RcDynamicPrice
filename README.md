@@ -51,7 +51,7 @@ Im Admin unter **Einstellungen → Plugins → Dynamischer Meterpreis**:
 | Hinweistext-Vorlage | Template mit Platzhaltern `{length}`, `{maxPiece}`, `{pieces}`, `{pieceLength}`, `{remainder}` | leer (Snippet-Default) |
 | Meterpreis global fuer alle Produkte aktivieren | Aktiviert den Meterpreis für alle Produkte, die am Produkt auf **Vererben** stehen und deren Kategorie-Kette keinen Override setzt. Produkte mit **Inaktiv** bleiben immer deaktiviert. | aus |
 
-## Konfigurations-Scope (BRIEF19)
+## Konfigurations-Scope
 
 Der Meterpreis kann auf drei Ebenen konfiguriert werden; die Prioritäten werden strikt eingehalten:
 
@@ -105,7 +105,7 @@ Die Plugin-Konfiguration im Admin und die Custom-Fields am Produkt folgen beide 
 2. System-Default-Locale
 3. `en-GB` (Shopware-Fallback)
 
-Wer die Ausgabesprache umschalten moechte, aendert die eigene Admin-User-Sprache (Rechts oben → Nutzerprofil → Sprache). Das Plugin pflegt aktuell `de-DE` und `en-GB`. Weitere Sprachen muessen im Schema und in allen Migrations gleichzeitig ergaenzt werden, sonst faellt das Backend still auf einen der gepflegten Locales zurueck.
+Wer die Ausgabesprache umschalten möchte, ändert die eigene Admin-User-Sprache (Rechts oben → Nutzerprofil → Sprache). Das Plugin pflegt aktuell `de-DE` und `en-GB`. Weitere Sprachen müssen im Schema und in allen Migrations gleichzeitig ergänzt werden, sonst fällt das Backend still auf einen der gepflegten Locales zurück.
 
 ## Deployment
 
@@ -123,15 +123,3 @@ Siehe CHANGELOG.md für den Deployment-Hinweis pro Version.
 composer install
 composer quality   # cs-check + phpstan + test
 ```
-
-<!-- TRIAGE-WORKFLOW: auto-managed by triage-deploy.ps1 -->
-## Triage und Reviews
-
-- **Watcher starten:** `.\triage-watch.ps1` (bzw. `.\triage-watch-php.ps1` / `.\triage-watch-shopware.ps1`) im Projekt-Root
-- **Review on-demand:** `.\triage-review.ps1` -- laedt Projekt-Regeln aus `.ai/rules/` und uebergibt sie an Ollama
-- **Enterprise-Review (ERP-2026):** in Claude Code anfragen -- Claude orchestriert, Ollama macht mechanische Sub-Tasks
-- **Status-Dateien:** `.ai/triage-status.json`, `.ai/triage-escalation.md`, `.ai/reviews/*.md`, `.ai/erp/*.md`
-
-Volle Doku: `F:\Entwicklung\_Anleitungen\allgemein\triage-workflow.md`
-Routing-Regeln: `.ai/rules/ollama-delegation.md` und `.ai/rules/enterprise-review.md`
-<!-- /TRIAGE-WORKFLOW -->

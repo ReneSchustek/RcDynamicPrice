@@ -12,8 +12,8 @@ use Shopware\Core\Framework\DataAbstractionLayer\EntityRepository;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\Criteria;
 
 /**
- * Schlanke Utility-Klasse fuer Produkt-Ladung und Rundungs-Arithmetik.
- * Scope-abhaengige Konfigurationsaufloesung liegt im MeterConfigResolver.
+ * Schlanke Utility-Klasse für Produkt-Ladung und Rundungs-Arithmetik.
+ * Scope-abhängige Konfigurationsauflösung liegt im MeterConfigResolver.
  */
 final class MeterProductHelper implements MeterProductHelperInterface
 {
@@ -36,7 +36,7 @@ final class MeterProductHelper implements MeterProductHelperInterface
     {
         $criteria = new Criteria([$productId]);
         $criteria->setLimit(1);
-        // Kategorie-Ketten-Resolver braucht categoryIds — categories-Assoziation fuellt das zuverlaessig.
+        // Kategorie-Ketten-Resolver braucht categoryIds — categories-Assoziation füllt das zuverlässig.
         $criteria->addAssociation('categories');
 
         $product = $this->productRepository->search($criteria, $context)->first();

@@ -2,52 +2,63 @@
 
 Alle nennenswerten Änderungen werden in dieser Datei dokumentiert.
 
+## [1.5.3] - 2026-04-23
+
+> **Deployment:** `php bin/console cache:clear` reicht. Die Migration-Änderung wirkt nur bei Erst-Durchlauf oder erzwungenem Re-Run, nicht auf bereits migrierte Shops.
+
+### Behoben
+- `CacheInvalidationSubscriber` invalidiert `rc-dynamic-price-category-{id}` jetzt auch bei Kategorie-Löschung. Bisher hörte der Subscriber nur auf `EntityWrittenContainerEvent`, das Delete-Events nicht zuverlässig abdeckt — Folge: stale HTTP-Cache-Einträge bis TTL-Ablauf. Neu: separate Subscriptions auf `CategoryEvents::CATEGORY_WRITTEN_EVENT` und `CATEGORY_DELETED_EVENT` mit gemeinsamem Handler.
+
+### Geändert
+- `Migration1745600000ConvertActiveFieldToTriState` wrappt den Backfill-Batch jetzt in `Connection::transactional(...)`. Cursor (`$lastId`) rückt erst nach erfolgreichem Commit vor — bricht ein Batch mit transientem DB-Fehler ab, startet der Re-Run an derselben Position und überspringt keine Rows mehr.
+- Deutsche Umlaute (ä/ö/ü/ß) in Kommentaren, Log-Messages, Exception-Messages, Admin-Labels und Help-Texts konsistent wiederhergestellt. Keine Identifier-Änderungen, keine Daten-Migration.
+
 ## [1.5.2] - 2026-04-22
 
-> **Deployment:** kein Shop-Deployment noetig (Dev-Tooling).
+> **Deployment:** kein Shop-Deployment nötig (Dev-Tooling).
 
-### Geaendert
+### Geändert
 - Dev-Dependencies aktualisiert: `composer/composer` auf 2.9.7, `phpseclib/phpseclib` auf 3.0.51, `friendsofphp/php-cs-fixer` auf 3.95.1. Alle bisher gemeldeten HIGH/LOW-CVEs in Dev-Deps sind damit behoben.
-- Lokales Gate-Script `.ai/checker/brief-done-gate.sh` zieht `composer audit` auf `--no-dev` (analog CI) und fuehrt den Vollaudit separat und informativ aus — BRIEF-Abschluss haengt nicht mehr am Dev-Dep-Audit.
+- Lokales Gate-Script `.ai/checker/brief-done-gate.sh` zieht `composer audit` auf `--no-dev` (analog CI) und führt den Vollaudit separat und informativ aus — BRIEF-Abschluss hängt nicht mehr am Dev-Dep-Audit.
 - `composer.lock` wird wieder committed, damit Lock-State zwischen lokal und CI/DevBox eindeutig ist.
 
 ## [1.5.1] - 2026-04-22
 
-> **Deployment:** kein Shop-Deployment noetig (nur Tests + Regel-Doku).
+> **Deployment:** kein Shop-Deployment nötig (nur Tests + Regel-Doku).
 
-### Hinzugefuegt
-- Regression-Guard `AdminLabelCleanlinessTest`: prueft `config.xml` (Card-Titles, Labels, HelpTexts, Placeholders, Option-Names) und alle Migration-Label-Maps gegen technische Strings (`Rc `-Prefix, `rc_`-Prefix, `Custom Field`/`Custom Fields`-Platzhalter)
+### Hinzugefügt
+- Regression-Guard `AdminLabelCleanlinessTest`: prüft `config.xml` (Card-Titles, Labels, HelpTexts, Placeholders, Option-Names) und alle Migration-Label-Maps gegen technische Strings (`Rc `-Prefix, `rc_`-Prefix, `Custom Field`/`Custom Fields`-Platzhalter)
 - Regel `.ai/rules/shopware.md` -> neuer Abschnitt "Admin-Sichtbarkeit": sprachlich passende Bezeichnungen sind Pflicht, technische Feldnamen bleiben stabil
 
 ## [1.5.0] - 2026-04-22
 
-> **Deployment:** `php bin/console plugin:update RcDynamicPrice` (zwei neue Migrations) + `php bin/console cache:clear`. Nach Update alle HTTP-Caches verwerfen, da sich der Cache-Tag-Schema veraendert hat.
+> **Deployment:** `php bin/console plugin:update RcDynamicPrice` (zwei neue Migrations) + `php bin/console cache:clear`. Nach Update alle HTTP-Caches verwerfen, da sich der Cache-Tag-Schema verändert hat.
 
-### Hinzugefuegt
-- Konfigurations-Scope auf drei Ebenen: Produkt > Kategorie (Tree-Walk ueber Primaerkategorie bis zur Wurzel) > Plugin-Global (neues Feld `applyToAllProducts`) > Default
+### Hinzugefügt
+- Konfigurations-Scope auf drei Ebenen: Produkt > Kategorie (Tree-Walk über Primärkategorie bis zur Wurzel) > Plugin-Global (neues Feld `applyToAllProducts`) > Default
 - Neues Custom-Field-Set `rc_dynamic_price_category` an der `category`-Entity mit identischen Feldern wie am Produkt
-- Service `MeterConfigResolver` (plus Interface) loesen die finale Config zentral auf und liefern pro Feld die Herkunft (`ConfigScope::Product|Category|Global|Default`)
-- `CategoryChainLoader` laedt die Primaerkategorie samt Ahnenkette ohne N+1 (ein DAL-Call ueber `category.path`)
-- `CacheInvalidationSubscriber` invalidiert gezielt `rc-dynamic-price-category-{id}` bei Kategorie-Writes und `rc-dynamic-price-global` bei Aenderungen an einer Plugin-Config, die in den Resolver einfliesst
-- `StorefrontResponseSubscriber` haengt die Meterpreis-Cache-Tags als `sw-cache-tags`-Header an Produktseiten
+- Service `MeterConfigResolver` (plus Interface) lösen die finale Config zentral auf und liefern pro Feld die Herkunft (`ConfigScope::Product|Category|Global|Default`)
+- `CategoryChainLoader` lädt die Primärkategorie samt Ahnenkette ohne N+1 (ein DAL-Call über `category.path`)
+- `CacheInvalidationSubscriber` invalidiert gezielt `rc-dynamic-price-category-{id}` bei Kategorie-Writes und `rc-dynamic-price-global` bei Änderungen an einer Plugin-Config, die in den Resolver einfließt
+- `StorefrontResponseSubscriber` hängt die Meterpreis-Cache-Tags als `sw-cache-tags`-Header an Produktseiten
 
-### Geaendert
+### Geändert
 - Produkt-Feld `rc_meter_price_active` wurde von `bool` (Checkbox) auf `select` mit den Werten `inherit` / `on` / `off` (Default `inherit`) umgebaut. Daten-Backfill: `true -> on`, `false -> inherit`. Eine Verifikations-Query bricht die Migration ab, falls nach dem Backfill noch bool-/int-Werte auftauchen.
 - `MeterProductHelper` ist auf die zwei Utility-Methoden `loadProduct` (inkl. Kategorie-Assoziation) und `roundUp` geschrumpft. Scope-sensitive Config-Leser liegen komplett im neuen Resolver.
 - `LineItemSubscriber`, `DynamicPriceProcessor`-Kette und `ProductPageSubscriber` greifen nicht mehr direkt auf `product.customFields` zu, sondern konsumieren `ResolvedMeterConfig`.
 
-### Hinweis fuer Integrationen (Breaking)
-- Fremde Integrationen, die `customFields.rc_meter_price_active === true` direkt pruefen, **brechen**. Ersatz: `MeterConfigResolverInterface::resolveForProduct(...)` oder `=== 'on'`-Check.
+### Hinweis für Integrationen (Breaking)
+- Fremde Integrationen, die `customFields.rc_meter_price_active === true` direkt prüfen, **brechen**. Ersatz: `MeterConfigResolverInterface::resolveForProduct(...)` oder `=== 'on'`-Check.
 
 ## [1.4.3] - 2026-04-22
 
-> **Deployment:** `php bin/console cache:clear` (nur `config.xml` geaendert, keine Migration noetig)
+> **Deployment:** `php bin/console cache:clear` (nur `config.xml` geändert, keine Migration nötig)
 
 ### Behoben
-- Plugin-Konfiguration im Admin-Backend erschien fuer deutsche Admin-User komplett in Englisch. Ursache: `config.xml`-Elemente ohne `lang`-Attribut werden von Shopware als `en-GB`-Default interpretiert und von nachgezogenen `lang="en-GB"`-Eintraegen ueberschrieben — es existierte kein `lang="de-DE"`-Eintrag. Alle `<title>`, `<label>`, `<helpText>`, `<placeholder>` und `<option><name>` fuehren jetzt beide Locales explizit.
+- Plugin-Konfiguration im Admin-Backend erschien für deutsche Admin-User komplett in Englisch. Ursache: `config.xml`-Elemente ohne `lang`-Attribut werden von Shopware als `en-GB`-Default interpretiert und von nachgezogenen `lang="en-GB"`-Einträgen überschrieben — es existierte kein `lang="de-DE"`-Eintrag. Alle `<title>`, `<label>`, `<helpText>`, `<placeholder>` und `<option><name>` führen jetzt beide Locales explizit.
 
 ### Hinzugefügt
-- Regressionstest `LocalizationCompletenessTest` parst `config.xml` und alle Migration-JSON-Payloads und erzwingt, dass jedes uebersetzbare Label sowohl `de-DE` als auch `en-GB` pflegt
+- Regressionstest `LocalizationCompletenessTest` parst `config.xml` und alle Migration-JSON-Payloads und erzwingt, dass jedes übersetzbare Label sowohl `de-DE` als auch `en-GB` pflegt
 - README-Abschnitt „Backend-Sprache" dokumentiert Fallback-Ordnung und Admin-Locale-Bindung
 
 ## [1.4.2] - 2026-04-21

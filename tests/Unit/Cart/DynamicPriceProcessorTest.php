@@ -274,7 +274,7 @@ final class DynamicPriceProcessorTest extends TestCase
 
     public function testRoundingAppliesPerSiblingWhenCartHasSplitItems(): void
     {
-        // Szenario BRIEF16: 3x 4750 mm landen im Cart (vom Subscriber erzeugt), full_m rundet pro Teilstueck auf 5000 mm.
+        // Splitting-Szenario: 3x 4750 mm landen im Cart (vom Subscriber erzeugt), full_m rundet pro Teilstück auf 5000 mm.
         $primary = $this->createMeterLineItemWithId('primary-id', 4750, 100.0);
         $primary->setPayloadValue(DynamicPriceConstants::PAYLOAD_ROUNDING, 'full_m');
 

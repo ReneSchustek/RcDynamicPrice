@@ -23,17 +23,17 @@ final class LengthSplitter implements LengthSplitterInterface
     {
         if ($totalMm <= 0) {
             throw new \InvalidArgumentException(
-                \sprintf('Gesamtlaenge muss positiv sein, erhalten: %d', $totalMm)
+                \sprintf('Gesamtlänge muss positiv sein, erhalten: %d', $totalMm)
             );
         }
 
         if ($totalMm > self::MAX_TOTAL_MM) {
             throw new \InvalidArgumentException(
-                \sprintf('Gesamtlaenge %d ueberschreitet unterstuetztes Maximum (%d mm)', $totalMm, self::MAX_TOTAL_MM)
+                \sprintf('Gesamtlänge %d überschreitet unterstütztes Maximum (%d mm)', $totalMm, self::MAX_TOTAL_MM)
             );
         }
 
-        // Kein Split, wenn Modus unbekannt, deaktiviert oder die Stueckelungsgrenze nicht greift
+        // Kein Split, wenn Modus unbekannt, deaktiviert oder die Stückelungsgrenze nicht greift
         if ($mode === null || $mode === SplitMode::Hint || $maxPieceMm <= 0 || $totalMm <= $maxPieceMm) {
             return [$totalMm];
         }
@@ -45,8 +45,8 @@ final class LengthSplitter implements LengthSplitterInterface
     }
 
     /**
-     * Gleichmaessige Teilung: minimale Anzahl Teile, bei der jedes Teil <= maxPiece bleibt.
-     * Jedes Teil erhaelt dieselbe (aufgerundete) Laenge — kleine Ueberzahlung bei nicht teilbaren Werten.
+     * Gleichmäßige Teilung: minimale Anzahl Teile, bei der jedes Teil <= maxPiece bleibt.
+     * Jedes Teil erhält dieselbe (aufgerundete) Länge — kleine Überzahlung bei nicht teilbaren Werten.
      *
      * @return non-empty-list<int>
      */
@@ -63,9 +63,9 @@ final class LengthSplitter implements LengthSplitterInterface
     }
 
     /**
-     * Max-Rest-Teilung: volle maxPiece-Stuecke plus Rest.
-     * Wenn der Rest unter die Mindestlaenge faellt, wird er auf die Mindestlaenge angehoben,
-     * weil ein kleinerer Zuschnitt immer moeglich ist.
+     * Max-Rest-Teilung: volle maxPiece-Stücke plus Rest.
+     * Wenn der Rest unter die Mindestlänge fällt, wird er auf die Mindestlänge angehoben,
+     * weil ein kleinerer Zuschnitt immer möglich ist.
      *
      * @return non-empty-list<int>
      */

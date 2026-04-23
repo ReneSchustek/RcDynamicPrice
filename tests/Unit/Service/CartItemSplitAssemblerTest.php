@@ -77,8 +77,8 @@ final class CartItemSplitAssemblerTest extends TestCase
 
     public function testSiblingIdFollowsCartItemInsteadOfEventInstanceOnMerging(): void
     {
-        // Cart enthaelt bereits ein gemergtes LineItem mit derselben ID; der Subscriber uebergibt
-        // das eingehende (frische) LineItem an den Assembler. Sibling-IDs muessen sich am Cart-Item orientieren.
+        // Cart enthält bereits ein gemergtes LineItem mit derselben ID; der Subscriber übergibt
+        // das eingehende (frische) LineItem an den Assembler. Sibling-IDs müssen sich am Cart-Item orientieren.
         $existingCartItem = new LineItem('merged-id', LineItem::PRODUCT_LINE_ITEM_TYPE, 'product-id', 2);
         $incoming = new LineItem('merged-id', LineItem::PRODUCT_LINE_ITEM_TYPE, 'product-id', 1);
 
@@ -122,8 +122,8 @@ final class CartItemSplitAssemblerTest extends TestCase
 
     public function testParadoxMinExceedingMaxPieceBumpsRemainderInMaxRest(): void
     {
-        // minLength > maxPieceLength ist fachlich absurd, aber der Splitter muss nicht abstuerzen.
-        // Der Rest wird auf minLength angehoben, auch wenn dieser minLength groesser ist als maxPieceLength.
+        // minLength > maxPieceLength ist fachlich absurd, aber der Splitter muss nicht abstürzen.
+        // Der Rest wird auf minLength angehoben, auch wenn dieser minLength größer ist als maxPieceLength.
         $cart = $this->cartWithSingleItem('primary-id');
         $this->assembler->assemble(
             $cart,

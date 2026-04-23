@@ -12,21 +12,21 @@ use Symfony\Component\HttpKernel\KernelEvents;
 /**
  * Heftet die vom ProductPageSubscriber im Request hinterlegten Cache-Tags an
  * die HTTP-Antwort. Shopware's Reverse-Proxy/HTTP-Cache liest den Header
- * `sw-cache-tags` und ermoeglicht damit gezielte Invalidierung pro Kategorie
- * bzw. fuer den Plugin-Global-Scope.
+ * `sw-cache-tags` und ermöglicht damit gezielte Invalidierung pro Kategorie
+ * bzw. für den Plugin-Global-Scope.
  *
- * Die Header-Sammlung im Request existiert bereits — wir ergaenzen nur die
- * Meterpreis-spezifischen Tags, ohne Shopware-Defaults zu ueberschreiben.
+ * Die Header-Sammlung im Request existiert bereits — wir ergänzen nur die
+ * Meterpreis-spezifischen Tags, ohne Shopware-Defaults zu überschreiben.
  */
 final class StorefrontResponseSubscriber implements EventSubscriberInterface
 {
-    /** Shopware-konformer Header-Name fuer HTTP-Cache-Tags. */
+    /** Shopware-konformer Header-Name für HTTP-Cache-Tags. */
     private const CACHE_TAGS_HEADER = 'sw-cache-tags';
 
     public static function getSubscribedEvents(): array
     {
         return [
-            // Schreibt waehrend des Rendervorgangs, sodass der Response-Listener die Tags sieht.
+            // Schreibt während des Rendervorgangs, sodass der Response-Listener die Tags sieht.
             StorefrontRenderEvent::class => 'onStorefrontRender',
             KernelEvents::RESPONSE => ['onResponse', -1024],
         ];
@@ -39,7 +39,7 @@ final class StorefrontResponseSubscriber implements EventSubscriberInterface
             return;
         }
 
-        // Re-Injektion, damit der spaeter feuernde ResponseEvent die Tags wieder findet.
+        // Re-Injektion, damit der später feuernde ResponseEvent die Tags wieder findet.
         $event->getRequest()->attributes->set(
             ProductPageSubscriber::getCacheTagsRequestAttribute(),
             $tags,

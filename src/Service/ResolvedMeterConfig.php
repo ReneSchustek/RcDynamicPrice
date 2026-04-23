@@ -7,14 +7,14 @@ namespace Ruhrcoder\RcDynamicPrice\Service;
 use Ruhrcoder\RcDynamicPrice\Enum\SplitMode;
 
 /**
- * Aufgeloester Meterpreis-Konfig-Stand fuer ein konkretes Produkt.
- * Unveraenderlich. Enthaelt neben den Werten auch die Herkunft pro Feld
+ * Aufgelöster Meterpreis-Konfig-Stand für ein konkretes Produkt.
+ * Unveränderlich. Enthält neben den Werten auch die Herkunft pro Feld
  * (ConfigScope), damit Logs nachvollziehbar sind, welche Ebene gewonnen hat.
  */
 final readonly class ResolvedMeterConfig
 {
     /**
-     * @param list<string> $cacheTags Cache-Tag-Identifier fuer die HTTP-Invalidierung
+     * @param list<string> $cacheTags Cache-Tag-Identifier für die HTTP-Invalidierung
      */
     public function __construct(
         public bool $active,
@@ -36,7 +36,7 @@ final readonly class ResolvedMeterConfig
     }
 
     /**
-     * Factory fuer "Meterpreis nicht aktiv". Numerische Defaults sind fuer Clients
+     * Factory für "Meterpreis nicht aktiv". Numerische Defaults sind für Clients
      * ohne Bedeutung (Widget wird nicht gerendert), halten aber Invarianten ein.
      *
      * @param list<string> $cacheTags

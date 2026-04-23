@@ -9,7 +9,7 @@ use Shopware\Core\Framework\Context;
 interface CategoryChainLoaderInterface
 {
     /**
-     * Laedt die Kategorie-Kette einer Primaerkategorie von der Kategorie selbst
+     * Lädt die Kategorie-Kette einer Primärkategorie von der Kategorie selbst
      * bis zur Wurzel (deepest first). Pro Eintrag wird `id` und `customFields`
      * geliefert — Reihenfolge bestimmt die Gewinner-Logik im Resolver.
      *

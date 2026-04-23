@@ -8,8 +8,8 @@ use Doctrine\DBAL\Connection;
 use Shopware\Core\Framework\Migration\MigrationStep;
 
 /**
- * BRIEF19: Konvertiert `rc_meter_price_active` am Produkt von `bool` (Checkbox)
- * auf `select` mit den Werten `inherit` / `on` / `off`. Das Feld behaelt Namen
+ * Konvertiert `rc_meter_price_active` am Produkt von `bool` (Checkbox)
+ * auf `select` mit den Werten `inherit` / `on` / `off`. Das Feld behält Namen
  * und ID — vorhandene Beziehungen bleiben intakt.
  *
  * Backfill:
@@ -66,7 +66,7 @@ final class Migration1745600000ConvertActiveFieldToTriState extends MigrationSte
                 'config' => json_encode([
                     'label' => ['de-DE' => 'Meterpreis (Aktivierung)', 'en-GB' => 'Meter price (activation)'],
                     'helpText' => [
-                        'de-DE' => '"Vererben" uebernimmt die Entscheidung aus der Kategorie oder der Plugin-Global-Einstellung. "Aktiv" erzwingt den Meterpreis, "Inaktiv" deaktiviert ihn produktbezogen.',
+                        'de-DE' => '"Vererben" übernimmt die Entscheidung aus der Kategorie oder der Plugin-Global-Einstellung. "Aktiv" erzwingt den Meterpreis, "Inaktiv" deaktiviert ihn produktbezogen.',
                         'en-GB' => '"Inherit" defers to the category or the global plugin setting. "Active" forces the meter price, "Inactive" disables it product-wise.',
                     ],
                     'componentName' => 'sw-single-select',
@@ -107,10 +107,20 @@ final class Migration1745600000ConvertActiveFieldToTriState extends MigrationSte
                 break;
             }
 
-            foreach ($rows as $row) {
-                $this->rewriteRow($connection, 'product', $row['id_hex'], $row['custom_fields']);
-                $lastId = $row['id_hex'];
-            }
+            // Batch atomar schreiben: Cursor rückt erst nach erfolgreichem Commit vor.
+            // Bricht ein Batch ab, bleibt `$lastId` auf dem letzten erfolgreichen Batch —
+            // ein Re-Run der Migration nimmt denselben Batch nochmal und überspringt ihn nicht.
+            $batchLastId = $connection->transactional(function (Connection $tx) use ($rows): string {
+                $batchLastId = '';
+                foreach ($rows as $row) {
+                    $this->rewriteRow($tx, 'product', $row['id_hex'], $row['custom_fields']);
+                    $batchLastId = $row['id_hex'];
+                }
+
+                return $batchLastId;
+            });
+
+            $lastId = $batchLastId;
         } while (\count($rows) === self::BATCH_SIZE);
     }
 
@@ -120,7 +130,7 @@ final class Migration1745600000ConvertActiveFieldToTriState extends MigrationSte
             /** @var array<string, mixed>|null $customFields */
             $customFields = json_decode($rawJson, true, 512, \JSON_THROW_ON_ERROR);
         } catch (\JsonException) {
-            // Defekte JSON ueberspringen — wuerde im Admin sonst ohnehin nicht ladbar sein.
+            // Defekte JSON überspringen — würde im Admin sonst ohnehin nicht ladbar sein.
             return;
         }
 
@@ -163,7 +173,7 @@ final class Migration1745600000ConvertActiveFieldToTriState extends MigrationSte
 
         if ((int) $booleanLeftovers > 0) {
             throw new \RuntimeException(\sprintf(
-                'Backfill fuer Custom-Field "%s" unvollstaendig: %d Produkte halten weiterhin bool-/int-Werte. '
+                'Backfill für Custom-Field "%s" unvollständig: %d Produkte halten weiterhin bool-/int-Werte. '
                 . 'Plugin-Migration abgebrochen, Datenkorrektur notwendig.',
                 self::FIELD_NAME,
                 (int) $booleanLeftovers,

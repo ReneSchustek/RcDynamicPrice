@@ -11,7 +11,7 @@ final class DynamicPriceConstants
     /** Custom-Field-Set am Produkt */
     public const SET_PRODUCT = 'rc_dynamic_price';
 
-    /** Custom-Field-Set an der Kategorie (BRIEF19) */
+    /** Custom-Field-Set an der Kategorie (Scope-Override auf Kategorie-Ebene) */
     public const SET_CATEGORY = 'rc_dynamic_price_category';
 
     // --- Custom-Field-Namen am Produkt und an der Kategorie ---
@@ -19,13 +19,13 @@ final class DynamicPriceConstants
     /** Steuert ob das Meterartikel-Widget angezeigt wird (Tri-State: inherit/on/off) */
     public const FIELD_METER_ACTIVE = 'rc_meter_price_active';
 
-    // --- Active-Zustaende (Tri-State seit BRIEF19) ---
+    // --- Active-Zustände (Tri-State) ---
 
     public const ACTIVE_INHERIT = 'inherit';
     public const ACTIVE_ON = 'on';
     public const ACTIVE_OFF = 'off';
 
-    // --- Plugin-Config-Schluessel ---
+    // --- Plugin-Config-Schlüssel ---
 
     public const CONFIG_APPLY_TO_ALL_PRODUCTS = 'RcDynamicPrice.config.applyToAllProducts';
     public const CONFIG_MIN_LENGTH = 'RcDynamicPrice.config.minLength';
@@ -35,7 +35,7 @@ final class DynamicPriceConstants
     public const CONFIG_SPLIT_HINT_TEMPLATE = 'RcDynamicPrice.config.splitHintTemplate';
     public const CONFIG_HINT_TEXT = 'RcDynamicPrice.config.hintText';
 
-    // --- Cache-Tags (BRIEF19) ---
+    // --- Cache-Tags ---
 
     public const CACHE_TAG_GLOBAL = 'rc-dynamic-price-global';
     public const CACHE_TAG_CATEGORY_PREFIX = 'rc-dynamic-price-category-';
@@ -49,10 +49,10 @@ final class DynamicPriceConstants
     /** Rundungsmodus (none, cm, quarter_m, half_m, full_m) */
     public const FIELD_ROUNDING = 'rc_meter_price_rounding';
 
-    /** Split-Modus fuer Langstuecke (equal, max_rest, hint; leer = kein Split) */
+    /** Split-Modus für Langstücke (equal, max_rest, hint; leer = kein Split) */
     public const FIELD_SPLIT_MODE = 'rc_meter_price_split_mode';
 
-    /** Maximallaenge pro Teilstueck in mm — Schwelle fuer Splitting */
+    /** Maximallänge pro Teilstück in mm — Schwelle für Splitting */
     public const FIELD_MAX_PIECE_LENGTH = 'rc_meter_price_max_piece_length';
 
     /** Kundenspezifischer Hinweistext mit Platzhaltern, wenn mehr als maxPieceLength eingegeben wurde */

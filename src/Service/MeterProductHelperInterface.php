@@ -10,14 +10,14 @@ use Shopware\Core\Framework\Context;
 interface MeterProductHelperInterface
 {
     /**
-     * Laedt das Produkt inklusive der Kategorie-Assoziation, damit der Resolver
-     * die Primaerkategorie-Kette erreicht. `null`, wenn das Produkt fehlt.
+     * Lädt das Produkt inklusive der Kategorie-Assoziation, damit der Resolver
+     * die Primärkategorie-Kette erreicht. `null`, wenn das Produkt fehlt.
      */
     public function loadProduct(string $productId, Context $context): ?ProductEntity;
 
     /**
-     * Rundet Millimeter auf die naechste volle Einheit gemaess Modus auf.
-     * Exakte Vielfache bleiben unveraendert. Unbekannter Modus = keine Rundung.
+     * Rundet Millimeter auf die nächste volle Einheit gemäß Modus auf.
+     * Exakte Vielfache bleiben unverändert. Unbekannter Modus = keine Rundung.
      */
     public function roundUp(int $mm, string $mode): int;
 }
