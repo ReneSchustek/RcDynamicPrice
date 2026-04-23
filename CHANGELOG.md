@@ -2,6 +2,20 @@
 
 Alle nennenswerten Änderungen werden in dieser Datei dokumentiert.
 
+## [1.6.4] - 2026-04-23
+
+> **Deployment:** `php bin/console cache:clear` + `bin/build-storefront.sh` (JS geändert). Keine Datenbank-Migration. Bestehende Warenkörbe heilen sich beim nächsten Cart-Zugriff durch den regulären Enrichment-Pass — kein Backfill nötig.
+
+### Behoben
+- **Kritisch: Gesplittete Warenkorbpositionen konnten vom Kunden nicht entfernt werden.** `CartItemSplitAssembler::appendSiblingPieces` erzeugte Siblings per `new LineItem(...)` ohne `setRemovable(true)`/`setStackable(true)`. Shopware-Default ist `false`; der reguläre Add-Pfad setzt die Flags im Product-Enrichment, Siblings, die mitten im `BeforeLineItemAddedEvent` per `$cart->add()` eingeschleust werden, erreichen diesen Enrichment-Pass aber nicht zuverlässig — in der Storefront fehlten deshalb X-Button und Mengen-Minus an den Teilstücken, eine manuelle Mengenänderung auf 0 wurde per HTML5-`min="1"` abgelehnt. Der Kunde hatte keinen Weg, Sibling-Positionen zu entfernen. Fix: Flags werden jetzt explizit auf `true` gesetzt. Regression durch zwei Unit-Tests (`Equal`-Split + `MaxRest`-Split) und einen Integrationstest abgesichert.
+- **Handshake-Bug im Plugin-Interaktionsprotokoll.** Die ID-Controller-Erkennung funktionierte in keiner Richtung zuverlässig:
+    - **Frontend:** `dynamic-price.plugin.js` prüfte per `this._form.querySelector('[data-rc-id-controller]')`. `querySelector` durchsucht nur Nachkommen, nicht das Element selbst — RcCartSplitter setzt den Marker aber auf das Form-Element direkt (`this._form.dataset.rcIdController = 'true'`). RcDynamicPrice erkannte die fremde ID-Hoheit deshalb nicht und überschrieb die Hash-basierte LineItem-ID. Fix: zusätzliche `dataset.rcIdController`-Prüfung vor dem DOM-Query.
+    - **Backend:** `LineItemSubscriber::effectiveSplitMode` suchte die Marker-Keys `rcTmmsActive`/`rcCustomFieldsActive` top-level im Request. Die Plugins injizieren die Marker aber genested als `lineItems[{productId}][payload][rcTmmsActive]`. Der Split-Modus-Downgrade auf `Hint` (bei fremder ID-Hoheit) griff deshalb nie. Fix: neue Helper-Methode `hasForeignIdControllerMarker` iteriert `$request->request->all('lineItems')` und prüft die Payload-Ebene; Top-Level-Check bleibt als Legacy-Pfad. Abgesichert durch drei neue Unit-Tests (nested TMMS, nested CustomFields, Negativ-Fall ohne Marker).
+- `.ai/rules/plugin-interaction.md` dokumentiert die beiden Prüfebenen (Element-Dataset + Nachkommen-Selector; nested Payload-Lookup) explizit, damit zukünftige Plugins nicht in dieselbe Falle laufen.
+
+### Geändert
+- Test-Suite: +2 Unit-Tests in `CartItemSplitAssemblerTest`, +3 Unit-Tests in `LineItemSubscriberTest`, +1 Integrationstest in `LineItemSubscriberIntegrationTest`. Die Regression „removable/stackable am Sibling" ist jetzt ab dem Unit-Test bis hoch zum End-to-End-Pfad gegen Re-Einschleichung abgesichert.
+
 ## [1.6.3] - 2026-04-23
 
 > **Deployment:** `php bin/console plugin:update RcDynamicPrice` (konvertiert `rc_meter_price_active` in `product_translation` auf Tri-State) + `php bin/console cache:clear`.
