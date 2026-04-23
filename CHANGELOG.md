@@ -8,7 +8,7 @@ Alle nennenswerten Änderungen werden in dieser Datei dokumentiert.
 
 ### Behoben
 - `Migration1745600000ConvertActiveFieldToTriState` griff auf die Tabelle `product` zu, dort existiert die Spalte `custom_fields` aber nicht. Shopware hält Product-Custom-Fields in `product_translation` vor. In 1.6.2 lief die Migration deshalb ins `Unknown column 'custom_fields'`-Exception und blieb auf jeder Instanz hängen.
-- Migration ist jetzt auf `product_translation` umgestellt und macht den Bool→Tri-State-Backfill als zwei Single-Statement-UPDATEs (true/1/"1" → "on", false/0/"0" → "inherit"). PHP-seitige Batch-/Cursor-Logik entfällt, weil der DB-Server das atomar erledigt.
+- Migration ist jetzt auf `product_translation` umgestellt und macht den Bool→Tri-State-Backfill als zwei Single-Statement-UPDATEs (true/1/"1" → "on", false/0/"0" → "inherit"). PHP-seitige Batch- und Pagination-Logik entfällt, weil der DB-Server das atomar erledigt.
 
 ## [1.6.2] - 2026-04-23
 
@@ -60,7 +60,7 @@ Alle nennenswerten Änderungen werden in dieser Datei dokumentiert.
 - `CacheInvalidationSubscriber` invalidiert `rc-dynamic-price-category-{id}` jetzt auch bei Kategorie-Löschung. Bisher hörte der Subscriber nur auf `EntityWrittenContainerEvent`, das Delete-Events nicht zuverlässig abdeckt — Folge: stale HTTP-Cache-Einträge bis TTL-Ablauf. Neu: separate Subscriptions auf `CategoryEvents::CATEGORY_WRITTEN_EVENT` und `CATEGORY_DELETED_EVENT` mit gemeinsamem Handler.
 
 ### Geändert
-- `Migration1745600000ConvertActiveFieldToTriState` wrappt den Backfill-Batch jetzt in `Connection::transactional(...)`. Cursor (`$lastId`) rückt erst nach erfolgreichem Commit vor — bricht ein Batch mit transientem DB-Fehler ab, startet der Re-Run an derselben Position und überspringt keine Rows mehr.
+- `Migration1745600000ConvertActiveFieldToTriState` wrappt den Backfill-Batch jetzt in `Connection::transactional(...)`. Der Pagination-Zeiger (`$lastId`) rückt erst nach erfolgreichem Commit vor — bricht ein Batch mit transientem DB-Fehler ab, startet der Re-Run an derselben Position und überspringt keine Rows mehr.
 - Deutsche Umlaute (ä/ö/ü/ß) in Kommentaren, Log-Messages, Exception-Messages, Admin-Labels und Help-Texts konsistent wiederhergestellt. Keine Identifier-Änderungen, keine Daten-Migration.
 
 ## [1.5.2] - 2026-04-22
