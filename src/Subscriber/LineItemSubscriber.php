@@ -152,13 +152,47 @@ final class LineItemSubscriber implements EventSubscriberInterface
             return $configured;
         }
 
-        foreach (self::FOREIGN_ID_CONTROLLER_KEYS as $key) {
-            $value = $request->request->get($key, '');
-            if ($value !== '' && $value !== null) {
-                return SplitMode::Hint;
-            }
+        if ($this->hasForeignIdControllerMarker($request)) {
+            return SplitMode::Hint;
         }
 
         return $configured;
+    }
+
+    /**
+     * Prueft, ob ein ID-Controller-Plugin (RcCartSplitter, RcCustomFields) im Add-to-Cart-Request
+     * aktiv ist. Beide Plugins injizieren ihre Marker genested ins Buy-Form-Payload
+     * (`lineItems[{productId}][payload][rcTmmsActive]=1`), nicht top-level — die Top-Level-Pruefung
+     * bleibt als Legacy-Pfad erhalten, falls ein Plugin den Marker dort setzt.
+     */
+    private function hasForeignIdControllerMarker(Request $request): bool
+    {
+        foreach (self::FOREIGN_ID_CONTROLLER_KEYS as $key) {
+            $value = $request->request->get($key, '');
+            if (\is_string($value) && $value !== '') {
+                return true;
+            }
+        }
+
+        $lineItems = $request->request->all('lineItems');
+        foreach ($lineItems as $lineItemData) {
+            if (!\is_array($lineItemData)) {
+                continue;
+            }
+
+            $payload = $lineItemData['payload'] ?? null;
+            if (!\is_array($payload)) {
+                continue;
+            }
+
+            foreach (self::FOREIGN_ID_CONTROLLER_KEYS as $key) {
+                $payloadValue = $payload[$key] ?? null;
+                if (\is_string($payloadValue) && $payloadValue !== '') {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 }

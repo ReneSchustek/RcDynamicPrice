@@ -260,8 +260,11 @@ export default class DynamicPricePlugin extends Plugin {
             detail: { mm: mm, suffix: suffix },
         }));
 
-        // ID-Setzung delegieren wenn ein Plugin mit hoeherer Prioritaet vorhanden ist
-        const hasHigherPriority = this._form.querySelector('[data-rc-id-controller]')
+        // ID-Setzung delegieren, wenn ein Plugin mit hoeherer Prioritaet vorhanden ist.
+        // Prio-Plugins duerfen den Marker direkt auf dem Form-Element ODER auf einem Nachkommen setzen —
+        // querySelector matcht das Element nicht selbst, deshalb zusaetzlich dataset pruefen.
+        const hasHigherPriority = this._form.dataset.rcIdController === 'true'
+            || this._form.querySelector('[data-rc-id-controller]')
             || this._form.querySelector('[data-rc-custom-fields]')
             || this._form.querySelector('[data-rc-cart-splitter]');
         if (hasHigherPriority) {
