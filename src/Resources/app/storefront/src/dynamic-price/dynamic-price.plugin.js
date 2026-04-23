@@ -71,15 +71,24 @@ export default class DynamicPricePlugin extends Plugin {
 
     _showHintModal(text) {
         const buttonLabel = this.el.dataset.snippetModalButton || 'OK';
+        const titleId = 'rc-dynamic-price-modal-title-' + this._productId;
+
+        const previouslyFocused = document.activeElement;
 
         const backdrop = document.createElement('div');
         backdrop.className = 'rc-dynamic-price-backdrop';
 
         const modal = document.createElement('div');
         modal.className = 'rc-dynamic-price-modal';
+        // role=dialog + aria-modal + aria-labelledby machen den Modal-Dialog fuer Screenreader
+        // als modal erkennbar. Der Hinweis-Text dient als Label, damit der Benutzer beim
+        // Fokus-Eintritt sofort weiss, worum es geht.
+        modal.setAttribute('role', 'dialog');
+        modal.setAttribute('aria-modal', 'true');
+        modal.setAttribute('aria-labelledby', titleId);
         modal.innerHTML =
             '<div class="rc-dynamic-price-modal__content">' +
-                '<p>' + this._escapeHtml(text) + '</p>' +
+                '<p id="' + titleId + '">' + this._escapeHtml(text) + '</p>' +
                 '<button type="button" class="btn btn-primary btn-sm rc-dynamic-price-modal__close">'
                     + this._escapeHtml(buttonLabel) +
                 '</button>' +
@@ -87,6 +96,18 @@ export default class DynamicPricePlugin extends Plugin {
 
         document.body.appendChild(backdrop);
         document.body.appendChild(modal);
+
+        const closeButton = modal.querySelector('.rc-dynamic-price-modal__close');
+
+        // Focus-Trap: Das Modal enthaelt nur den Close-Button, also bleibt der Fokus
+        // beim Tabben auf diesem Element. Tab und Shift+Tab werden auf den Button
+        // gefangen, damit der Fokus nicht aus dem Dialog rutscht.
+        const onTrapFocus = (e) => {
+            if (e.key === 'Tab') {
+                e.preventDefault();
+                closeButton.focus();
+            }
+        };
 
         const onEscape = (e) => {
             if (e.key === 'Escape') {
@@ -98,12 +119,21 @@ export default class DynamicPricePlugin extends Plugin {
             backdrop.remove();
             modal.remove();
             document.removeEventListener('keydown', onEscape);
-            this._input.focus();
+            modal.removeEventListener('keydown', onTrapFocus);
+            // Fokus zurueck auf das auslösende Element (typischerweise das Input-Feld)
+            if (previouslyFocused && typeof previouslyFocused.focus === 'function') {
+                previouslyFocused.focus();
+            } else {
+                this._input.focus();
+            }
         };
 
-        modal.querySelector('.rc-dynamic-price-modal__close').addEventListener('click', close);
+        closeButton.addEventListener('click', close);
         backdrop.addEventListener('click', close);
         document.addEventListener('keydown', onEscape);
+        modal.addEventListener('keydown', onTrapFocus);
+
+        closeButton.focus();
     }
 
     _escapeHtml(text) {
@@ -277,6 +307,7 @@ export default class DynamicPricePlugin extends Plugin {
         this._errorEl.classList.remove('text-danger');
         this._errorEl.classList.add('text-info');
         this._input.classList.remove('is-invalid');
+        this._input.setAttribute('aria-invalid', 'false');
     }
 
     _roundUp(mm) {
@@ -411,12 +442,14 @@ export default class DynamicPricePlugin extends Plugin {
         this._errorEl.classList.remove('text-info');
         this._errorEl.classList.add('text-danger');
         this._input.classList.add('is-invalid');
+        this._input.setAttribute('aria-invalid', 'true');
     }
 
     _clearError() {
         this._errorEl.hidden = true;
         this._errorEl.classList.remove('text-info', 'text-danger');
         this._input.classList.remove('is-invalid');
+        this._input.setAttribute('aria-invalid', 'false');
     }
 
     /** Setzt Ergebnis, Submit und Meter-State zurück — gemeinsamer Pfad bei ungültiger Eingabe. */

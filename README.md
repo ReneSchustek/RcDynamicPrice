@@ -117,6 +117,53 @@ Wer die Ausgabesprache umschalten möchte, ändert die eigene Admin-User-Sprache
 
 Siehe CHANGELOG.md für den Deployment-Hinweis pro Version.
 
+## Rollback
+
+Falls ein Release zurückgerollt werden muss, gelten diese Schritte. Vorab **DB-Snapshot** und einen kurzen Storefront-Test auf Staging einplanen.
+
+### Rollback 1.5.x → 1.4.x
+
+1. **Plugin-Version herunterziehen**
+   ```bash
+   composer require ruhrcoder/rc-dynamic-price:^1.4.0
+   php bin/console plugin:refresh
+   php bin/console plugin:update RcDynamicPrice
+   ```
+2. **Tri-State-Werte auf bool zurückschreiben.** 1.4.x erwartet `rc_meter_price_active` als Boolean; 1.5.x speichert `'inherit' | 'on' | 'off'`. Direkt auf der DB:
+   ```sql
+   UPDATE product SET custom_fields = JSON_SET(
+       custom_fields,
+       '$.rc_meter_price_active',
+       CASE JSON_UNQUOTE(JSON_EXTRACT(custom_fields, '$.rc_meter_price_active'))
+           WHEN 'on' THEN CAST('true' AS JSON)
+           ELSE CAST('false' AS JSON)
+       END
+   ) WHERE JSON_EXTRACT(custom_fields, '$.rc_meter_price_active') IS NOT NULL;
+   ```
+   `inherit` und `off` werden beide zu `false` — der Effekt entspricht „Meterpreis aus", weil 1.4.x kein Inherit-Konzept kennt.
+3. **Custom-Field-Definition auf bool zurück.** Auch das `custom_field`-Schema muss rückumgestellt werden, sonst versteckt sich das Feld im Admin-UI:
+   ```sql
+   UPDATE custom_field SET type = 'bool', config = '{"type":"checkbox","label":{"de-DE":"Meterpreis aktiv","en-GB":"Meter price active"},"customFieldType":"checkbox","customFieldPosition":1}'
+   WHERE name = 'rc_meter_price_active';
+   ```
+4. **Kategorie-Custom-Field-Set stilllegen.** 1.4.x ignoriert `rc_dynamic_price_category` komplett; die Tabelle bleibt bestehen. Will man sie physisch entfernen:
+   ```sql
+   DELETE FROM custom_field_set WHERE name = 'rc_dynamic_price_category';
+   ```
+   (Kaskadiert auf Felder und Relations.)
+5. **HTTP-Cache und App-Cache verwerfen.**
+   ```bash
+   php bin/console cache:clear
+   php bin/console http:cache:clear
+   ```
+6. **Plugin-Config-Keys**, die 1.5.x hinzugefügt hat (`applyToAllProducts`, `splitMode`, `maxPieceLength`, `splitHintTemplate`), werden von 1.4.x ignoriert — keine Datenaktion nötig.
+7. **Smoke-Test** auf einem aktivierten Meterprodukt: PDP lädt, Längeneingabe funktioniert, Cart-Position korrekt.
+
+### Was nicht rückgängig gemacht werden kann
+
+- **Bestellungen**, die mit Split-Modus `equal`/`max_rest` in Teilstücke zerlegt wurden, bleiben als getrennte Positionen im Auftrag bestehen. 1.4.x versteht die Sibling-IDs, rendert sie aber ohne Split-Hinweis.
+- **Split-Hint-Templates**, die Kunden-Admins in 1.5.x gepflegt haben, gehen beim Rollback verloren (1.4.x kennt das Feld nicht).
+
 ## Entwicklung
 
 ```bash

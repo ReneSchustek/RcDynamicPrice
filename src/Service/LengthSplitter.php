@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Ruhrcoder\RcDynamicPrice\Service;
 
 use Ruhrcoder\RcDynamicPrice\Enum\SplitMode;
+use Ruhrcoder\RcDynamicPrice\Exception\DynamicPriceException;
 
 /**
  * Berechnet die Aufteilung einer Gesamtlänge in Teilstücke.
@@ -22,15 +23,11 @@ final class LengthSplitter implements LengthSplitterInterface
     public function split(int $totalMm, int $maxPieceMm, int $minPieceMm, ?SplitMode $mode): array
     {
         if ($totalMm <= 0) {
-            throw new \InvalidArgumentException(
-                \sprintf('Gesamtlänge muss positiv sein, erhalten: %d', $totalMm)
-            );
+            throw DynamicPriceException::invalidTotalLength($totalMm);
         }
 
         if ($totalMm > self::MAX_TOTAL_MM) {
-            throw new \InvalidArgumentException(
-                \sprintf('Gesamtlänge %d überschreitet unterstütztes Maximum (%d mm)', $totalMm, self::MAX_TOTAL_MM)
-            );
+            throw DynamicPriceException::totalLengthExceedsMaximum($totalMm, self::MAX_TOTAL_MM);
         }
 
         // Kein Split, wenn Modus unbekannt, deaktiviert oder die Stückelungsgrenze nicht greift

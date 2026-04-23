@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Ruhrcoder\RcDynamicPrice\Migration;
 
 use Doctrine\DBAL\Connection;
+use Ruhrcoder\RcDynamicPrice\Exception\DynamicPriceException;
 use Shopware\Core\Framework\Migration\MigrationStep;
 
 /**
@@ -172,12 +173,7 @@ final class Migration1745600000ConvertActiveFieldToTriState extends MigrationSte
         );
 
         if ((int) $booleanLeftovers > 0) {
-            throw new \RuntimeException(\sprintf(
-                'Backfill für Custom-Field "%s" unvollständig: %d Produkte halten weiterhin bool-/int-Werte. '
-                . 'Plugin-Migration abgebrochen, Datenkorrektur notwendig.',
-                self::FIELD_NAME,
-                (int) $booleanLeftovers,
-            ));
+            throw DynamicPriceException::backfillIncomplete(self::FIELD_NAME, (int) $booleanLeftovers);
         }
     }
 }

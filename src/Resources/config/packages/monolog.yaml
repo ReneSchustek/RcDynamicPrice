@@ -1,0 +1,6 @@
+# Dedizierter Monolog-Channel fuer das Plugin. Ops-Teams koennen per channel-Filter
+# genau die Log-Eintraege dieses Plugins isolieren, ohne auf Message-Prefix-Matching
+# angewiesen zu sein. Der Channel-Service wird als `monolog.logger.rc_dynamic_price`
+# registriert und in services.xml an die drei Haupt-Services gereicht.
+monolog:
+    channels: ['rc_dynamic_price']

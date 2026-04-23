@@ -2,6 +2,22 @@
 
 Alle nennenswerten Änderungen werden in dieser Datei dokumentiert.
 
+## [1.6.0] - 2026-04-23
+
+> **Deployment:** `bin/build-storefront.sh` (JS + Twig geändert) und `php bin/console cache:clear`. Keine Datenbank-Migration.
+
+### Hinzugefügt
+- **Accessibility (BFSG-Compliance):** Buy-Widget-Form trägt jetzt `aria-describedby`, `aria-invalid`, `role="alert"`/`aria-live="assertive"` am Fehler-Container, `aria-live="polite"` an Split-Info und Ergebnis. Der Hinweis-Modal nutzt `role="dialog"`, `aria-modal="true"`, `aria-labelledby` sowie Focus-Trap und Focus-Restauration beim Schließen.
+- **Dedizierter Monolog-Channel `rc_dynamic_price`:** `LineItemSubscriber`, `DynamicPriceProcessor` und `CartItemSplitAssembler` loggen über einen eigenen Channel. Ops können Plugin-Logs gezielt filtern, ohne auf Message-Prefix-Matching angewiesen zu sein.
+- **ConfigScope-Observability-Log:** Beim Add-to-Cart schreibt der Subscriber ein `info`-Event mit der aufgelösten Scope-Herkunft pro Feld (`productId`, `active`, `activeScope`, `minLengthScope`, …). Support-Fälle "warum ist Preis X?" sind damit ohne Code-Durchgang nachvollziehbar.
+- **Plugin-eigene Exception-Klasse `DynamicPriceException`** (`src/Exception/`) mit stabilen `errorCode`-Konstanten (`CODE_INVALID_TOTAL_LENGTH`, `CODE_BACKFILL_INCOMPLETE` etc.). Alle plugin-seitig geworfenen Fehler sind jetzt Instanzen dieser Klasse; `getErrorCode()` liefert den maschinenlesbaren Identifier.
+- **Integration-Test-Suite** in `tests/Integration/`: `DynamicPriceProcessorIntegrationTest` fährt gegen einen echten Shopware-Core `QuantityPriceCalculator`; `LineItemSubscriberIntegrationTest` wired Subscriber → Resolver → Assembler → Splitter mit echten Instanzen. Getrennte PHPUnit-Suite `Integration`.
+- **Rollback-Abschnitt im README:** konkrete Schritte und SQL-Queries für den Downgrade-Pfad 1.5.x → 1.4.x, inkl. Tri-State-zu-Bool-Rückkonvertierung und Cache-Invalidierung.
+
+### Geändert
+- `LengthSplitter`, `RcDynamicPriceConfigStruct` und beide Migrations werfen jetzt `DynamicPriceException` statt generische `\RuntimeException`/`\InvalidArgumentException`. Externe Integrationen, die zuvor `catch (\InvalidArgumentException)` auf Plugin-Aufrufen gemacht haben, müssen auf `catch (DynamicPriceException)` oder `catch (\RuntimeException)` umstellen (die neue Klasse erbt von `\RuntimeException`).
+- `.gitattributes` zwingt LF-Line-Endings auf allen Text-Dateien, damit Windows-Clients (`core.autocrlf=true`) und DevBox/CI nicht mehr auseinanderlaufen.
+
 ## [1.5.3] - 2026-04-23
 
 > **Deployment:** `php bin/console cache:clear` reicht. Die Migration-Änderung wirkt nur bei Erst-Durchlauf oder erzwungenem Re-Run, nicht auf bereits migrierte Shops.

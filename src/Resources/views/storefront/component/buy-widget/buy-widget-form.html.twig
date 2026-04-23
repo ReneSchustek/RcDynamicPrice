@@ -43,19 +43,39 @@
                     {{ 'rc-dynamic-price.label'|trans }}
                 </label>
                 <div class="input-group">
+                    {#
+                        aria-describedby verknuepft Input mit Fehler-, Split-Info- und Ergebnis-Bereich,
+                        damit Screenreader die Status-Meldungen dem Feld zuordnen.
+                        aria-invalid startet bei "false" und wird im Plugin-JS auf "true" gesetzt,
+                        wenn eine Eingabe abgelehnt wird.
+                    #}
                     <input type="text"
                            id="rc-length-input-{{ product.id }}"
                            class="form-control rc-dynamic-price__input"
                            inputmode="numeric"
                            autocomplete="off"
+                           aria-describedby="rc-length-error-{{ product.id }} rc-length-split-{{ product.id }} rc-length-result-{{ product.id }}"
+                           aria-invalid="false"
                            placeholder="{{ 'rc-dynamic-price.placeholder'|trans }}">
-                    <span class="input-group-text">{{ 'rc-dynamic-price.unit'|trans }}</span>
+                    <span class="input-group-text" aria-hidden="true">{{ 'rc-dynamic-price.unit'|trans }}</span>
                 </div>
-                <div class="rc-dynamic-price__error text-danger small mt-1" hidden></div>
-                <div class="rc-dynamic-price__split-info alert alert-info py-2 mt-2 small" hidden></div>
+                {# role=alert + aria-live=assertive: Validierungsfehler werden sofort angesagt #}
+                <div id="rc-length-error-{{ product.id }}"
+                     class="rc-dynamic-price__error text-danger small mt-1"
+                     role="alert"
+                     aria-live="assertive"
+                     hidden></div>
+                {# aria-live=polite: Split-Vorschau ist informativ, unterbricht nicht #}
+                <div id="rc-length-split-{{ product.id }}"
+                     class="rc-dynamic-price__split-info alert alert-info py-2 mt-2 small"
+                     aria-live="polite"
+                     hidden></div>
             </div>
 
-            <div class="rc-dynamic-price__result alert alert-success py-2 mb-3" hidden>
+            <div id="rc-length-result-{{ product.id }}"
+                 class="rc-dynamic-price__result alert alert-success py-2 mb-3"
+                 aria-live="polite"
+                 hidden>
                 {{ 'rc-dynamic-price.calculatedPrice'|trans }}&nbsp;<strong class="rc-dynamic-price__result-price"></strong>
             </div>
 

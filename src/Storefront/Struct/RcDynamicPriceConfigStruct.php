@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Ruhrcoder\RcDynamicPrice\Storefront\Struct;
 
+use Ruhrcoder\RcDynamicPrice\Exception\DynamicPriceException;
 use Shopware\Core\Framework\Struct\Struct;
 
 final class RcDynamicPriceConfigStruct extends Struct
@@ -20,15 +21,11 @@ final class RcDynamicPriceConfigStruct extends Struct
         private readonly string $splitHintTemplate = '',
     ) {
         if ($this->minLength > $this->maxLength) {
-            throw new \InvalidArgumentException(
-                sprintf('minLength (%d) darf maxLength (%d) nicht überschreiten', $this->minLength, $this->maxLength)
-            );
+            throw DynamicPriceException::invalidMinMaxLength($this->minLength, $this->maxLength);
         }
 
         if ($this->maxPieceLength < 0) {
-            throw new \InvalidArgumentException(
-                sprintf('maxPieceLength (%d) darf nicht negativ sein', $this->maxPieceLength)
-            );
+            throw DynamicPriceException::negativeMaxPieceLength($this->maxPieceLength);
         }
     }
 

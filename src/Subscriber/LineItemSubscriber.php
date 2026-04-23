@@ -75,6 +75,20 @@ final class LineItemSubscriber implements EventSubscriberInterface
         $salesChannelId = $event->getSalesChannelContext()->getSalesChannel()->getId();
         $resolved = $this->configResolver->resolveForProduct($product, $salesChannelId, $context);
 
+        // Scope-Herkunft pro Feld im Kontext — bei Support-Faellen "warum ist Preis X?"
+        // sieht Ops sofort, ob Produkt, Kategorie, Plugin-Global oder Default gewonnen hat.
+        $this->logger->info('RcDynamicPrice: Meterpreis-Konfiguration aufgeloest', [
+            'productId' => $productId,
+            'active' => $resolved->active,
+            'activeScope' => $resolved->activeScope->value,
+            'minLengthScope' => $resolved->minLengthScope->value,
+            'maxLengthScope' => $resolved->maxLengthScope->value,
+            'roundingModeScope' => $resolved->roundingModeScope->value,
+            'splitModeScope' => $resolved->splitModeScope->value,
+            'maxPieceLengthScope' => $resolved->maxPieceLengthScope->value,
+            'splitHintTemplateScope' => $resolved->splitHintTemplateScope->value,
+        ]);
+
         if (!$resolved->active) {
             return;
         }

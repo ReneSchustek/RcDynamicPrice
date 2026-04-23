@@ -35,7 +35,7 @@
 
         <service id="Ruhrcoder\RcDynamicPrice\Service\CartItemSplitAssembler">
             <argument type="service" id="Ruhrcoder\RcDynamicPrice\Service\LengthSplitterInterface"/>
-            <argument type="service" id="logger"/>
+            <argument type="service" id="monolog.logger.rc_dynamic_price"/>
         </service>
 
         <service id="Ruhrcoder\RcDynamicPrice\Service\CartItemSplitAssemblerInterface"
@@ -57,7 +57,7 @@
             <argument type="service" id="Ruhrcoder\RcDynamicPrice\Service\MeterProductHelperInterface"/>
             <argument type="service" id="Ruhrcoder\RcDynamicPrice\Service\MeterConfigResolverInterface"/>
             <argument type="service" id="Ruhrcoder\RcDynamicPrice\Service\CartItemSplitAssemblerInterface"/>
-            <argument type="service" id="logger"/>
+            <argument type="service" id="monolog.logger.rc_dynamic_price"/>
             <tag name="kernel.event_subscriber"/>
         </service>
 
@@ -69,7 +69,7 @@
         <service id="Ruhrcoder\RcDynamicPrice\Cart\DynamicPriceProcessor">
             <argument type="service" id="Shopware\Core\Checkout\Cart\Price\QuantityPriceCalculator"/>
             <argument type="service" id="Ruhrcoder\RcDynamicPrice\Service\MeterProductHelperInterface"/>
-            <argument type="service" id="logger"/>
+            <argument type="service" id="monolog.logger.rc_dynamic_price"/>
             <!-- Laeuft nach ProductCartProcessor (Prioritaet 5000) -->
             <tag name="shopware.cart.processor" priority="4800"/>
         </service>

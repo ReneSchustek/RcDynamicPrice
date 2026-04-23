@@ -7,6 +7,7 @@ namespace Ruhrcoder\RcDynamicPrice\Tests\Unit\Service;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Ruhrcoder\RcDynamicPrice\Enum\SplitMode;
+use Ruhrcoder\RcDynamicPrice\Exception\DynamicPriceException;
 use Ruhrcoder\RcDynamicPrice\Service\LengthSplitter;
 
 final class LengthSplitterTest extends TestCase
@@ -116,24 +117,40 @@ final class LengthSplitterTest extends TestCase
 
     public function testThrowsOnZeroTotal(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(DynamicPriceException::class);
+        $this->expectExceptionCode(0);
 
-        $this->splitter->split(0, 5000, 1, SplitMode::Equal);
+        try {
+            $this->splitter->split(0, 5000, 1, SplitMode::Equal);
+        } catch (DynamicPriceException $e) {
+            $this->assertSame(DynamicPriceException::CODE_INVALID_TOTAL_LENGTH, $e->getErrorCode());
+            throw $e;
+        }
     }
 
     public function testThrowsOnNegativeTotal(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(DynamicPriceException::class);
 
-        $this->splitter->split(-100, 5000, 1, SplitMode::Equal);
+        try {
+            $this->splitter->split(-100, 5000, 1, SplitMode::Equal);
+        } catch (DynamicPriceException $e) {
+            $this->assertSame(DynamicPriceException::CODE_INVALID_TOTAL_LENGTH, $e->getErrorCode());
+            throw $e;
+        }
     }
 
     public function testThrowsOnTotalAboveSupportedMaximum(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(DynamicPriceException::class);
         $this->expectExceptionMessageMatches('/überschreitet unterstütztes Maximum/');
 
-        $this->splitter->split(LengthSplitter::MAX_TOTAL_MM + 1, 5000, 1, SplitMode::Equal);
+        try {
+            $this->splitter->split(LengthSplitter::MAX_TOTAL_MM + 1, 5000, 1, SplitMode::Equal);
+        } catch (DynamicPriceException $e) {
+            $this->assertSame(DynamicPriceException::CODE_TOTAL_LENGTH_EXCEEDS_MAXIMUM, $e->getErrorCode());
+            throw $e;
+        }
     }
 
     public function testAcceptsTotalAtExactMaximum(): void

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Ruhrcoder\RcDynamicPrice\Tests\Unit\Storefront\Struct;
 
 use PHPUnit\Framework\TestCase;
+use Ruhrcoder\RcDynamicPrice\Exception\DynamicPriceException;
 use Ruhrcoder\RcDynamicPrice\Storefront\Struct\RcDynamicPriceConfigStruct;
 
 final class RcDynamicPriceConfigStructTest extends TestCase
@@ -28,9 +29,14 @@ final class RcDynamicPriceConfigStructTest extends TestCase
 
     public function testThrowsExceptionWhenMinExceedsMax(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(DynamicPriceException::class);
 
-        new RcDynamicPriceConfigStruct('Text', 5000, 1000);
+        try {
+            new RcDynamicPriceConfigStruct('Text', 5000, 1000);
+        } catch (DynamicPriceException $e) {
+            $this->assertSame(DynamicPriceException::CODE_INVALID_MIN_MAX_LENGTH, $e->getErrorCode());
+            throw $e;
+        }
     }
 
     public function testAcceptsEqualMinAndMax(): void
@@ -78,15 +84,20 @@ final class RcDynamicPriceConfigStructTest extends TestCase
 
     public function testThrowsExceptionWhenMaxPieceLengthIsNegative(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(DynamicPriceException::class);
 
-        new RcDynamicPriceConfigStruct(
-            hintText: 'Text',
-            minLength: 1,
-            maxLength: 10000,
-            roundingMode: 'none',
-            splitMode: 'equal',
-            maxPieceLength: -1,
-        );
+        try {
+            new RcDynamicPriceConfigStruct(
+                hintText: 'Text',
+                minLength: 1,
+                maxLength: 10000,
+                roundingMode: 'none',
+                splitMode: 'equal',
+                maxPieceLength: -1,
+            );
+        } catch (DynamicPriceException $e) {
+            $this->assertSame(DynamicPriceException::CODE_NEGATIVE_MAX_PIECE_LENGTH, $e->getErrorCode());
+            throw $e;
+        }
     }
 }

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Ruhrcoder\RcDynamicPrice\Migration;
 
 use Doctrine\DBAL\Connection;
+use Ruhrcoder\RcDynamicPrice\Exception\DynamicPriceException;
 use Shopware\Core\Framework\Migration\MigrationStep;
 use Shopware\Core\Framework\Uuid\Uuid;
 
@@ -108,11 +109,10 @@ final class Migration1745400000EnsureSplittingFieldsExist extends MigrationStep
         );
 
         if ($setId === false) {
-            throw new \RuntimeException(\sprintf(
-                'CustomFieldSet "%s" fehlt. Plugin-Installation scheint defekt — '
-                . 'Migration1743123456CreateMeterPriceCustomField muss vorher erfolgreich gelaufen sein.',
-                self::SET_NAME
-            ));
+            throw DynamicPriceException::missingCustomFieldSet(
+                self::SET_NAME,
+                'Migration1743123456CreateMeterPriceCustomField',
+            );
         }
 
         foreach (self::FIELDS as $fieldName => $spec) {
