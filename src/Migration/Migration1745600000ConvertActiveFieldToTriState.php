@@ -87,8 +87,14 @@ final class Migration1745600000ConvertActiveFieldToTriState extends MigrationSte
     /**
      * Backfill via Single-Statement-UPDATE gegen `product_translation` (dort liegen die
      * Custom-Fields — Tabelle `product` selbst hat keine `custom_fields`-Spalte).
-     * Zwei separate UPDATEs, weil MySQL/MariaDB keinen direkten CASE-über-JSON-Typ
-     * kennt und beide Mappings ohnehin disjunkt sind.
+     * Zwei separate UPDATEs; beide Mappings sind disjunkt.
+     *
+     * Die WHERE-Klauseln arbeiten ausschliesslich ueber `JSON_TYPE` plus
+     * `JSON_UNQUOTE(JSON_EXTRACT(...))`-String-Vergleich, damit ein bereits
+     * migrierter String-Wert (z.B. `"on"`) nicht als Zahl gecastet wird — genau das
+     * hat in einer frueheren Version `Truncated incorrect DECIMAL value: 'on'`
+     * ausgeloest, sobald die Migration idempotent auf bereits migrierten Daten
+     * nochmal lief.
      */
     private function backfillProductCustomFields(Connection $connection): void
     {
@@ -100,9 +106,12 @@ final class Migration1745600000ConvertActiveFieldToTriState extends MigrationSte
              SET `custom_fields` = JSON_SET(`custom_fields`, :jsonPath, :newValue)
              WHERE JSON_EXTRACT(`custom_fields`, :jsonPath) IS NOT NULL
                AND (
-                   JSON_EXTRACT(`custom_fields`, :jsonPath) = true
-                   OR JSON_EXTRACT(`custom_fields`, :jsonPath) = 1
-                   OR JSON_UNQUOTE(JSON_EXTRACT(`custom_fields`, :jsonPath)) = "1"
+                   (JSON_TYPE(JSON_EXTRACT(`custom_fields`, :jsonPath)) = "BOOLEAN"
+                    AND JSON_UNQUOTE(JSON_EXTRACT(`custom_fields`, :jsonPath)) = "true")
+                   OR (JSON_TYPE(JSON_EXTRACT(`custom_fields`, :jsonPath)) = "INTEGER"
+                       AND JSON_UNQUOTE(JSON_EXTRACT(`custom_fields`, :jsonPath)) = "1")
+                   OR (JSON_TYPE(JSON_EXTRACT(`custom_fields`, :jsonPath)) = "STRING"
+                       AND JSON_UNQUOTE(JSON_EXTRACT(`custom_fields`, :jsonPath)) = "1")
                )',
             ['jsonPath' => $jsonPath, 'newValue' => 'on']
         );
@@ -114,9 +123,12 @@ final class Migration1745600000ConvertActiveFieldToTriState extends MigrationSte
              SET `custom_fields` = JSON_SET(`custom_fields`, :jsonPath, :newValue)
              WHERE JSON_EXTRACT(`custom_fields`, :jsonPath) IS NOT NULL
                AND (
-                   JSON_EXTRACT(`custom_fields`, :jsonPath) = false
-                   OR JSON_EXTRACT(`custom_fields`, :jsonPath) = 0
-                   OR JSON_UNQUOTE(JSON_EXTRACT(`custom_fields`, :jsonPath)) = "0"
+                   (JSON_TYPE(JSON_EXTRACT(`custom_fields`, :jsonPath)) = "BOOLEAN"
+                    AND JSON_UNQUOTE(JSON_EXTRACT(`custom_fields`, :jsonPath)) = "false")
+                   OR (JSON_TYPE(JSON_EXTRACT(`custom_fields`, :jsonPath)) = "INTEGER"
+                       AND JSON_UNQUOTE(JSON_EXTRACT(`custom_fields`, :jsonPath)) = "0")
+                   OR (JSON_TYPE(JSON_EXTRACT(`custom_fields`, :jsonPath)) = "STRING"
+                       AND JSON_UNQUOTE(JSON_EXTRACT(`custom_fields`, :jsonPath)) = "0")
                )',
             ['jsonPath' => $jsonPath, 'newValue' => 'inherit']
         );
