@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/shopware/shopware/trunk/src/Core/System/SystemConfig/Schema/config.xsd">
+
+    <!--
+        Hinweis zu Übersetzungen:
+        Shopware interpretiert Elemente ohne `lang`-Attribut als en-GB-Default.
+        Um sowohl de-DE als auch en-GB sauber zu bedienen, ist jedes Label/HelpText/
+        Placeholder/Option-Name hier explizit mit `lang="de-DE"` und `lang="en-GB"` gepflegt.
+        Siehe `.ai/context/context.md` Abschnitt "Backend-Sprache".
+    -->
+
+    <card>
+        <title lang="de-DE">Dynamischer Meterpreis</title>
+        <title lang="en-GB">Dynamic Meter Price</title>
+
+        <input-field type="bool">
+            <name>applyToAllProducts</name>
+            <label lang="de-DE">Meterpreis global für alle Produkte aktivieren</label>
+            <label lang="en-GB">Enable meter price globally for all products</label>
+            <defaultValue>false</defaultValue>
+            <helpText lang="de-DE">Aktiviert den Meterpreis für alle Produkte, die am Produkt auf "Vererben" stehen und deren Kategorien keinen Override setzen. Produkte mit "Inaktiv" bleiben immer deaktiviert.</helpText>
+            <helpText lang="en-GB">Enables the meter price for all products set to "Inherit" at product level whose categories do not override. Products explicitly set to "Inactive" stay disabled.</helpText>
+        </input-field>
+
+        <input-field type="textarea">
+            <name>hintText</name>
+            <label lang="de-DE">Hinweistext im Eingabe-Modal</label>
+            <label lang="en-GB">Hint text in input modal</label>
+            <placeholder lang="de-DE">Bitte Länge in Millimetern eingeben – z. B. 1500 für 1,5 m</placeholder>
+            <placeholder lang="en-GB">Please enter the length in millimetres – e.g. 1500 for 1.5 m</placeholder>
+            <defaultValue>Bitte Länge in Millimetern eingeben – z. B. 1500 für 1,5 m</defaultValue>
+            <helpText lang="de-DE">Wird angezeigt, wenn der Kunde das Längenfeld fokussiert.</helpText>
+            <helpText lang="en-GB">Displayed when the customer focuses the length input field.</helpText>
+        </input-field>
+
+        <input-field type="int">
+            <name>minLength</name>
+            <label lang="de-DE">Mindestlänge (mm)</label>
+            <label lang="en-GB">Minimum length (mm)</label>
+            <defaultValue>1</defaultValue>
+            <helpText lang="de-DE">Kleinste erlaubte Eingabe in Millimetern.</helpText>
+            <helpText lang="en-GB">Smallest allowed input in millimetres.</helpText>
+        </input-field>
+
+        <input-field type="int">
+            <name>maxLength</name>
+            <label lang="de-DE">Maximallänge (mm)</label>
+            <label lang="en-GB">Maximum length (mm)</label>
+            <defaultValue>10000</defaultValue>
+            <helpText lang="de-DE">Größte erlaubte Eingabe in Millimetern.</helpText>
+            <helpText lang="en-GB">Largest allowed input in millimetres.</helpText>
+        </input-field>
+    </card>
+
+    <card>
+        <title lang="de-DE">Längen-Splitting (Standardwerte)</title>
+        <title lang="en-GB">Length splitting (defaults)</title>
+
+        <input-field type="single-select">
+            <name>splitMode</name>
+            <label lang="de-DE">Standard-Split-Modus</label>
+            <label lang="en-GB">Default split mode</label>
+            <helpText lang="de-DE">Wird verwendet, wenn am Produkt kein eigener Split-Modus gesetzt ist.</helpText>
+            <helpText lang="en-GB">Used when the product has no own split mode configured.</helpText>
+            <options>
+                <!-- "none" ist ein UI-Platzhalter und entspricht einem nicht gesetzten Modus.
+                     Wird vom MeterProductHelper über SplitMode::tryFromString zu null aufgelöst. -->
+                <option>
+                    <id>none</id>
+                    <name lang="de-DE">Kein Splitting</name>
+                    <name lang="en-GB">No splitting</name>
+                </option>
+                <option>
+                    <id>equal</id>
+                    <name lang="de-DE">Gleichmäßig aufteilen</name>
+                    <name lang="en-GB">Split equally</name>
+                </option>
+                <option>
+                    <id>max_rest</id>
+                    <name lang="de-DE">Volle Stücke plus Rest</name>
+                    <name lang="en-GB">Full pieces plus remainder</name>
+                </option>
+                <option>
+                    <id>hint</id>
+                    <name lang="de-DE">Nur Hinweis (Kunde teilt selbst auf)</name>
+                    <name lang="en-GB">Hint only (customer splits manually)</name>
+                </option>
+            </options>
+            <defaultValue>none</defaultValue>
+        </input-field>
+
+        <input-field type="int">
+            <name>maxPieceLength</name>
+            <label lang="de-DE">Max. Teilstücklänge (mm)</label>
+            <label lang="en-GB">Max. piece length (mm)</label>
+            <helpText lang="de-DE">Eingaben über diesem Wert werden aufgeteilt oder führen zum Hinweistext. Leer/0 = kein Splitting.</helpText>
+            <helpText lang="en-GB">Inputs above this value are split or trigger the hint. Empty/0 = no splitting.</helpText>
+        </input-field>
+
+        <input-field type="textarea">
+            <name>splitHintTemplate</name>
+            <label lang="de-DE">Hinweistext-Vorlage</label>
+            <label lang="en-GB">Hint text template</label>
+            <helpText lang="de-DE">Platzhalter: {length}, {maxPiece}, {pieces}, {pieceLength}, {remainder}. Leer = Snippet-Default.</helpText>
+            <helpText lang="en-GB">Placeholders: {length}, {maxPiece}, {pieces}, {pieceLength}, {remainder}. Empty = snippet default.</helpText>
+        </input-field>
+    </card>
+
+    <card>
+        <title lang="de-DE">Längen-Abrechnung (Modus „Gleichmäßig aufteilen")</title>
+        <title lang="en-GB">Length billing (mode "Split equally")</title>
+
+        <input-field type="single-select">
+            <name>equalSplitBilling</name>
+            <label lang="de-DE">Berechnete Länge der Teilstücke</label>
+            <label lang="en-GB">Billed length of the pieces</label>
+            <helpText lang="de-DE">Bestimmt, ob der Kunde die tatsächlich geschnittene (aufgerundete) Länge oder exakt die bestellte Länge zahlt. Beispiel: Bestellung 10001 mm, max. Teilstück 5000 mm → 3 Stücke. „Schnittlänge" rundet jedes Stück (gemäß Rundungsmodus) auf, die Summe kann die Eingabe übersteigen (der Shop berechnet das tatsächlich verarbeitete Material). „Exakte Länge" verteilt die Stücke so, dass ihre Summe genau der Eingabe entspricht.</helpText>
+            <helpText lang="en-GB">Determines whether the customer pays the actually cut (rounded-up) length or exactly the ordered length. Example: order 10001 mm, max piece 5000 mm → 3 pieces. "Cut length" rounds each piece up (per rounding mode), the sum may exceed the input (the shop bills the material actually processed). "Exact length" distributes the pieces so their sum equals the input.</helpText>
+            <options>
+                <option>
+                    <id>cut_length</id>
+                    <name lang="de-DE">Schnittlänge (aufgerundet, Standard)</name>
+                    <name lang="en-GB">Cut length (rounded up, default)</name>
+                </option>
+                <option>
+                    <id>exact</id>
+                    <name lang="de-DE">Exakte Bestelllänge</name>
+                    <name lang="en-GB">Exact ordered length</name>
+                </option>
+            </options>
+            <defaultValue>cut_length</defaultValue>
+        </input-field>
+
+        <input-field type="bool">
+            <name>equalSplitEnforceMin</name>
+            <label lang="de-DE">Teilstücke auf Mindestlänge anheben</label>
+            <label lang="en-GB">Raise pieces to minimum length</label>
+            <defaultValue>true</defaultValue>
+            <helpText lang="de-DE">Ist ein Teilstück kürzer als die Mindestlänge, wird es auf die Mindestlänge angehoben und auch so berechnet (der Shop muss ohnehin ein Mindeststück schneiden). Deaktiviert: Teilstücke bleiben wie berechnet, auch unter der Mindestlänge.</helpText>
+            <helpText lang="en-GB">If a piece is shorter than the minimum length, it is raised to the minimum length and billed accordingly (the shop has to cut a minimum piece anyway). Disabled: pieces stay as calculated, even below the minimum length.</helpText>
+        </input-field>
+    </card>
+
+    <card>
+        <title lang="de-DE">Observability (Metriken)</title>
+        <title lang="en-GB">Observability (metrics)</title>
+
+        <input-field type="bool">
+            <name>enableMetrics</name>
+            <label lang="de-DE">Metriken protokollieren</label>
+            <label lang="en-GB">Log metrics</label>
+            <defaultValue>false</defaultValue>
+            <helpText lang="de-DE">Schreibt optionale Kennzahlen (verarbeitete Meterpositionen, Rundungsdauer, eingeblendete Widgets) in den Plugin-Logkanal „rc_dynamic_price". Standardmäßig deaktiviert – ohne Aktivierung entsteht kein Mehraufwand.</helpText>
+            <helpText lang="en-GB">Writes optional metrics (processed meter items, rounding duration, shown widgets) to the plugin log channel "rc_dynamic_price". Off by default – no overhead unless enabled.</helpText>
+        </input-field>
+    </card>
+</config>

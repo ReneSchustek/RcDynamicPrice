@@ -1,0 +1,29 @@
+{
+    "rc-dynamic-price": {
+        "label": "Länge in Millimetern",
+        "placeholder": "z. B. 1500",
+        "unit": "mm",
+        "calculatedPrice": "Berechneter Preis:",
+        "errorIntegerOnly": "Bitte nur positive ganze Zahlen eingeben.",
+        "errorMinLength": "Mindestlänge: %minLength% mm",
+        "errorMaxLength": "Maximallänge: %maxLength% mm",
+        "errorMaxPieceLength": "Bitte teilen Sie die Länge in Stücke von maximal {maxPiece} mm auf.",
+        "roundUpHint": "Eingabe %input% mm → berechnet werden %billed% mm (gerundet)",
+        "hintModalButton": "Verstanden",
+        "labelWithDetails": "%name% (%details%)",
+        "labelLength": "Länge %length% mm",
+        "labelSplit": "Zuschnitt %length% mm: %pieces%",
+        "labelPiece": "%count%× %length% mm",
+        "labelBilled": ", berechnet %billed% mm",
+        "splitHintEqual": "Ihre Länge {length} mm wird auf {pieces} gleichmäßige Teilstücke à {pieceLength} mm aufgeteilt.",
+        "splitHintMaxRest": "Ihre Länge {length} mm wird aufgeteilt in volle Stücke à {maxPiece} mm plus ein Reststück von {remainder} mm ({pieces} Teilstücke).",
+        "splitHintManual": "Die eingegebene Länge {length} mm überschreitet die maximale Teilstücklänge von {maxPiece} mm. Bitte teilen Sie die Länge selbst auf (z. B. {pieces} × {pieceLength} mm) und legen Sie jedes Teilstück separat in den Warenkorb.",
+        "minPieceUpliftHint": "Das Reststück von {remainder} mm liegt unter der Mindestlänge von {minLength} mm. Geschnitten wird es in dieser Länge, berechnet wird die Mindestlänge — insgesamt {billed} mm statt {input} mm."
+    },
+    "error": {
+        "rc-dynamic-price-meter-price-unavailable": "Für den Artikel %name% konnte kein Meterpreis ermittelt werden. Bitte entfernen Sie die Position oder wenden Sie sich an uns — eine Bestellung ist bis dahin nicht möglich."
+    },
+    "checkout": {
+        "rc-dynamic-price-meter-price-unavailable": "Für den Artikel %name% konnte kein Meterpreis ermittelt werden. Bitte entfernen Sie die Position oder wenden Sie sich an uns — eine Bestellung ist bis dahin nicht möglich."
+    }
+}

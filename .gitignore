@@ -1,0 +1,67 @@
+# ============================================================
+# .gitignore – RcDynamicPrice (Shopware 6 Plugin)
+# ============================================================
+
+# ============================================================
+# PHP / Composer
+# ============================================================
+/vendor/
+*.phar
+
+# ============================================================
+# Shopware Plugin Build
+# ============================================================
+*.zip
+/node_modules/
+/public/
+/.pnpm-store/
+
+# src/Resources/app/storefront/dist/ wird BEWUSST mitversioniert:
+# Das Plugin steht public auf GitHub -- wer es dort installiert, hat keine
+# Node-Build-Umgebung. Ohne mitgeliefertes dist fehlt das Storefront-JS (Twig-Loader
+# bricht sogar mit HTTP 500 ab, wenn das Verzeichnis fehlt). Der Gate-Schritt
+# "dist-Frische" stellt sicher, dass das eingecheckte Bundle der Quelle entspricht,
+# damit kein veraltetes JS still ausgeliefert wird.
+
+# ============================================================
+# Shopware Cache / Runtime
+# ============================================================
+/var/
+/var/cache/
+/var/log/
+
+# ============================================================
+# Secrets / Umgebung (NIEMALS in Git!)
+# ============================================================
+.env
+.env.local
+.env.*.local
+!.env.example
+*.secret
+
+# ============================================================
+# Test-Ergebnisse
+# ============================================================
+.phpunit.result.cache
+/coverage/
+/report/
+
+# ============================================================
+# IDE & Betriebssystem
+# ============================================================
+.idea/
+.vscode/
+*.DS_Store
+Thumbs.db
+desktop.ini
+.phpstorm.meta.php
+_ide_helper.php
+
+# ============================================================
+# Logs
+# ============================================================
+*.log
+/logs/
+
+# composer.lock — Plugin ist eine Library, kein Deployment-Artefakt
+composer.lock

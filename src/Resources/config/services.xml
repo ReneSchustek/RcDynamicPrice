@@ -1,0 +1,106 @@
+<?xml version="1.0" ?>
+<container xmlns="http://symfony.com/schema/dic/services"
+           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xsi:schemaLocation="http://symfony.com/schema/dic/services
+           http://symfony.com/schema/dic/services/services-1.0.xsd">
+
+    <services>
+
+        <!--
+          Optionale Observability. Default-Recorder ist der NullMetricsRecorder (No-Op):
+          die Interface-Service-ID ist konkret mit NullMetricsRecorder hinterlegt.
+          Der LoggingMetricsRecorder dekoriert sie transparent: er delegiert immer an den inneren
+          (Null-)Recorder und loggt nur zusätzlich, wenn die Plugin-Config `enableMetrics` aktiv ist.
+          Damit bleibt das nach außen sichtbare Standardverhalten (Toggle aus) identisch zum
+          NullMetricsRecorder; der Decorator selbst bleibt als zwischengespeicherte Bool-Prüfung im Pfad.
+        -->
+        <service id="Ruhrcoder\RcDynamicPrice\Service\Metrics\MetricsRecorderInterface"
+                 class="Ruhrcoder\RcDynamicPrice\Service\Metrics\NullMetricsRecorder"/>
+
+        <service id="Ruhrcoder\RcDynamicPrice\Service\Metrics\LoggingMetricsRecorder"
+                 decorates="Ruhrcoder\RcDynamicPrice\Service\Metrics\MetricsRecorderInterface">
+            <argument type="service" id="Ruhrcoder\RcDynamicPrice\Service\Metrics\LoggingMetricsRecorder.inner"/>
+            <argument type="service" id="Shopware\Core\System\SystemConfig\SystemConfigService"/>
+            <argument type="service" id="monolog.logger.rc_dynamic_price"/>
+        </service>
+
+        <service id="Ruhrcoder\RcDynamicPrice\Service\MeterProductHelper">
+            <argument type="service" id="product.repository"/>
+            <argument type="service" id="Ruhrcoder\RcDynamicPrice\Service\Metrics\MetricsRecorderInterface"/>
+        </service>
+
+        <service id="Ruhrcoder\RcDynamicPrice\Service\MeterProductHelperInterface"
+                 alias="Ruhrcoder\RcDynamicPrice\Service\MeterProductHelper"/>
+
+        <service id="Ruhrcoder\RcDynamicPrice\Service\CategoryChainLoader">
+            <argument type="service" id="category.repository"/>
+        </service>
+
+        <service id="Ruhrcoder\RcDynamicPrice\Service\CategoryChainLoaderInterface"
+                 alias="Ruhrcoder\RcDynamicPrice\Service\CategoryChainLoader"/>
+
+        <service id="Ruhrcoder\RcDynamicPrice\Service\MeterConfigResolver">
+            <argument type="service" id="Ruhrcoder\RcDynamicPrice\Service\CategoryChainLoaderInterface"/>
+            <argument type="service" id="Shopware\Core\System\SystemConfig\SystemConfigService"/>
+        </service>
+
+        <service id="Ruhrcoder\RcDynamicPrice\Service\MeterConfigResolverInterface"
+                 alias="Ruhrcoder\RcDynamicPrice\Service\MeterConfigResolver"/>
+
+        <service id="Ruhrcoder\RcDynamicPrice\Service\LengthSplitter"/>
+
+        <service id="Ruhrcoder\RcDynamicPrice\Service\LengthSplitterInterface"
+                 alias="Ruhrcoder\RcDynamicPrice\Service\LengthSplitter"/>
+
+        <service id="Ruhrcoder\RcDynamicPrice\Service\CartItemSplitAssembler">
+            <argument type="service" id="Ruhrcoder\RcDynamicPrice\Service\LengthSplitterInterface"/>
+            <argument type="service" id="monolog.logger"/>
+        </service>
+
+        <service id="Ruhrcoder\RcDynamicPrice\Service\CartItemSplitAssemblerInterface"
+                 alias="Ruhrcoder\RcDynamicPrice\Service\CartItemSplitAssembler"/>
+
+        <service id="Ruhrcoder\RcDynamicPrice\Storefront\Subscriber\ProductPageSubscriber">
+            <argument type="service" id="Shopware\Core\System\SystemConfig\SystemConfigService"/>
+            <argument type="service" id="Ruhrcoder\RcDynamicPrice\Service\MeterConfigResolverInterface"/>
+            <argument type="service" id="request_stack"/>
+            <argument type="service" id="Ruhrcoder\RcDynamicPrice\Service\Metrics\MetricsRecorderInterface"/>
+            <tag name="kernel.event_subscriber"/>
+        </service>
+
+        <service id="Ruhrcoder\RcDynamicPrice\Storefront\Subscriber\StorefrontResponseSubscriber">
+            <tag name="kernel.event_subscriber"/>
+        </service>
+
+        <service id="Ruhrcoder\RcDynamicPrice\Subscriber\LineItemSubscriber">
+            <argument type="service" id="request_stack"/>
+            <argument type="service" id="Ruhrcoder\RcDynamicPrice\Service\MeterProductHelperInterface"/>
+            <argument type="service" id="Ruhrcoder\RcDynamicPrice\Service\MeterConfigResolverInterface"/>
+            <argument type="service" id="Ruhrcoder\RcDynamicPrice\Service\CartItemSplitAssemblerInterface"/>
+            <argument type="service" id="monolog.logger"/>
+            <tag name="kernel.event_subscriber"/>
+        </service>
+
+        <service id="Ruhrcoder\RcDynamicPrice\Subscriber\CacheInvalidationSubscriber">
+            <argument type="service" id="Shopware\Core\Framework\Adapter\Cache\CacheInvalidator"/>
+            <tag name="kernel.event_subscriber"/>
+        </service>
+
+        <service id="Ruhrcoder\RcDynamicPrice\Cart\DynamicPriceProcessor">
+            <argument type="service" id="Shopware\Core\Checkout\Cart\Price\QuantityPriceCalculator"/>
+            <argument type="service" id="Ruhrcoder\RcDynamicPrice\Service\MeterProductHelperInterface"/>
+            <argument type="service" id="monolog.logger"/>
+            <argument type="service" id="Ruhrcoder\RcDynamicPrice\Service\Metrics\MetricsRecorderInterface"/>
+            <argument type="service" id="translator"/>
+            <argument type="service" id="Shopware\Core\System\Locale\LanguageLocaleCodeProvider"/>
+            <!--
+              Priorität zwingend zwischen ProductCartProcessor (5000) und PromotionProcessor (4900):
+              wir brauchen den vom Product-Processor gesetzten Stückpreis und müssen den
+              ausmultiplizierten Positions-Preis schreiben, bevor die Promotion-Engine ihren
+              Rabatt prozentual auf den (dann ausmultiplizierten) Preis bezieht.
+            -->
+            <tag name="shopware.cart.processor" priority="4950"/>
+        </service>
+
+    </services>
+</container>

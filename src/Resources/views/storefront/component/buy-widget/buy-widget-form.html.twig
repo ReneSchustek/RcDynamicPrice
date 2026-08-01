@@ -1,0 +1,107 @@
+{% sw_extends '@Storefront/storefront/component/buy-widget/buy-widget-form.html.twig' %}
+
+{% block buy_widget_buy_quantity_container %}
+    {# Extension wird serverseitig nur für Meterartikel gesetzt — kein weiterer Custom-Field-Check nötig #}
+    {% if page.extensions.rcDynamicPriceConfig is defined %}
+        {% set rcConfig = page.extensions.rcDynamicPriceConfig %}
+        {% set hintText = rcConfig.hintText %}
+        {% set minLength = rcConfig.minLength %}
+        {% set maxLength = rcConfig.maxLength %}
+        {% set splitMode = rcConfig.splitMode %}
+        {% set maxPieceLength = rcConfig.maxPieceLength %}
+        {% set splitHintTemplate = rcConfig.splitHintTemplate %}
+
+        {% set defaultSplitHint = splitMode == 'hint'
+            ? 'rc-dynamic-price.splitHintManual'|trans
+            : (splitMode == 'max_rest'
+                ? 'rc-dynamic-price.splitHintMaxRest'|trans
+                : 'rc-dynamic-price.splitHintEqual'|trans) %}
+        {% set effectiveSplitHint = splitHintTemplate ?: defaultSplitHint %}
+
+        <div class="col-12 rc-dynamic-price"
+             data-dynamic-price="true"
+             data-hint-text="{{ hintText|e('html_attr') }}"
+             data-min-length="{{ minLength }}"
+             data-max-length="{{ maxLength }}"
+             data-base-price="{{ product.calculatedPrice.unitPrice }}"
+             data-currency="{{ context.currency.isoCode|default('EUR') }}"
+             data-product-id="{{ product.id }}"
+             data-rounding-mode="{{ rcConfig.roundingMode|e('html_attr') }}"
+             data-rounding-steps="{{ rcConfig.roundingSteps|json_encode|e('html_attr') }}"
+             data-split-mode="{{ splitMode|e('html_attr') }}"
+             data-max-piece-length="{{ maxPieceLength }}"
+             data-equal-billing="{{ rcConfig.equalSplitBilling|e('html_attr') }}"
+             data-equal-enforce-min="{{ rcConfig.equalSplitEnforceMin ? '1' : '0' }}"
+             data-split-hint-template="{{ effectiveSplitHint|e('html_attr') }}"
+             data-snippet-error-integer="{{ 'rc-dynamic-price.errorIntegerOnly'|trans|e('html_attr') }}"
+             data-snippet-error-min="{{ 'rc-dynamic-price.errorMinLength'|trans|e('html_attr') }}"
+             data-snippet-error-max="{{ 'rc-dynamic-price.errorMaxLength'|trans|e('html_attr') }}"
+             data-snippet-error-max-piece="{{ 'rc-dynamic-price.errorMaxPieceLength'|trans|e('html_attr') }}"
+             data-snippet-round-up="{{ 'rc-dynamic-price.roundUpHint'|trans|e('html_attr') }}"
+             data-snippet-min-piece-uplift="{{ 'rc-dynamic-price.minPieceUpliftHint'|trans|e('html_attr') }}"
+             data-snippet-modal-button="{{ 'rc-dynamic-price.hintModalButton'|trans|e('html_attr') }}">
+
+            <div class="rc-dynamic-price__field mb-3">
+                <label class="form-label rc-dynamic-price__label"
+                       for="rc-length-input-{{ product.id }}">
+                    {{ 'rc-dynamic-price.label'|trans }}
+                </label>
+                <div class="input-group">
+                    {#
+                        aria-describedby verknuepft Input mit Fehler-, Split-Info- und Ergebnis-Bereich,
+                        damit Screenreader die Status-Meldungen dem Feld zuordnen.
+                        aria-invalid startet bei "false" und wird im Plugin-JS auf "true" gesetzt,
+                        wenn eine Eingabe abgelehnt wird.
+                    #}
+                    <input type="text"
+                           id="rc-length-input-{{ product.id }}"
+                           class="form-control rc-dynamic-price__input"
+                           inputmode="numeric"
+                           autocomplete="off"
+                           aria-describedby="rc-length-unit-{{ product.id }} rc-length-error-{{ product.id }} rc-length-info-{{ product.id }} rc-length-split-{{ product.id }} rc-length-result-{{ product.id }}"
+                           aria-invalid="false"
+                           placeholder="{{ 'rc-dynamic-price.placeholder'|trans }}">
+                    <span id="rc-length-unit-{{ product.id }}"
+                          class="input-group-text">{{ 'rc-dynamic-price.unit'|trans }}</span>
+                </div>
+                {# role=alert + aria-live=assertive: Validierungsfehler werden sofort angesagt #}
+                <div id="rc-length-error-{{ product.id }}"
+                     class="rc-dynamic-price__error text-danger small mt-1"
+                     role="alert"
+                     aria-live="assertive"
+                     hidden></div>
+                {# role=status + aria-live=polite: informative Rundungs-Bestaetigung, unterbricht den Lesefluss nicht #}
+                <div id="rc-length-info-{{ product.id }}"
+                     class="rc-dynamic-price__info text-info small mt-1"
+                     role="status"
+                     aria-live="polite"
+                     hidden></div>
+                {# aria-live=polite: Split-Vorschau ist informativ, unterbricht nicht #}
+                <div id="rc-length-split-{{ product.id }}"
+                     class="rc-dynamic-price__split-info alert alert-info py-2 mt-2 small"
+                     aria-live="polite"
+                     hidden></div>
+            </div>
+
+            <div id="rc-length-result-{{ product.id }}"
+                 class="rc-dynamic-price__result alert alert-success py-2 mb-3"
+                 aria-live="polite"
+                 hidden>
+                {{ 'rc-dynamic-price.calculatedPrice'|trans }}&nbsp;<strong class="rc-dynamic-price__result-price"></strong>
+            </div>
+
+            {# Überträgt die validierte Länge an den Server — leer wenn keine gültige Eingabe #}
+            <input type="hidden"
+                   class="rc-dynamic-price__hidden"
+                   name="mmLength"
+                   value="">
+        </div>
+
+        {# Quantity-Selektor ausblenden – Menge wird durch die Länge bestimmt #}
+        <input type="hidden"
+               name="lineItems[{{ product.id }}][quantity]"
+               value="1">
+    {% else %}
+        {{ parent() }}
+    {% endif %}
+{% endblock %}
