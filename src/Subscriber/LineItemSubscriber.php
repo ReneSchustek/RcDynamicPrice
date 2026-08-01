@@ -94,7 +94,7 @@ final class LineItemSubscriber implements EventSubscriberInterface
 
         // Scope-Herkunft pro Feld im Kontext — bei Support-Fällen "warum ist Preis X?"
         // sieht Ops sofort, ob Produkt, Kategorie, Plugin-Global oder Default gewonnen hat.
-        $this->logger->info('RcDynamicPrice: Meterpreis-Konfiguration aufgeloest', [
+        $this->logger->info('RcDynamicPrice: Meterpreis-Konfiguration aufgelöst', [
             'productId' => $productId,
             'active' => $resolved->active,
             'activeScope' => $resolved->activeScope->value,
@@ -141,7 +141,7 @@ final class LineItemSubscriber implements EventSubscriberInterface
         } catch (\Throwable $exception) {
             // Fail-safe: eine Fehlkonfiguration (z.B. maxLength jenseits der Splitter-Obergrenze) darf
             // den Add-to-Cart nicht mit einem 500 abreissen. Auf „kein Split" degradieren und loggen.
-            $this->logger->error('RcDynamicPrice: Split-Assembler fehlgeschlagen, Position ohne Split hinzugefuegt', [
+            $this->logger->error('RcDynamicPrice: Split-Assembler fehlgeschlagen, Position ohne Split hinzugefügt', [
                 'productId' => $productId,
                 'mmLength' => $mmLength,
                 'exception' => $exception::class,

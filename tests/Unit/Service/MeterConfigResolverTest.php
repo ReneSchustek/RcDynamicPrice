@@ -336,7 +336,7 @@ final class MeterConfigResolverTest extends TestCase
         $this->assertContains('rc-dynamic-price-category-cat-id', $config->cacheTags);
     }
 
-    // --- Deterministische Primaer-Kategorie ---
+    // --- Deterministische Primär-Kategorie ---
 
     public function testPrimaryCategoryUsesSmallestIdDeterministicallyWhenNoMainCategory(): void
     {
@@ -383,7 +383,7 @@ final class MeterConfigResolverTest extends TestCase
 
         $this->resolver->resolveForProduct($product, 'sc-1', Context::createDefaultContext());
 
-        // Haendler-Intent gewinnt vor der sortierten Fallback-Kategorie (cat-aaa).
+        // Händler-Intent gewinnt vor der sortierten Fallback-Kategorie (cat-aaa).
         $this->assertSame('cat-bbb', $captured);
     }
 

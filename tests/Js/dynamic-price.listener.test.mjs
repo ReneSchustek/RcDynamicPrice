@@ -54,13 +54,13 @@ describe('_onForeignSuffixChanged — Self-Loop-Konvention', () => {
         assert.deepStrictEqual(plugin._updateMeterStateCalls, []);
     });
 
-    test('triggert _updateMeterState bei Fremd-Source-Event mit gueltigem hidden-Value', () => {
+    test('triggert _updateMeterState bei Fremd-Source-Event mit gültigem hidden-Value', () => {
         const plugin = makePlugin('500');
         plugin._onForeignSuffixChanged({ detail: { source: 'rcColorPicker', suffix: 'cRAL3025' } });
         assert.deepStrictEqual(plugin._updateMeterStateCalls, [500]);
     });
 
-    test('triggert nicht, wenn hidden-Value 0 oder leer ist (kein gueltiger Meter-State)', () => {
+    test('triggert nicht, wenn hidden-Value 0 oder leer ist (kein gültiger Meter-State)', () => {
         const plugin = makePlugin('');
         plugin._onForeignSuffixChanged({ detail: { source: 'rcColorPicker' } });
         assert.deepStrictEqual(plugin._updateMeterStateCalls, []);

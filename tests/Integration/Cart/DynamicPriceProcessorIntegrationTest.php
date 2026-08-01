@@ -30,7 +30,7 @@ use Symfony\Component\Translation\IdentityTranslator;
 /**
  * Integrationstest: DynamicPriceProcessor gegen einen echten QuantityPriceCalculator aus
  * Shopware-Core. Stellt sicher, dass unsere Preis-Definition von der Kern-Engine korrekt
- * verarbeitet wird — Mock-basierte Unit-Tests faengen hier Signatur-Drifts nicht ab.
+ * verarbeitet wird — Mock-basierte Unit-Tests fängen hier Signatur-Drifts nicht ab.
  */
 final class DynamicPriceProcessorIntegrationTest extends TestCase
 {

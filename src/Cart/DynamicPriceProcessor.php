@@ -133,9 +133,9 @@ final class DynamicPriceProcessor implements CartProcessorInterface
                 $delivery->setLength((float)$longestPiece);
             }
 
-            // Optionale Observability: zaehlt jede erfolgreich verarbeitete Meterposition.
+            // Optionale Observability: zählt jede erfolgreich verarbeitete Meterposition.
             // Der Recorder ist per Vertrag fail-safe (Default = NullMetricsRecorder),
-            // daher kein try/catch noetig — die Preisberechnung bleibt unberuehrt.
+            // daher kein try/catch nötig — die Preisberechnung bleibt unberührt.
             $this->metrics->increment(DynamicPriceConstants::METRIC_CART_ITEM_PROCESSED, [
                 'rounding' => \is_string($roundingMode) ? $roundingMode : DynamicPriceConstants::ROUNDING_NONE,
             ]);

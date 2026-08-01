@@ -64,7 +64,7 @@ final class ProductPageSubscriberTest extends TestCase
         $page->method('getProduct')->willReturn(new SalesChannelProductEntity());
         $page->expects($this->never())->method('addExtension');
 
-        // Inaktives Widget -> kein Vorschau-Zaehler.
+        // Inaktives Widget -> kein Vorschau-Zähler.
         $this->metrics->expects($this->never())->method('increment');
 
         $this->subscriber->onProductPageLoaded($this->createProductPageEvent($page, 'sc-id'));

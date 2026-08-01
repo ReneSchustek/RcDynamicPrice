@@ -73,7 +73,7 @@ final class ProductPageSubscriber implements EventSubscriberInterface
             ),
         );
 
-        // Optionale Observability: zaehlt eingeblendete Meter-Widgets (Vorschau-Renderings).
+        // Optionale Observability: zählt eingeblendete Meter-Widgets (Vorschau-Renderings).
         // Recorder ist per Vertrag fail-safe (Default = NullMetricsRecorder).
         $this->metrics->increment(DynamicPriceConstants::METRIC_PRODUCT_PAGE_WIDGET_SHOWN);
     }

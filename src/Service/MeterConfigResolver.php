@@ -343,7 +343,7 @@ final class MeterConfigResolver implements MeterConfigResolverInterface
      * Bestimmt die maßgebliche Kategorie für die Konfigurations-Vererbung
      * **deterministisch**. Reihenfolge:
      *
-     * 1. Die vom Haendler gepflegte Hauptkategorie (`mainCategories`) des aktuellen
+     * 1. Die vom Händler gepflegte Hauptkategorie (`mainCategories`) des aktuellen
      *    Sales Channels — das ist die explizite Absicht und pro Kanal eindeutig.
      * 2. Sonst die kleinste Kategorie-ID (sortiert) statt der ersten beliebigen.
      *    Die DAL garantiert keine stabile Reihenfolge; ohne Sortierung konnten

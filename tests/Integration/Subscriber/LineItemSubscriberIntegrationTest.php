@@ -26,7 +26,7 @@ use Symfony\Component\HttpFoundation\RequestStack;
 
 /**
  * Integrationstest: der komplette Add-to-Cart-Pfad mit echtem Resolver, echtem Assembler
- * und echtem Splitter. Nur DAL-/Product-Helper-Grenzen sind gestubt. Faengt Regressions
+ * und echtem Splitter. Nur DAL-/Product-Helper-Grenzen sind gestubt. Fängt Regressions
  * in der Wiring-Logik, die reine Subscriber-Unit-Tests mit gemockten Services übersehen.
  */
 final class LineItemSubscriberIntegrationTest extends TestCase

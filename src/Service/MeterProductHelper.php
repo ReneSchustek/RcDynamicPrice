@@ -46,7 +46,7 @@ final class MeterProductHelper implements MeterProductHelperInterface
         $criteria->setLimit(1);
         // Kategorie-Ketten-Resolver braucht categoryIds — categories-Assoziation füllt das zuverlässig.
         $criteria->addAssociation('categories');
-        // mainCategories erlaubt dem Resolver, die haendler-gepflegte Hauptkategorie pro
+        // mainCategories erlaubt dem Resolver, die händler-gepflegte Hauptkategorie pro
         // Sales Channel deterministisch zu bevorzugen (statt einer beliebigen Kategorie).
         $criteria->addAssociation('mainCategories');
 
