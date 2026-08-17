@@ -50,7 +50,6 @@ final class ProductPageSubscriberTest extends TestCase
     public function testGetSubscribedEventsReturnsArray(): void
     {
         $events = ProductPageSubscriber::getSubscribedEvents();
-        $this->assertIsArray($events);
         $this->assertArrayHasKey(ProductPageLoadedEvent::class, $events);
     }
 

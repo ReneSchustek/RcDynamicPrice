@@ -98,7 +98,7 @@ final class Migration1745200000AddSplittingCustomFields extends MigrationStep
                         [
                             'value' => 'hint',
                             'label' => [
-                                'de-DE' => 'Nur Hinweis (Kunde teilt selbst auf)',
+                                'de-DE' => 'Nur Hint (Kunde teilt selbst auf)',
                                 'en-GB' => 'Hint only (customer splits manually)',
                             ],
                         ],

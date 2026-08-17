@@ -78,9 +78,6 @@ final class LocalizationCompletenessTest extends TestCase
     {
         $gaps = [];
         foreach ($document->getElementsByTagName($tag) as $node) {
-            if (!$node instanceof \DOMElement) {
-                continue;
-            }
 
             $present = [];
             foreach ($node->parentNode?->childNodes ?? [] as $sibling) {
@@ -134,15 +131,9 @@ final class LocalizationCompletenessTest extends TestCase
     {
         $gaps = [];
         foreach ($document->getElementsByTagName('option') as $option) {
-            if (!$option instanceof \DOMElement) {
-                continue;
-            }
 
             $names = [];
             foreach ($option->getElementsByTagName('name') as $name) {
-                if (!$name instanceof \DOMElement) {
-                    continue;
-                }
                 $lang = $name->getAttribute('lang');
                 if ($lang === '') {
                     $gaps[] = \sprintf(

@@ -199,7 +199,7 @@ describe('HintModal', () => {
     });
 
     test('open() hängt Backdrop und Modal an den Body und setzt ARIA-Attribute', () => {
-        const modal = new HintModal({ text: 'Hinweis', titleId: 'title-1', document: doc });
+        const modal = new HintModal({ text: 'Hint', titleId: 'title-1', document: doc });
         modal.open();
 
         assert.equal(doc.body.children.length, 2);
@@ -213,7 +213,7 @@ describe('HintModal', () => {
     });
 
     test('open() legt den Fokus auf den Schließen-Button', () => {
-        const modal = new HintModal({ text: 'Hinweis', document: doc });
+        const modal = new HintModal({ text: 'Hint', document: doc });
         modal.open();
 
         const closeButton = doc.body.querySelector('.rc-dynamic-price-modal__close');
@@ -221,7 +221,7 @@ describe('HintModal', () => {
     });
 
     test('close() entfernt den Dialog und stellt den vorherigen Fokus wieder her', () => {
-        const modal = new HintModal({ text: 'Hinweis', document: doc });
+        const modal = new HintModal({ text: 'Hint', document: doc });
         modal.open();
         modal.close();
 
@@ -230,7 +230,7 @@ describe('HintModal', () => {
     });
 
     test('Escape-Taste schließt den Dialog', () => {
-        const modal = new HintModal({ text: 'Hinweis', document: doc });
+        const modal = new HintModal({ text: 'Hint', document: doc });
         modal.open();
 
         doc.dispatch('keydown', keyEvent('Escape'));
@@ -240,7 +240,7 @@ describe('HintModal', () => {
     });
 
     test('Klick auf den Backdrop schließt den Dialog', () => {
-        const modal = new HintModal({ text: 'Hinweis', document: doc });
+        const modal = new HintModal({ text: 'Hint', document: doc });
         modal.open();
 
         const backdrop = doc.body.querySelector('.rc-dynamic-price-backdrop');
@@ -250,7 +250,7 @@ describe('HintModal', () => {
     });
 
     test('Klick auf den Schließen-Button schließt den Dialog', () => {
-        const modal = new HintModal({ text: 'Hinweis', document: doc });
+        const modal = new HintModal({ text: 'Hint', document: doc });
         modal.open();
 
         const closeButton = doc.body.querySelector('.rc-dynamic-price-modal__close');
@@ -260,7 +260,7 @@ describe('HintModal', () => {
     });
 
     test('Focus-Trap zykelt Tab und Shift+Tab am einzigen fokussierbaren Knoten', () => {
-        const modal = new HintModal({ text: 'Hinweis', document: doc });
+        const modal = new HintModal({ text: 'Hint', document: doc });
         modal.open();
 
         const modalEl = doc.body.querySelector('.rc-dynamic-price-modal');
@@ -278,7 +278,7 @@ describe('HintModal', () => {
     });
 
     test('applyThemeVariables setzt die theme-abhängigen Inline-Styles', () => {
-        const modal = new HintModal({ text: 'Hinweis', document: doc });
+        const modal = new HintModal({ text: 'Hint', document: doc });
         modal.open();
 
         const modalEl = doc.body.querySelector('.rc-dynamic-price-modal');
@@ -287,7 +287,7 @@ describe('HintModal', () => {
         assert.match(modalEl.style.getPropertyValue('border'), /var\(--bs-border-color/);
     });
 
-    test('Hinweis-Text landet als Textknoten, nicht als Markup (XSS-Schutz)', () => {
+    test('Hint-Text landet als Textknoten, nicht als Markup (XSS-Schutz)', () => {
         const modal = new HintModal({ text: '<b>x</b>', document: doc });
         modal.open();
 
@@ -297,7 +297,7 @@ describe('HintModal', () => {
     });
 
     test('Button-Beschriftung landet als Textknoten, nicht als Markup (XSS-Schutz)', () => {
-        const modal = new HintModal({ text: 'Hinweis', buttonLabel: '<img src=x>', document: doc });
+        const modal = new HintModal({ text: 'Hint', buttonLabel: '<img src=x>', document: doc });
         modal.open();
 
         const closeButton = doc.body.querySelector('.rc-dynamic-price-modal__close');
@@ -307,7 +307,7 @@ describe('HintModal', () => {
 
     test('titleId kann nicht aus dem id-Attribut ausbrechen', () => {
         // Regression: früher wurde titleId roh in einen id="..."-String interpoliert.
-        const modal = new HintModal({ text: 'Hinweis', titleId: '" onload="alert(1)', document: doc });
+        const modal = new HintModal({ text: 'Hint', titleId: '" onload="alert(1)', document: doc });
         modal.open();
 
         const title = doc.body.querySelector('p');

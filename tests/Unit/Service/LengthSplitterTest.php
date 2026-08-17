@@ -259,7 +259,7 @@ final class LengthSplitterTest extends TestCase
                 (int) $case['maxPiece'],
                 (int) $case['min'],
                 (string) $case['mode'],
-                array_map('intval', $case['expected']),
+                array_values(array_map('intval', $case['expected'])),
                 (string) ($case['equalBilling'] ?? 'cut_length'),
                 (bool) ($case['enforceMin'] ?? true),
             ];

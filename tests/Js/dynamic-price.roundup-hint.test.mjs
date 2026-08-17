@@ -1,4 +1,4 @@
-// Regressionstest: der Rundungs-Hinweis muss verschwinden, sobald eine Eingabe
+// Regressionstest: der Rundungs-Hint muss verschwinden, sobald eine Eingabe
 // nicht mehr gerundet werden muss. Vorher blieb der Text einer früheren Eingabe
 // stehen — die aria-live-Region (role="status") meldete damit eine falsche Länge.
 
@@ -75,7 +75,7 @@ function typeLength(plugin, value) {
     plugin._onInput();
 }
 
-describe('Rundungs-Hinweis (aria-live status)', () => {
+describe('Rundungs-Hint (aria-live status)', () => {
     let plugin;
 
     beforeEach(() => {
@@ -92,11 +92,11 @@ describe('Rundungs-Hinweis (aria-live status)', () => {
 
     test('verschwindet wieder, sobald die Eingabe glatt ist (Regression)', () => {
         typeLength(plugin, '1234');
-        assert.equal(plugin._infoEl.hidden, false, 'Vorbedingung: Hinweis steht');
+        assert.equal(plugin._infoEl.hidden, false, 'Vorbedingung: Hint steht');
 
         typeLength(plugin, '3000');
 
-        assert.equal(plugin._infoEl.textContent, '', 'Stehengebliebener Hinweis meldet eine falsche Länge');
+        assert.equal(plugin._infoEl.textContent, '', 'Stehengebliebener Hint meldet eine falsche Länge');
         assert.equal(plugin._infoEl.hidden, true);
     });
 

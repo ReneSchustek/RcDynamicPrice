@@ -314,7 +314,6 @@ final class DynamicPriceProcessor implements CartProcessorInterface
             return [$mmLength];
         }
 
-        /** @var non-empty-list<int> $cutLengths */
         return $cutLengths;
     }
 

@@ -1,3 +1,6 @@
+includes:
+    - vendor/shopwarelabs/phpstan-shopware/rules.neon
+
 parameters:
     level: 8
     paths:
@@ -7,4 +10,27 @@ parameters:
         - vendor
     bootstrapFiles:
         - vendor/autoload.php
-    ignoreErrors: []
+    ignoreErrors:
+        # **Diese Regel greift hier daneben, und ihre Befolgung wäre gefährlich.** Sie behauptet,
+        # `?->` links von `??` sei überflüssig, weil `??` den Fall schon abfange. Das stimmt nicht:
+        # `??` fängt nicht gesetzte Werte ab, nicht den Zugriff auf ein nicht vorhandenes Objekt.
+        # Wäre `$resolved->splitMode` leer, löste `->value` eine Warnung aus — und die wird in
+        # Shopware zur Ausnahme. Der Aufteilungsmodus ist ausdrücklich leer erlaubt
+        # (`?SplitMode`), also träfe das jede Produktseite ohne Aufteilung.
+        -
+            message: '#Using nullsafe property access .* on left side of \?\? is unnecessary#'
+            paths:
+                - src/Storefront/Subscriber/ProductPageSubscriber.php
+                - tests/Unit/Resources/LocalizationCompletenessTest.php
+
+        # In Tests gibt es keinen Aufrufer, aus dem sich ein Kontext ableiten ließe. Ein aufgebauter
+        # Nutzerkontext täuschte eine Abhängigkeit vor, die der Test gar nicht hat.
+        -
+            message: '#Do not use Shopware\\Core\\Framework\\Context::createDefaultContext#'
+            path: tests/*
+
+        # Die Antwort ist hier ein Prüfgegenstand, kein Ergebnis: Geprüft wird, was der Empfänger
+        # an ihr verändert. Ein Rumpf wäre dafür ohne Bedeutung.
+        -
+            message: '#Response with empty body#'
+            path: tests/Unit/Storefront/Subscriber/StorefrontResponseSubscriberTest.php

@@ -18,6 +18,9 @@ use Shopware\Core\Framework\DataAbstractionLayer\Search\EntitySearchResult;
 
 final class MeterProductHelperTest extends TestCase
 {
+    /** Eine echte UUID: Der Helfer weist inzwischen alles ab, was keine ist. */
+    private const PRODUCT_ID = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+
     /** @var EntityRepository<ProductCollection>&MockObject */
     private EntityRepository&MockObject $productRepository;
     private MetricsRecorderInterface&MockObject $metrics;
@@ -33,29 +36,32 @@ final class MeterProductHelperTest extends TestCase
     public function testLoadProductReturnsEntityWhenFound(): void
     {
         $product = new ProductEntity();
+        $product->setId(self::PRODUCT_ID);
 
         $result = $this->createMock(EntitySearchResult::class);
-        $result->method('first')->willReturn($product);
+        $result->method('getEntities')->willReturn(new ProductCollection([$product]));
 
         $this->productRepository->method('search')->willReturn($result);
 
-        $this->assertSame($product, $this->helper->loadProduct('product-id', Context::createDefaultContext()));
+        $this->assertSame($product, $this->helper->loadProduct(self::PRODUCT_ID, Context::createDefaultContext()));
     }
 
     public function testLoadProductReturnsNullWhenNotFound(): void
     {
         $result = $this->createMock(EntitySearchResult::class);
-        $result->method('first')->willReturn(null);
+        $result->method('getEntities')->willReturn(new ProductCollection());
 
         $this->productRepository->method('search')->willReturn($result);
 
-        $this->assertNull($this->helper->loadProduct('product-id', Context::createDefaultContext()));
+        $this->assertNull($this->helper->loadProduct(self::PRODUCT_ID, Context::createDefaultContext()));
     }
 
     public function testLoadProductRequestsCategoriesAssociation(): void
     {
         $result = $this->createMock(EntitySearchResult::class);
-        $result->method('first')->willReturn(new ProductEntity());
+        $product = new ProductEntity();
+        $product->setId(self::PRODUCT_ID);
+        $result->method('getEntities')->willReturn(new ProductCollection([$product]));
 
         $this->productRepository
             ->expects($this->once())
@@ -68,7 +74,7 @@ final class MeterProductHelperTest extends TestCase
             )
             ->willReturn($result);
 
-        $this->helper->loadProduct('product-id', Context::createDefaultContext());
+        $this->helper->loadProduct(self::PRODUCT_ID, Context::createDefaultContext());
     }
 
     // --- roundUp: Modus none ---

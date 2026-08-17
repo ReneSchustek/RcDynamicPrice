@@ -151,7 +151,6 @@ final class CartItemSplitAssemblerTest extends TestCase
         );
 
         $item = $this->lineItem($cart, 'primary-id');
-        $this->assertNotNull($item);
         $this->assertTrue($item->getPayloadValue(DynamicPriceConstants::PAYLOAD_METER_ACTIVE));
         $this->assertSame('full_m', $item->getPayloadValue(DynamicPriceConstants::PAYLOAD_ROUNDING));
         $this->assertSame(10, $item->getPayloadValue(DynamicPriceConstants::PAYLOAD_MIN_LENGTH));

@@ -55,7 +55,6 @@ final class LineItemSubscriberTest extends TestCase
     public function testGetSubscribedEventsReturnsArray(): void
     {
         $events = LineItemSubscriber::getSubscribedEvents();
-        $this->assertIsArray($events);
         $this->assertArrayHasKey(BeforeLineItemAddedEvent::class, $events);
     }
 
@@ -672,5 +671,82 @@ final class LineItemSubscriberTest extends TestCase
         }
 
         return $event;
+    }
+
+    /**
+     * Was: Ein Gutschein-Platzhalter im Warenkorb.
+     * Warum: Der Warenkorb trägt mehr als Produkte. Ein Gutschein trägt an der Stelle, an der
+     *        sonst die Produktkennung steht, den **Code** — die Produktsuche brach damit mit
+     *        einer Ausnahme ab und riss den ganzen Warenkorb-Zugang mit. Am 2026-08-03 auf der
+     *        Live-Seite: kein Code mehr einlösbar, und im Protokoll stand nichts.
+     * Erwartet: Der Subscriber steigt sofort aus, ohne das Produkt zu suchen.
+     */
+    public function testSkipsPromotionLineItemsWithoutTouchingTheProductLookup(): void
+    {
+        $this->setCurrentRequest(['mmLength' => '5000']);
+
+        $this->meterProductHelper->expects($this->never())->method('loadProduct');
+        $this->configResolver->expects($this->never())->method('resolveForProduct');
+        $this->assembler->expects($this->never())->method('assemble');
+
+        $lineItem = new LineItem('promo-id', LineItem::PROMOTION_LINE_ITEM_TYPE, 'Sommer2026');
+
+        $this->subscriber->onBeforeLineItemAdded($this->createEvent($lineItem));
+    }
+
+    /**
+     * Was: Eine Versandkosten-Position.
+     * Warum: Stellvertretend für alle weiteren Nicht-Produkt-Typen. Ein Meterpreis ergibt dort
+     *        keinen Sinn, und jede Auflösung wäre eine irreführende Protokollzeile.
+     * Erwartet: unberührt.
+     */
+    public function testSkipsShippingLineItems(): void
+    {
+        $this->setCurrentRequest(['mmLength' => '5000']);
+        $this->meterProductHelper->expects($this->never())->method('loadProduct');
+
+        $lineItem = new LineItem('shipping-id', 'shipping', 'irgendwas');
+
+        $this->subscriber->onBeforeLineItemAdded($this->createEvent($lineItem));
+    }
+
+    /**
+     * Was: Der Split-Assembler wirft.
+     * Warum: **Der wichtigste ungetestete Pfad.** Er hängt im Add-to-Cart und ist als
+     *        Ausfallschutz gebaut: Eine Fehlkonfiguration darf keinen Serverfehler auslösen,
+     *        sondern muss auf „kein Split" zurückfallen. War der Schutz kaputt, sah man das
+     *        erst, wenn ein Kunde nichts mehr in den Warenkorb legen konnte.
+     * Erwartet: kein Wurf nach außen, dafür ein Eintrag im Fehlerprotokoll.
+     */
+    public function testAssemblerFailureDegradesToNoSplitAndIsLogged(): void
+    {
+        $this->setCurrentRequest(['mmLength' => '5000']);
+
+        $product = $this->createMock(ProductEntity::class);
+        $this->meterProductHelper->method('loadProduct')->willReturn($product);
+        $this->configResolver->method('resolveForProduct')->willReturn($this->activeResolved());
+
+        $this->assembler->method('assemble')
+            ->willThrowException(new \RuntimeException('maxLength jenseits der Obergrenze'));
+
+        $logger = $this->createMock(LoggerInterface::class);
+        $logger->expects($this->once())
+            ->method('error')
+            ->with(
+                $this->stringContains('Split-Assembler fehlgeschlagen'),
+                $this->callback(static fn (array $kontext): bool => isset($kontext['exception'], $kontext['message']))
+            );
+
+        $subscriber = new LineItemSubscriber(
+            $this->requestStack,
+            $this->meterProductHelper,
+            $this->configResolver,
+            $this->assembler,
+            $logger,
+        );
+
+        $lineItem = new LineItem('line-id', LineItem::PRODUCT_LINE_ITEM_TYPE, 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa');
+
+        $subscriber->onBeforeLineItemAdded($this->createEvent($lineItem));
     }
 }

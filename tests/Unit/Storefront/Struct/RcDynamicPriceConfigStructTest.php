@@ -12,9 +12,9 @@ final class RcDynamicPriceConfigStructTest extends TestCase
 {
     public function testGettersReturnConstructorValues(): void
     {
-        $struct = new RcDynamicPriceConfigStruct('Hinweis', 100, 5000, 'quarter_m');
+        $struct = new RcDynamicPriceConfigStruct('Hint', 100, 5000, 'quarter_m');
 
-        $this->assertSame('Hinweis', $struct->getHintText());
+        $this->assertSame('Hint', $struct->getHintText());
         $this->assertSame(100, $struct->getMinLength());
         $this->assertSame(5000, $struct->getMaxLength());
         $this->assertSame('quarter_m', $struct->getRoundingMode());
@@ -58,7 +58,7 @@ final class RcDynamicPriceConfigStructTest extends TestCase
 
     public function testSplitGettersReturnDefaults(): void
     {
-        $struct = new RcDynamicPriceConfigStruct('Hinweis', 1, 10000);
+        $struct = new RcDynamicPriceConfigStruct('Hint', 1, 10000);
 
         $this->assertSame('', $struct->getSplitMode());
         $this->assertSame(0, $struct->getMaxPieceLength());

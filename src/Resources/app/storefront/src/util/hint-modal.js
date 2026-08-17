@@ -1,5 +1,5 @@
 /**
- * Wiederverwendbarer, barrierearmer Hinweis-Dialog (Modal).
+ * Wiederverwendbarer, barrierearmer Hint-Dialog (Modal).
  *
  * Warum eigene Klasse: die Modal-Logik (DOM-Aufbau, Focus-Trap, Escape-Schließen,
  * Theme-Variablen) war früher inline im DynamicPricePlugin verdrahtet und damit nur
@@ -13,7 +13,7 @@
 export default class HintModal {
     /**
      * @param {object}      options
-     * @param {string}      [options.text]              Hinweis-Text (wird als Textknoten gesetzt).
+     * @param {string}      [options.text]              Hint-Text (wird als Textknoten gesetzt).
      * @param {string}      [options.buttonLabel]       Beschriftung des Schließen-Buttons.
      * @param {string}      [options.titleId]           DOM-ID für aria-labelledby.
      * @param {HTMLElement} [options.fallbackFocusEl]   Fokus-Ziel beim Schließen, falls kein
@@ -62,7 +62,7 @@ export default class HintModal {
         this._modal = doc.createElement('div');
         this._modal.className = 'rc-dynamic-price-modal';
         // role=dialog + aria-modal + aria-labelledby machen den Dialog für Screenreader
-        // als modal erkennbar; der Hinweis-Text dient als Label.
+        // als modal erkennbar; der Hint-Text dient als Label.
         this._modal.setAttribute('role', 'dialog');
         this._modal.setAttribute('aria-modal', 'true');
         this._modal.setAttribute('aria-labelledby', this._titleId);

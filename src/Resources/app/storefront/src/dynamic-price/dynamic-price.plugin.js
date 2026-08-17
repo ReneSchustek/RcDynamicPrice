@@ -223,7 +223,7 @@ export default class DynamicPricePlugin extends Plugin {
         } else if (billedMm !== mm) {
             this._showRoundUpHint(mm, billedMm);
         } else {
-            // Ohne dieses Zurücksetzen bliebe der Hinweis einer früheren, gerundeten
+            // Ohne dieses Zurücksetzen bliebe der Hint einer früheren, gerundeten
             // Eingabe stehen und die aria-live-Region meldete eine falsche Länge.
             this._clearRoundUpHint();
         }
@@ -314,7 +314,7 @@ export default class DynamicPricePlugin extends Plugin {
             .replace('%input%', inputMm.toLocaleString(locale))
             .replace('%billed%', billedMm.toLocaleString(locale));
 
-        // Rundungs-Hinweis ist Status, kein Fehler — eigene polite-Region (BFSG WCAG 4.1.3),
+        // Rundungs-Hint ist Status, kein Fehler — eigene polite-Region (BFSG WCAG 4.1.3),
         // damit Screenreader den Lesefluss nicht abrupt unterbrechen.
         if (this._infoEl) {
             this._infoEl.textContent = msg;
@@ -455,7 +455,7 @@ export default class DynamicPricePlugin extends Plugin {
     }
 
     /**
-     * Ersetzt die Platzhalter im Hinweis-Template durch die berechneten Werte.
+     * Ersetzt die Platzhalter im Hint-Template durch die berechneten Werte.
      * Platzhalter: {length}, {maxPiece}, {pieces}, {pieceLength}, {remainder}
      */
     _renderSplitText(template, length, maxPiece, pieces) {
@@ -483,7 +483,7 @@ export default class DynamicPricePlugin extends Plugin {
     }
 
     /**
-     * Blockierender Hinweis (Kunde muss aktiv handeln), aber kein Fehler-Stil.
+     * Blockierender Hint (Kunde muss aktiv handeln), aber kein Fehler-Stil.
      * Wird im Hint-Modus genutzt, damit der Kunde nicht denkt, er habe etwas falsch gemacht.
      */
     _showBlockingInfo(html) {

@@ -104,35 +104,35 @@ describe('Mehrlänge durch Mindestlängen-Anhebung (max_rest)', () => {
     test('weist die Mehrlänge samt Grund aus', () => {
         typeLength(plugin, '6100');
 
-        assert.equal(plugin._infoEl.hidden, false, 'Der Hinweis muss sichtbar sein');
+        assert.equal(plugin._infoEl.hidden, false, 'Der Hint muss sichtbar sein');
         assert.match(plugin._infoEl.textContent, /Reststück von 100 mm/);
         assert.match(plugin._infoEl.textContent, /Mindestlänge von 1\.000 mm/);
         assert.match(plugin._infoEl.textContent, /7\.000 mm statt 6\.100 mm/);
     });
 
-    test('kein Hinweis, wenn das Reststück die Mindestlänge erreicht', () => {
+    test('kein Hint, wenn das Reststück die Mindestlänge erreicht', () => {
         // 7500 -> [6000, 1500]. 1500 >= min 1000, keine Anhebung, Summe == Eingabe.
         typeLength(plugin, '7500');
 
         assert.equal(plugin.billedMm, 7500);
-        assert.equal(plugin._infoEl.hidden, true, 'Ohne Mehrlänge darf kein Hinweis stehen');
+        assert.equal(plugin._infoEl.hidden, true, 'Ohne Mehrlänge darf kein Hint stehen');
         assert.equal(plugin._infoEl.textContent, '');
     });
 
-    test('kein Hinweis ohne Split (Eingabe unter der Teilstückgrenze)', () => {
+    test('kein Hint ohne Split (Eingabe unter der Teilstückgrenze)', () => {
         typeLength(plugin, '5000');
 
         assert.equal(plugin.billedMm, 5000);
         assert.equal(plugin._infoEl.hidden, true);
     });
 
-    test('Hinweis verschwindet wieder, sobald die Eingabe ohne Anhebung auskommt', () => {
+    test('Hint verschwindet wieder, sobald die Eingabe ohne Anhebung auskommt', () => {
         typeLength(plugin, '6100');
-        assert.equal(plugin._infoEl.hidden, false, 'Vorbedingung: Hinweis steht');
+        assert.equal(plugin._infoEl.hidden, false, 'Vorbedingung: Hint steht');
 
         typeLength(plugin, '7500');
 
-        assert.equal(plugin._infoEl.textContent, '', 'Stehengebliebener Hinweis meldet eine falsche Länge');
+        assert.equal(plugin._infoEl.textContent, '', 'Stehengebliebener Hint meldet eine falsche Länge');
         assert.equal(plugin._infoEl.hidden, true);
     });
 

@@ -28,7 +28,7 @@ final class CategoryChainLoaderTest extends TestCase
     public function testReturnsEmptyWhenPrimaryCategoryMissing(): void
     {
         $result = $this->createMock(EntitySearchResult::class);
-        $result->method('first')->willReturn(null);
+        $result->method('getEntities')->willReturn(new CategoryCollection());
 
         $this->categoryRepository->method('search')->willReturn($result);
 
@@ -117,7 +117,7 @@ final class CategoryChainLoaderTest extends TestCase
     private function singleResult(?CategoryEntity $entity): EntitySearchResult
     {
         $result = $this->createMock(EntitySearchResult::class);
-        $result->method('first')->willReturn($entity);
+        $result->method('getEntities')->willReturn(new CategoryCollection($entity !== null ? [$entity] : []));
 
         return $result;
     }

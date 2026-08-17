@@ -71,6 +71,16 @@ final class LineItemSubscriber implements EventSubscriberInterface
         }
 
         $lineItem = $event->getLineItem();
+
+        // Nur Produktpositionen. Der Warenkorb trägt auch Gutschein-Platzhalter,
+        // Versandkosten und Zuschläge; ein Meterpreis ergibt dort keinen Sinn, und ein
+        // Gutschein trägt in `referencedId` den Code statt einer Kennung. Ohne diese
+        // Prüfung liefe für jeden Gutschein-Zugang eine Produktsuche ins Leere — samt
+        // einer Protokollzeile „Meterpreis-Konfiguration aufgelöst", die nichts aussagt.
+        if ($lineItem->getType() !== LineItem::PRODUCT_LINE_ITEM_TYPE) {
+            return;
+        }
+
         $productId = $lineItem->getReferencedId();
         if ($productId === null) {
             $this->logger->info('RcDynamicPrice: LineItem ohne referencedId übersprungen', [
@@ -171,7 +181,7 @@ final class LineItemSubscriber implements EventSubscriberInterface
         $this->logger->warning('RcDynamicPrice: Menge einer Meter-Position auf 1 zurückgesetzt', [
             'productId' => $productId,
             'lineItemId' => $lineItem->getId(),
-            'angeforderteMenge' => $lineItem->getQuantity(),
+            'requestedQuantity' => $lineItem->getQuantity(),
         ]);
 
         // setQuantity() wirft bei nicht-stackable Positionen. Der reguläre Produkt-Pfad liefert

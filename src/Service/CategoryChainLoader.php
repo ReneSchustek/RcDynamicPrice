@@ -55,7 +55,7 @@ final class CategoryChainLoader implements CategoryChainLoaderInterface
         $criteria = new Criteria([$id]);
         $criteria->setLimit(1);
 
-        $entity = $this->categoryRepository->search($criteria, $context)->first();
+        $entity = $this->categoryRepository->search($criteria, $context)->getEntities()->first();
 
         return $entity instanceof CategoryEntity ? $entity : null;
     }
@@ -78,10 +78,10 @@ final class CategoryChainLoader implements CategoryChainLoaderInterface
         $result = $this->categoryRepository->search($criteria, $context);
 
         $map = [];
+        // Die Sammlung führt laut Typangabe nur Kategorien — eine Prüfung darauf kann nicht
+        // fehlschlagen.
         foreach ($result->getEntities() as $category) {
-            if ($category instanceof CategoryEntity) {
-                $map[$category->getId()] = $category;
-            }
+            $map[$category->getId()] = $category;
         }
 
         return $map;

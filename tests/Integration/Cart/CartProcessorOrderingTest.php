@@ -94,7 +94,7 @@ final class CartProcessorOrderingTest extends TestCase
      * der sich zwischen unseren und den Promotion-Processor schiebt und dort mit Preisen
      * arbeitet, die wir gerade erst gesetzt haben.
      */
-    public function testKeinFremderProcessorLiegtZwischenUnsUndDenPromotions(): void
+    public function testNoForeignProcessorSitsBetweenUsAndThePromotions(): void
     {
         $eigen = $this->position(DynamicPriceProcessor::class);
         $promotion = $this->position(PromotionProcessor::class);

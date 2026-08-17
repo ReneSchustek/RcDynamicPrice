@@ -1,7 +1,16 @@
+# 1.20.2
+
+- **Vorbereitung auf die nächste Shopware-Hauptversion.** Der Zugriff auf Suchergebnisse folgt der Schreibweise, die Shopware 6.8 verlangt. Am Verhalten ändert sich nichts.
+
+# 1.20.1
+
+- **Behoben (kritisch): Gutscheincodes konnten den Warenkorb-Zugang zerreißen.** Das Plugin behandelte jede Warenkorb-Position als Produkt. Ein Gutschein trägt an der Stelle, an der sonst die Produktkennung steht, aber den **Code** — die Produktsuche brach damit mit einer Ausnahme ab und riss den gesamten Vorgang mit. Der Kunde sah „Leider ist etwas schiefgelaufen“, im Protokoll stand nichts. Am laufenden Testsystem gegen die echte Datenbankschicht belegt.
+- Hinzugefügt: Drei Tests für Pfade, die bisher keinen hatten — der Ausfallschutz beim Aufteilen einer Position (er fängt eine Fehlkonfiguration ab, damit kein Serverfehler entsteht) und die neue Typprüfung.
+- Geändert: Nur noch Produktpositionen lösen die Meterpreis-Auflösung aus. Gutscheine, Versandkosten und Zuschläge werden übersprungen — dort ergab die Auflösung ohnehin nichts und schrieb nur eine irreführende Protokollzeile.
+
 # Changelog
 
 Alle nennenswerten Änderungen werden in dieser Datei dokumentiert.
-
 ## [1.20.0] - 2026-07-17 — Handshake-Fix + Per-Positions-Länge
 
 > **Deployment:** `php bin/console plugin:update RcDynamicPrice && php bin/console cache:clear` + Theme-Kompilierung. Kein Schema-Break, keine Migration.

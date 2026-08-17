@@ -11,6 +11,7 @@ use Shopware\Core\Content\Product\ProductEntity;
 use Shopware\Core\Framework\Context;
 use Shopware\Core\Framework\DataAbstractionLayer\EntityRepository;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\Criteria;
+use Shopware\Core\Framework\Uuid\Uuid;
 
 /**
  * Schlanke Utility-Klasse für Produkt-Ladung und Rundungs-Arithmetik.
@@ -42,6 +43,17 @@ final class MeterProductHelper implements MeterProductHelperInterface
 
     public function loadProduct(string $productId, Context $context): ?ProductEntity
     {
+        // Nicht darauf verlassen, dass der Aufrufer eine Produktkennung liefert.
+        //
+        // `Criteria` prüft beim Anlegen nur den Typ, nicht die Form — die Ausnahme fällt
+        // erst tief in der Datenbankschicht (`InvalidUuidException`). Ein Gutschein-Platzhalter
+        // trägt in `referencedId` den **Code** statt einer Kennung; ohne diese Prüfung riss
+        // jeder Gutschein-Zugang den ganzen Warenkorb-Vorgang mit. Bei RcCartSplitter ist
+        // genau das auf Live passiert — dort war monatelang kein Code einlösbar.
+        if (!Uuid::isValid($productId)) {
+            return null;
+        }
+
         $criteria = new Criteria([$productId]);
         $criteria->setLimit(1);
         // Kategorie-Ketten-Resolver braucht categoryIds — categories-Assoziation füllt das zuverlässig.
@@ -50,7 +62,7 @@ final class MeterProductHelper implements MeterProductHelperInterface
         // Sales Channel deterministisch zu bevorzugen (statt einer beliebigen Kategorie).
         $criteria->addAssociation('mainCategories');
 
-        $product = $this->productRepository->search($criteria, $context)->first();
+        $product = $this->productRepository->search($criteria, $context)->getEntities()->first();
 
         return $product instanceof ProductEntity ? $product : null;
     }

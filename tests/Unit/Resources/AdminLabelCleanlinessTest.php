@@ -57,9 +57,6 @@ final class AdminLabelCleanlinessTest extends TestCase
 
         foreach (self::TRANSLATABLE_CONFIG_TAGS as $tag) {
             foreach ($document->getElementsByTagName($tag) as $node) {
-                if (!$node instanceof \DOMElement) {
-                    continue;
-                }
                 $locale = $node->getAttribute('lang') ?: null;
                 $violations = array_merge(
                     $violations,
@@ -73,13 +70,7 @@ final class AdminLabelCleanlinessTest extends TestCase
         }
 
         foreach ($document->getElementsByTagName('option') as $option) {
-            if (!$option instanceof \DOMElement) {
-                continue;
-            }
             foreach ($option->getElementsByTagName('name') as $name) {
-                if (!$name instanceof \DOMElement) {
-                    continue;
-                }
                 $locale = $name->getAttribute('lang') ?: null;
                 $violations = array_merge(
                     $violations,

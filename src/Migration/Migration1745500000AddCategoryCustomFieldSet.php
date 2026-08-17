@@ -121,7 +121,7 @@ final class Migration1745500000AddCategoryCustomFieldSet extends MigrationStep
                     'options' => [
                         ['value' => 'equal', 'label' => ['de-DE' => 'Gleichmäßig aufteilen', 'en-GB' => 'Split equally']],
                         ['value' => 'max_rest', 'label' => ['de-DE' => 'Volle Stücke plus Rest', 'en-GB' => 'Full pieces plus remainder']],
-                        ['value' => 'hint', 'label' => ['de-DE' => 'Nur Hinweis', 'en-GB' => 'Hint only']],
+                        ['value' => 'hint', 'label' => ['de-DE' => 'Nur Hint', 'en-GB' => 'Hint only']],
                     ],
                 ],
             ],
