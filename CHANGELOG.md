@@ -1,3 +1,17 @@
+# 1.24.0
+
+- **Alle Längen mit einem Klick.** Fallen eingegebene Längen in verschiedene Größen („1200; 4200“), legt ein
+  Klick auf „In den Warenkorb“ alle hinein: Die Seite stellt nach jedem Posten selbst auf die nächste Größe
+  um, trägt die Länge ein und legt sie in den Warenkorb. Am Ende zeigt die Warenkorb-Leiste alle Posten,
+  jeden zum Preis seiner Größe. Vorher musste der Kunde für jede Größe noch einmal klicken.
+- **Mehrere Längen mit Leerzeichen oder Komma getrennt.** Neben „1200; 1300“ versteht das Feld jetzt auch
+  „1200 1300“, „1200, 1300“, „1200,1300“ und Mischungen mit Einheiten wie „1,2 m, 4,2 m“ oder
+  „120 cm 1,5 m 2000“. Ein Komma zwischen wenigen Ziffern bleibt Dezimalkomma („4,2“). Vorher las das Feld
+  „1200,1300“ als 1200,13 Meter.
+- Der Hinweis zum nächsten Schritt (abschaltbar, ab Werk aus) beschreibt den neuen Ablauf.
+
+> **Deployment:** `plugin:update RcDynamicPrice`, `assets:install`, `theme:compile`, `cache:clear`.
+
 # 1.23.5
 
 - **Behoben: Die Längenzeile brach den Warenkorb.** Im aufklappbaren Bereich „Eingaben prüfen“ steht die

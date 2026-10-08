@@ -1,5 +1,6 @@
 import Plugin from 'src/plugin-system/plugin.class';
 import PseudoModalUtil from 'src/utility/modal-extension/pseudo-modal.util';
+import ElementLoadingIndicatorUtil from 'src/utility/loading-indicator/element-loading-indicator.util';
 import { parseLength } from '../util/parse-length';
 
 /**
@@ -25,6 +26,10 @@ import { parseLength } from '../util/parse-length';
  * Lieber nichts tun als auf die falsche Größe springen.
  */
 export default class LengthVariantSwitchPlugin extends Plugin {
+    // So lange wartet ein automatischer Schritt höchstens auf die Speicherung durch TMMS. Dessen Aufruf
+    // dauert im Shop um 200 ms; die Länge steht ohnehin auch im abgeschickten Formular.
+    static STEP_SAVE_WAIT_MS = 1200;
+
     static options = {
         // Das Längenfeld des fremden Plugins. Es wird gelesen und beschrieben, nie ersetzt.
         inputSelector: '.tmms-customer-input-value',
@@ -323,14 +328,41 @@ export default class LengthVariantSwitchPlugin extends Plugin {
      *
      * @return {number[]|null}
      */
-    static parseLengths(value) {
-        const raw = String(value || '').trim();
+    /**
+     * Zerlegt die Eingabe in einzelne Längen. Kunden trennen mit Semikolon, Leerzeichen oder Komma
+     * („1200; 1300", „1200 1300", „1200, 1300"). Das Komma ist zugleich Dezimalkomma („4,2 m"); als Trenner
+     * gilt es nur mit Leerzeichen danach, direkt hinter einer Einheit oder mit drei und mehr Ziffern davor:
+     * „1200,1300" sind zwei Längen, denn 1200,13 Meter bestellt niemand. Eine Einheit nach einem Leerzeichen
+     * gehört zur Zahl davor („420 cm").
+     */
+    static splitLengths(value) {
+        const text = String(value || '')
+            .trim()
+            .replace(/(\d{3,}),(?=\d)/g, '$1;')
+            .replace(/(mm|cm|m),/gi, '$1;')
+            .replace(/,\s+/g, ';');
 
-        if (raw === '') {
-            return [];
+        const tokens = [];
+
+        for (const part of text.split(';')) {
+            const words = part.trim().split(/\s+/).filter((word) => word !== '');
+
+            for (const word of words) {
+                const previous = tokens.length > 0 ? tokens[tokens.length - 1] : null;
+
+                if (/^(mm|cm|m)$/i.test(word) && previous !== null && previous.part === part && /\d$/.test(previous.text)) {
+                    previous.text += ` ${word}`;
+                } else {
+                    tokens.push({ part, text: word });
+                }
+            }
         }
 
-        const parts = raw.split(';').map((part) => part.trim()).filter((part) => part !== '');
+        return tokens.map((token) => token.text);
+    }
+
+    static parseLengths(value) {
+        const parts = LengthVariantSwitchPlugin.splitLengths(value);
 
         if (parts.length === 0) {
             return [];
@@ -486,11 +518,12 @@ export default class LengthVariantSwitchPlugin extends Plugin {
             return false;
         }
 
-        if (raw.endsWith(';')) {
+        // Endet die Eingabe auf einen Trenner, kommt noch eine Länge.
+        if (/[;,]$/.test(raw) || /\s$/.test(String(value))) {
             return false;
         }
 
-        const lastSegment = raw.split(';').pop().trim();
+        const lastSegment = LengthVariantSwitchPlugin.splitLengths(raw).pop() || '';
 
         return lastSegment.length >= digits && /^\d+$/.test(lastSegment);
     }
@@ -604,8 +637,14 @@ export default class LengthVariantSwitchPlugin extends Plugin {
         const steps = this._readSteps();
 
         // Bei mehreren Größen erklärt der Schritt-Hinweis den Sprung; ein Fenster obendrauf wäre doppelt.
+        // Ab dem zweiten Schritt legt die Seite die Länge selbst in den Warenkorb: Der Kunde hat einmal
+        // geklickt und meint alle Längen.
         if (steps.length > 0 || stashed.step) {
             this._showNextStep(lengths, stashed.to, steps[0]);
+
+            if (stashed.step) {
+                this._continueSteps();
+            }
 
             return;
         }
@@ -678,6 +717,38 @@ export default class LengthVariantSwitchPlugin extends Plugin {
         });
 
         range.apply();
+    }
+
+    /**
+     * Legt die nächste Größe selbst in den Warenkorb, über die Kaufbox des Kerns wie beim Klick des Kunden;
+     * so laufen TMMS und RcCartSplitter genauso mit. Vorher muss TMMS den eben geschriebenen Wert gespeichert
+     * haben. Sein Skript meldet das nicht verlässlich, deshalb wartet die Seite auf die Meldung oder höchstens
+     * `STEP_SAVE_WAIT_MS`. Die Kaufbox trägt solange den Ladekreis, damit niemand dazwischen klickt.
+     */
+    _continueSteps() {
+        // Das Längenfeld steht in einem eigenen Formular von TMMS, nicht im Kaufformular des Kerns.
+        const form = document.querySelector('#productDetailPageBuyProductForm, form[action*="line-item/add"]');
+        const button = form?.querySelector('.btn-buy');
+
+        if (!button) {
+            return;
+        }
+
+        const box = button.closest('.product-detail-buy, .buy-widget') || form;
+        ElementLoadingIndicatorUtil.create(box);
+
+        let sent = false;
+        const send = () => {
+            if (sent) {
+                return;
+            }
+            sent = true;
+            ElementLoadingIndicatorUtil.remove(box);
+            button.click();
+        };
+
+        this._input.addEventListener('afterSaveCustomerInputSendPostRequest', send, { once: true });
+        window.setTimeout(send, LengthVariantSwitchPlugin.STEP_SAVE_WAIT_MS);
     }
 
     _onAddedToCart() {

@@ -27,7 +27,7 @@
             "modalTitleHint": "Note on the length",
             "adjusted": "Your length does not match \"%from%\". We switched to \"%to%\".",
             "outOfRange": "This article is available from %minCm% to %maxCm% cm, that is from %minMm% to %maxMm% mm.",
-            "nextStep": "%done% goes into “%size%”. Add it to the cart; we will then switch to “%nextSize%” and enter %next%.",
+            "nextStep": "%done% goes into “%size%”, %next% into “%nextSize%”. One click on “Add to cart” adds all lengths.",
             "askUnit": "Do you mean %value% m? Please enter the length with a unit, such as “%value% m” or “%value%000 mm”."
         },
         "guidedSelection": {

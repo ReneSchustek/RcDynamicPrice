@@ -101,6 +101,34 @@ describe('parseLengths — die Eingabe des Kunden', () => {
         assert.deepEqual(LengthVariantSwitchPlugin.parseLengths('970;1140;'), [970, 1140]);
     });
 
+    test('trennt auch mit Leerzeichen und Komma', () => {
+        assert.deepEqual(LengthVariantSwitchPlugin.parseLengths('1200 1300'), [1200, 1300]);
+        assert.deepEqual(LengthVariantSwitchPlugin.parseLengths('1200, 1300'), [1200, 1300]);
+        assert.deepEqual(LengthVariantSwitchPlugin.parseLengths('1200,1300,1400'), [1200, 1300, 1400]);
+        assert.deepEqual(LengthVariantSwitchPlugin.parseLengths('1200 ; 1300  1400'), [1200, 1300, 1400]);
+    });
+
+    test('Einheiten bleiben bei ihrer Zahl, auch in der Liste', () => {
+        assert.deepEqual(LengthVariantSwitchPlugin.parseLengths('1,2 m 130 cm'), [1200, 1300]);
+        assert.deepEqual(LengthVariantSwitchPlugin.parseLengths('1,2 m, 4,2 m'), [1200, 4200]);
+        assert.deepEqual(LengthVariantSwitchPlugin.parseLengths('1,2m,1,3m'), [1200, 1300]);
+        assert.deepEqual(LengthVariantSwitchPlugin.parseLengths('420 cm 1300'), [4200, 1300]);
+        assert.deepEqual(LengthVariantSwitchPlugin.parseLengths('1200mm, 1,3 m'), [1200, 1300]);
+    });
+
+    test('das Komma zwischen wenigen Ziffern bleibt Dezimalkomma', () => {
+        assert.deepEqual(LengthVariantSwitchPlugin.parseLengths('4,2'), [4200]);
+        assert.deepEqual(LengthVariantSwitchPlugin.parseLengths('13,5'), [13500]);
+        assert.deepEqual(LengthVariantSwitchPlugin.parseLengths('4,2 1300'), [4200, 1300]);
+    });
+
+    test('isComplete wartet nach einem Trenner auf die nächste Länge', () => {
+        assert.equal(LengthVariantSwitchPlugin.isComplete('1200 1300'), true);
+        assert.equal(LengthVariantSwitchPlugin.isComplete('1200 '), false);
+        assert.equal(LengthVariantSwitchPlugin.isComplete('1200,'), false);
+        assert.equal(LengthVariantSwitchPlugin.isComplete('1200, 13'), false);
+    });
+
     test('das leere Feld ist keine Fehleingabe', () => {
         assert.deepEqual(LengthVariantSwitchPlugin.parseLengths(''), []);
         assert.deepEqual(LengthVariantSwitchPlugin.parseLengths('   '), []);
