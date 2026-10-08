@@ -2,10 +2,10 @@
 //
 // Das Interaktionsprotokoll kennt zwei Kennzeichnungs-Wege für ID-Hoheit: `data-rc-id-controller`
 // an einem Nachkommen des Formulars oder `dataset.rcIdController` am Formular selbst. Beide
-// müssen erkannt werden, und Vorschau wie ID-Setzung müssen dieselbe Antwort bekommen — sonst
-// zeigt die Storefront eine Aufteilung, die der Server nicht rechnet.
+// müssen erkannt werden, und Vorschau wie ID-Setzung bekommen dieselbe Antwort; sonst zeigt die
+// Produktseite eine Aufteilung, die der Server nicht rechnet.
 //
-// Zero-Dependency: Node-Standardbibliothek (node:test).
+// Ohne Abhängigkeiten, nur mit der Standardbibliothek von Node (node:test).
 
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -28,6 +28,10 @@ const pluginSourcePath = join(
     'dynamic-price.plugin.js',
 );
 
+const parseLengthSource = readFileSync(
+    join(__dirname, '..', '..', 'src', 'Resources', 'app', 'storefront', 'src', 'util', 'parse-length.js'),
+    'utf8',
+).replace(/^export /m, '');
 const rawSource = readFileSync(pluginSourcePath, 'utf8');
 const stripped = rawSource
     .replace(/^import [^\n]*\n/gm, '')
@@ -38,6 +42,7 @@ const wrapped = `
         init() {}
         destroy() {}
     }
+    ${parseLengthSource}
     ${stripped}
     return DynamicPricePlugin;
 `;
@@ -45,9 +50,9 @@ const wrapped = `
 const DynamicPricePlugin = new Function(wrapped)();
 
 /**
- * Minimales Form-Double. `descendants` listet die Selektoren, die im Form-INNEREN existieren —
- * querySelector matcht bewusst nur diese, niemals das Form selbst. Ein Double ohne diese
- * DOM-Semantik prüft am Kern vorbei.
+ * Ein kleinstmögliches Formular. `descendants` listet die Selektoren im Inneren des Formulars;
+ * querySelector trifft wie im DOM nur diese, nie das Formular selbst. Ein Nachbau, der das
+ * Formular selbst träfe, prüfte am entscheidenden Fall vorbei.
  */
 function makeForm({ dataset = {}, descendants = [] } = {}) {
     return {
@@ -102,9 +107,10 @@ describe('_hasForeignIdController — Handshake-Vertrag', () => {
 });
 
 /**
- * Schneidet den Rumpf einer Methode aus dem Quelltext. Ankert auf die DEFINITION (vier Leerzeichen
- * Einrückung), nicht auf den Namen — sonst trifft ein früherer Aufruf derselben Methode und der
- * Ausschnitt ist leer oder falsch. Zählt Klammern, damit verschachtelte Blöcke drin bleiben.
+ * Schneidet den Rumpf einer Methode aus dem Quelltext. Gesucht wird die Definition mit vier
+ * Leerzeichen Einrückung, nicht der Name; sonst träfe ein früherer Aufruf derselben Methode, und
+ * der Ausschnitt wäre leer oder falsch. Die Klammern werden gezählt, damit verschachtelte Blöcke
+ * im Ausschnitt bleiben.
  */
 function extractMethodBody(source, name) {
     const start = source.indexOf(`\n    ${name}(`);
@@ -128,7 +134,7 @@ function extractMethodBody(source, name) {
 }
 
 describe('_hasForeignIdController — einziger Einstiegspunkt', () => {
-    // Vorschau und ID-Setzung müssen dieselbe Antwort bekommen — deshalb genau eine Prüfstelle.
+    // Vorschau und ID-Setzung fragen dieselbe Prüfstelle, damit sie dieselbe Antwort bekommen.
 
     test('_onInput baut keine eigene Marker-Prüfung', () => {
         const onInput = extractMethodBody(rawSource, '_onInput');

@@ -14,12 +14,16 @@ use Shopware\Storefront\Page\Product\ProductPageLoadedEvent;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpFoundation\RequestStack;
 
+/**
+ * Gibt der Produktseite eines Meterartikels die Angaben für das Widget mit und merkt sich die
+ * Cache-Tags der Kategoriekette, damit eine geänderte Einstellung die Seite verwirft.
+ */
 final class ProductPageSubscriber implements EventSubscriberInterface
 {
     /**
-     * Attributname, unter dem Shopware-Storefront Cache-Tags für den aktuellen Request sammelt.
-     * Der Storefront-Response-Subscriber liest die Liste und setzt sie als HTTP-Cache-Tags,
-     * sodass gezielte Invalidierung über `CacheInvalidator::invalidate()` greift.
+     * Das Request-Attribut, unter dem diese Erweiterung ihre Cache-Tags sammelt. Der
+     * StorefrontResponseSubscriber schreibt sie in den Header `sw-cache-tags`, damit
+     * `CacheInvalidator::invalidate()` gezielt greift.
      */
     private const CACHE_TAGS_REQUEST_ATTRIBUTE = '_rc_dynamic_price_cache_tags';
 
@@ -73,15 +77,14 @@ final class ProductPageSubscriber implements EventSubscriberInterface
             ),
         );
 
-        // Optionale Observability: zählt eingeblendete Meter-Widgets (Vorschau-Renderings).
-        // Recorder ist per Vertrag fail-safe (Default = NullMetricsRecorder).
+        // Zählt gezeigte Widgets; der Recorder wirft per Vertrag nie.
         $this->metrics->increment(DynamicPriceConstants::METRIC_PRODUCT_PAGE_WIDGET_SHOWN);
     }
 
     /**
-     * Merkt die Cache-Tags am aktuellen Request vor, damit der StorefrontResponse-Subscriber
-     * sie auf die HTTP-Antwort setzen kann. Ohne aktiven Request (z. B. CLI-Aufruf) wird
-     * still übersprungen — HTTP-Cache ist im CLI-Pfad irrelevant.
+     * Merkt die Cache-Tags am aktuellen Request vor, damit der StorefrontResponseSubscriber sie auf
+     * die HTTP-Antwort setzt. Ohne Request, etwa auf der Kommandozeile, gibt es keinen HTTP-Cache
+     * und nichts zu tun.
      *
      * @param list<string> $tags
      */
@@ -103,7 +106,7 @@ final class ProductPageSubscriber implements EventSubscriberInterface
         $request->attributes->set(self::CACHE_TAGS_REQUEST_ATTRIBUTE, $merged);
     }
 
-    /** Wird vom StorefrontResponseSubscriber gelesen — keine Geschäftslogik. */
+    /** Für den StorefrontResponseSubscriber, der die Tags wieder abholt. */
     public static function getCacheTagsRequestAttribute(): string
     {
         return self::CACHE_TAGS_REQUEST_ATTRIBUTE;

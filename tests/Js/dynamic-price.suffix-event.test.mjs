@@ -1,6 +1,7 @@
-// Vertrags-Test für dynamic-price.plugin.js. Verankert die SUFFIX_CHANGED_EVENT-Konstante,
-// damit ein Wert-Drift (Tippfehler, Refactor) sofort auffällt — Plugin-Interaktionsprotokoll.
-// Zero-Dependency: Node-Standardbibliothek (node:test).
+// Hält den Wert von SUFFIX_CHANGED_EVENT in dynamic-price.plugin.js fest. Andere Plugins hören
+// auf diesen Namen (Plugin-Interaktionsprotokoll); ein Tippfehler oder eine Umbenennung ließe sie
+// still taub werden.
+// Ohne Abhängigkeiten, nur mit der Standardbibliothek von Node (node:test).
 
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -22,6 +23,10 @@ const sourcePath = join(
     'dynamic-price.plugin.js',
 );
 
+const parseLengthSource = readFileSync(
+    join(__dirname, '..', '..', 'src', 'Resources', 'app', 'storefront', 'src', 'util', 'parse-length.js'),
+    'utf8',
+).replace(/^export /m, '');
 const rawSource = readFileSync(sourcePath, 'utf8');
 const stripped = rawSource
     .replace(/^import [^\n]*\n/gm, '')
@@ -32,6 +37,7 @@ const wrapped = `
         init() {}
         destroy() {}
     }
+    ${parseLengthSource}
     ${stripped}
     return DynamicPricePlugin;
 `;

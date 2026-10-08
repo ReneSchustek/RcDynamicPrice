@@ -1,14 +1,10 @@
 /**
- * Wiederverwendbarer, barrierearmer Hint-Dialog (Modal).
+ * Barrierearmer Hinweisdialog der Meterpreis-Eingabe: Aufbau, Fokusfalle, Schließen mit Escape und
+ * Farben aus dem Theme.
  *
- * Warum eigene Klasse: die Modal-Logik (DOM-Aufbau, Focus-Trap, Escape-Schließen,
- * Theme-Variablen) war früher inline im DynamicPricePlugin verdrahtet und damit nur
- * schwer isoliert testbar. Hier extrahiert per Komposition — das Verhalten ist
- * unverändert (siehe tests/Js/hint-modal.test.mjs) und für andere Ruhrcoder-Plugins
- * wiederverwendbar.
- *
- * Das `document` ist injizierbar, damit der Dialog außerhalb eines Browsers
- * (Node-Unit-Tests mit Fake-DOM) konstruiert werden kann.
+ * Als eigene Klasse lässt er sich ohne das Meterpreis-Plugin testen (`tests/Js/hint-modal.test.mjs`) und
+ * in anderen Erweiterungen verwenden. Das `document` ist übergebbar, damit die Tests ihn in Node mit
+ * nachgebautem DOM aufbauen können.
  */
 export default class HintModal {
     /**
@@ -28,8 +24,8 @@ export default class HintModal {
         this._fallbackFocusEl = options.fallbackFocusEl || null;
         this._document = options.document || (typeof document !== 'undefined' ? document : null);
 
-        // Robust gegen künftige Erweiterungen (Links im Text, weitere Buttons):
-        // first/last werden zur Laufzeit ermittelt.
+        // Erstes und letztes fokussierbares Element bestimmt die Falle bei jedem Tab neu; ein Link im
+        // Text oder ein zweiter Knopf braucht dann keine Änderung hier.
         this._focusableSelector = options.focusableSelector
             || 'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"]), input:not([disabled]), select:not([disabled]), textarea:not([disabled])';
 
@@ -46,7 +42,7 @@ export default class HintModal {
     /**
      * Baut den Dialog auf, hängt ihn an den Body, aktiviert Focus-Trap und
      * Escape-Schließen und legt den Fokus auf den Schließen-Button.
-     * Mehrfach-Aufrufe ohne vorheriges close() sind ein No-Op.
+     * Ein zweiter Aufruf ohne `close()` dazwischen bewirkt nichts.
      */
     open() {
         if (this._document === null || this._modal !== null) {
@@ -61,8 +57,8 @@ export default class HintModal {
 
         this._modal = doc.createElement('div');
         this._modal.className = 'rc-dynamic-price-modal';
-        // role=dialog + aria-modal + aria-labelledby machen den Dialog für Screenreader
-        // als modal erkennbar; der Hint-Text dient als Label.
+        // `role=dialog`, `aria-modal` und `aria-labelledby` machen ihn für Vorleseprogramme als Dialog
+        // erkennbar; der Hinweistext dient als Beschriftung.
         this._modal.setAttribute('role', 'dialog');
         this._modal.setAttribute('aria-modal', 'true');
         this._modal.setAttribute('aria-labelledby', this._titleId);
@@ -88,10 +84,9 @@ export default class HintModal {
     /**
      * Baut den Dialog-Inhalt rein programmatisch auf.
      *
-     * Warum kein innerHTML: Text, Button-Beschriftung und titleId stammen von Aufrufern.
-     * Über `textContent` und `setAttribute` kann keiner dieser Werte aus seinem Kontext
-     * ausbrechen — bei String-Konkatenation wäre insbesondere die titleId im
-     * `id="…"`-Attribut ein Breakout-Vektor.
+     * Ohne `innerHTML`, weil Text, Knopfbeschriftung und `titleId` vom Aufrufer kommen. Über
+     * `textContent` und `setAttribute` kann keiner dieser Werte aus seinem Kontext ausbrechen; aus
+     * Zeichenketten zusammengesetzt, könnte eine präparierte `titleId` das `id`-Attribut verlassen.
      *
      * @param  {Document} doc
      * @return {HTMLElement}
@@ -118,7 +113,7 @@ export default class HintModal {
     /**
      * Entfernt den Dialog, räumt die Listener ab und stellt den Fokus auf das
      * vorher fokussierte Element (sonst auf fallbackFocusEl) zurück.
-     * Aufruf ohne offenen Dialog ist ein No-Op.
+     * Ohne offenen Dialog bewirkt der Aufruf nichts.
      */
     close() {
         if (this._modal === null) {
@@ -146,8 +141,8 @@ export default class HintModal {
     }
 
     /**
-     * Aktiviert die Focus-Trap auf dem Dialog: Tab/Shift+Tab zyklen zwischen erstem
-     * und letztem fokussierbaren Knoten, statt den Fokus aus dem Modal zu lassen.
+     * Hält den Fokus im Dialog: Tab und Umschalt+Tab springen vom letzten zum ersten fokussierbaren
+     * Element und zurück, statt den Dialog zu verlassen.
      *
      * @param {string} focusableSelector Selektor der fokussierbaren Knoten.
      */
@@ -166,10 +161,8 @@ export default class HintModal {
     /**
      * Setzt die theme-abhängigen Farben als Inline-Style auf den Dialog.
      *
-     * Warum inline statt nur via SCSS: damit der Dialog auch in Plugins ohne das
-     * RcDynamicPrice-SCSS im aktiven (Dark-/Custom-)Theme korrekt erscheint. Die
-     * Werte spiegeln base.scss eins zu eins (`var(--bs-*, fallback)`) — die
-     * gerenderte Darstellung bleibt identisch.
+     * Zusätzlich zur Gestaltung in `base.scss`, damit der Dialog auch in einer Erweiterung ohne diese
+     * Gestaltung im aktiven Theme richtig aussieht. Die Werte sind dieselben wie dort.
      */
     applyThemeVariables() {
         if (this._modal === null) {

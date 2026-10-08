@@ -8,6 +8,13 @@ use Doctrine\DBAL\Connection;
 use Shopware\Core\Framework\Migration\MigrationStep;
 use Shopware\Core\Framework\Uuid\Uuid;
 
+/**
+ * Ergänzt am Produkt-Set den Haken „Auf vollen Meter aufrunden".
+ *
+ * Der Haken kennt nur eine Stufe, 1000 mm. Die Migration mit dem Rundungsmodus ersetzt ihn durch eine
+ * Auswahl mehrerer Stufen und übernimmt gesetzte Haken; diese hier bleibt stehen, weil Shopware bereits
+ * gelaufene Migrationen nicht erneut ausführt und eine gelöschte im Verlauf fehlen würde.
+ */
 final class Migration1743300000AddRoundUpMeterCustomField extends MigrationStep
 {
     private const SET_NAME = 'rc_dynamic_price';

@@ -8,18 +8,14 @@ use Doctrine\DBAL\Connection;
 use Shopware\Core\Framework\Migration\MigrationStep;
 
 /**
- * Erweitert die Mail-Templates vom Typ order_confirmation_mail um Länge und Zuschnitt-Aufteilung
- * pro Position (HTML- und Plaintext-Variante).
+ * Ergänzt die Vorlagen der Bestellbestätigung, HTML und Klartext, je Position um Länge und Aufteilung
+ * des Zuschnitts, damit Kunde und Fertigung sehen, was bestellt ist.
  *
- * Ohne diesen Block nennt die Bestellbestätigung nur Bezeichnung, Menge und Preis — der Kunde
- * erfährt nicht, welche Länge er bestellt hat, und die Fertigung nicht, welche Stücke zu schneiden
- * sind.
- *
- * Zwei Schutzschichten gegen unbeabsichtigtes Überschreiben:
- * - Marker-Detection: enthält der Inhalt bereits den Marker, wird nichts verändert (idempotent).
- * - Anchor-Detection: ohne den exakten Default-Anchor (Shopware-Default-Label-Ausgabe) wird nicht
- *   gepatcht. Damit bleiben shop-spezifisch angepasste Vorlagen unangetastet — die manuelle
- *   Ergänzung ist in der README dokumentiert.
+ * Zwei Riegel schützen eine Vorlage vor dem Überschreiben. Trägt sie schon den Marker, bleibt sie, wie
+ * sie ist; ein zweiter Lauf ändert nichts. Fehlt die Zeile, hinter die der Block gehört, in der Form, wie
+ * Shopware sie ausliefert, hat der Shop die Vorlage angepasst, und sie bleibt ebenfalls unberührt.
+ * `Migration1784000000RemoveMeterLengthFromOrderConfirmationMail` nimmt den Block wieder heraus, seit die
+ * Länge im Positionsnamen steht.
  */
 final class Migration1783900000AddMeterLengthToOrderConfirmationMail extends MigrationStep
 {
@@ -75,15 +71,15 @@ final class Migration1783900000AddMeterLengthToOrderConfirmationMail extends Mig
 
     public function updateDestructive(Connection $connection): void
     {
-        // Forward-only, keine destruktive Phase.
+        // Nichts zu tun: Die Migration greift nur an Stellen, die sie eindeutig erkennt.
     }
 
     /**
-     * Patcht den HTML-Inhalt: fügt den Längen-Block direkt nach dem `</div>`-Tag ein, das auf den
-     * Label-Anchor folgt. Skip-Bedingungen: Inhalt leer, Marker vorhanden (idempotent), Anchor
-     * nicht gefunden (Template wurde vom Shop angepasst).
+     * Setzt den Längen-Block in die HTML-Vorlage, direkt hinter das `</div>`, das auf die Ausgabe der
+     * Positionsbezeichnung folgt. Liefert null bei leerem Inhalt, vorhandenem Marker oder fehlender
+     * Bezeichnungszeile.
      *
-     * Nur für interne Verwendung und Tests public.
+     * Öffentlich nur für die Tests.
      */
     public function patchHtml(?string $content): ?string
     {
@@ -112,10 +108,10 @@ final class Migration1783900000AddMeterLengthToOrderConfirmationMail extends Mig
     }
 
     /**
-     * Patcht den Plaintext-Inhalt: fügt den Längen-Block direkt nach der Zeile mit dem Label-Anchor
-     * ein. Skip-Bedingungen analog HTML.
+     * Setzt den Längen-Block in die Klartext-Vorlage, direkt hinter die Zeile mit der
+     * Positionsbezeichnung. Liefert null in denselben Fällen wie die HTML-Fassung.
      *
-     * Nur für interne Verwendung und Tests public.
+     * Öffentlich nur für die Tests.
      */
     public function patchPlain(?string $content): ?string
     {

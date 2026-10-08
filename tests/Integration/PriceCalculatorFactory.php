@@ -11,8 +11,8 @@ use Shopware\Core\Checkout\Cart\Price\QuantityPriceCalculator;
 use Shopware\Core\Checkout\Cart\Tax\TaxCalculator;
 
 /**
- * Factory für eine echte QuantityPriceCalculator-Instanz aus Shopware-Core-Bausteinen.
- * Integration-Tests fahren damit gegen die produktive Rechen-Logik, nicht gegen Mocks.
+ * Baut einen echten `QuantityPriceCalculator` aus den Bausteinen des Kerns, ohne Container. Die
+ * Integrationstests rechnen damit wie der Shop selbst, auch bei Steuer und Rundung.
  */
 final class PriceCalculatorFactory
 {

@@ -5,13 +5,12 @@ declare(strict_types=1);
 namespace Ruhrcoder\RcDynamicPrice\Exception;
 
 /**
- * Plugin-interne Exception. Trägt einen stabilen `errorCode`, damit Log-Aggregation
- * und Support-Tooling Fehler eindeutig einordnen können, ohne auf Message-Strings
- * zu parsen. Alle Plugin-seitig bewusst geworfenen Fehler sind Instanzen dieser Klasse.
+ * Die Exception der Erweiterung. Sie trägt einen festen `errorCode`, damit Protokollauswertung und
+ * Support einen Fehler einordnen können, ohne den Meldungstext zu zerlegen. Jeder Fehler, den die
+ * Erweiterung absichtlich wirft, ist eine Instanz dieser Klasse.
  *
- * Basis ist `\RuntimeException`, weil die Plugin-Fehler zur Laufzeit entstehen
- * (DB-Zustand, User-Input-Bounds) und nicht per se statische Programmfehler sind.
- * Semantisch bleiben die Factory-Methoden benannt nach ihrem Zweck.
+ * Basis ist `\RuntimeException`, weil diese Fehler zur Laufzeit entstehen (Datenbestand, Grenzen der
+ * Eingabe) und keine Programmierfehler sind.
  */
 final class DynamicPriceException extends \RuntimeException
 {

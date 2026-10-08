@@ -7,17 +7,12 @@ namespace Ruhrcoder\RcDynamicPrice\Tests\Unit\Cart;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Pinning-Test gegen den Live-Bug: 3-%-Skonto wirkte nur auf den Meter-Stückpreis
- * (10 €) statt auf den ausmultiplizierten Positions-Preis (30 €). Ursache war eine
- * Cart-Processor-Priorität unterhalb des Shopware-PromotionProcessor (4900) — die
- * Promotion sah den noch nicht multiplizierten Preis.
+ * Hält die Priorität des Prozessors in der `services.xml` fest: zwischen `ProductCartProcessor`
+ * (5000) und `PromotionProcessor` (4900). Liegt sie darunter, sieht die Promotion den noch nicht
+ * ausmultiplizierten Preis, und 3 % Skonto auf 3 m zu 10 € ergeben 0,30 € statt 0,90 €.
  *
- * Korrekte Reihenfolge in der Pipeline:
- *   ProductCartProcessor (5000) → DynamicPriceProcessor (zwischen 4900 und 5000)
- *   → PromotionProcessor (4900)
- *
- * Drift in der Priorität schaltet den Bug wieder scharf. Die Werte werden hier hart
- * gepinnt, damit ein versehentliches Zurückdrehen sofort rot wird.
+ * Der Test liest nur die eigene Zahl, ohne Kern; ob die Reihenfolge im laufenden Shop stimmt,
+ * prüft `CartProcessorOrderingTest`.
  */
 final class DynamicPriceProcessorPriorityTest extends TestCase
 {
@@ -47,7 +42,8 @@ final class DynamicPriceProcessorPriorityTest extends TestCase
 
     public function testServicePriorityIsExactlyPinned(): void
     {
-        // Exakter Pinning-Wert verhindert leise Drift innerhalb des gültigen Korridors.
+        // Der genaue Wert fällt auf, auch wenn er sich innerhalb des erlaubten Bereichs verschiebt;
+        // so ändert ihn niemand nebenbei.
         self::assertSame(4950, $this->loadCartProcessorPriority());
     }
 

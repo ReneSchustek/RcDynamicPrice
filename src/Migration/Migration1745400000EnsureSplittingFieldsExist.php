@@ -10,12 +10,13 @@ use Shopware\Core\Framework\Migration\MigrationStep;
 use Shopware\Core\Framework\Uuid\Uuid;
 
 /**
- * Repariert den Sonderfall, dass Migration1745200000 silent returned hat, weil das CustomFieldSet
- * zum Zeitpunkt ihrer Ausführung fehlte (z. B. Datenbank-Wiederherstellung aus Backup, in der
- * 1743123456CreateMeterPriceCustomField nicht lief).
+ * Legt die drei Felder zum Aufteilen an, falls `Migration1745200000AddSplittingCustomFields` ohne sie
+ * zurückkam, weil das Feldset fehlte, etwa nach dem Einspielen einer Sicherung, in der die Migration
+ * mit dem Set nicht gelaufen ist.
  *
- * Fehlt das Set jetzt immer noch, wird eine RuntimeException geworfen — der Admin sieht beim
- * plugin:update sofort das Problem, statt stumme Nicht-Funktionalität im Shop.
+ * Fehlt das Set auch hier, bricht die Migration mit einer Ausnahme ab. So erscheint das Problem beim
+ * `plugin:update`, statt als Shop, in dem das Aufteilen still nicht funktioniert. Die Felddefinitionen
+ * stehen hier noch einmal vollständig, mit dem Textfeld für den Hinweis wie nach der Umstellung.
  */
 final class Migration1745400000EnsureSplittingFieldsExist extends MigrationStep
 {

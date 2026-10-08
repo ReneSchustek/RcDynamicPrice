@@ -32,13 +32,13 @@ use Shopware\Core\System\SalesChannel\SalesChannelContext;
 use Symfony\Component\Translation\IdentityTranslator;
 
 /**
- * Pipeline-Reihenfolge gegen den Live-Bug: ein nach dem DynamicPriceProcessor angewendeter
- * prozentualer Rabatt MUSS auf dem ausmultiplizierten Positions-Preis operieren (Meterpreis × Länge),
- * nicht auf dem rohen Meter-Stückpreis.
+ * Ein prozentualer Rabatt nach dem `DynamicPriceProcessor` muss auf dem ausmultiplizierten
+ * Positionspreis (Meterpreis × Länge) rechnen, nicht auf dem rohen Meterpreis; sonst bekommt der
+ * Kunde auf eine 3-m-Position nur ein Drittel seines Skontos.
  *
- * Der Test simuliert die korrekte Cart-Processor-Reihenfolge gegen echte Shopware-Core-Rechner —
- * dadurch fängt er sowohl eine Drift in der services.xml-Priority als auch eine Regression in der
- * Preis-Definition des DynamicPriceProcessor.
+ * Der Test ruft beide Schritte in der richtigen Reihenfolge mit den echten Rechnern des Kerns auf
+ * und prüft so die Preisdefinition des Prozessors. Ob die Reihenfolge im Shop stimmt, prüft
+ * `CartProcessorOrderingTest`.
  */
 final class DynamicPricePromotionOrderIntegrationTest extends TestCase
 {
@@ -81,8 +81,8 @@ final class DynamicPricePromotionOrderIntegrationTest extends TestCase
 
     public function testThreePercentDiscountAppliesToMultipliedPositionPrice(): void
     {
-        // Meterpreis 10 €, Länge 3 m → Positions-Preis 30 € → 3-%-Skonto = 0,90 €.
-        // Bug-Verhalten vor Fix: 3 % von 10 € = 0,30 € (Skonto wirkt nur auf den Meterpreis).
+        // Meterpreis 10 €, Länge 3 m, also Positionspreis 30 € und 3 % Skonto 0,90 €. Rechnete der
+        // Rabatt auf dem Meterpreis, wären es nur 0,30 €.
         $lineItem = $this->createMeterLineItem(3000, 10.0);
 
         $this->processor->process(

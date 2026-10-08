@@ -12,6 +12,10 @@ use Ruhrcoder\RcDynamicPrice\Service\Metrics\LoggingMetricsRecorder;
 use Ruhrcoder\RcDynamicPrice\Service\Metrics\MetricsRecorderInterface;
 use Shopware\Core\System\SystemConfig\SystemConfigService;
 
+/**
+ * Der protokollierende Metrik-Rekorder liegt in jedem Warenkorb-Durchlauf. Er darf dort weder
+ * werfen noch bei jedem Aufruf die Einstellungen neu lesen, auch wenn das Protokoll aus ist.
+ */
 final class LoggingMetricsRecorderTest extends TestCase
 {
     private MetricsRecorderInterface&MockObject $inner;
@@ -70,8 +74,8 @@ final class LoggingMetricsRecorderTest extends TestCase
 
     public function testTogglesIsReadOnlyOncePerInstance(): void
     {
-        // Der Decorator liegt auch bei ausgeschaltetem Toggle im Hot-Path. Der
-        // Config-Zugriff darf deshalb nicht pro Aufruf erneut passieren.
+        // Der Rekorder liegt auch bei ausgeschaltetem Protokoll im Warenkorb-Durchlauf; die
+        // Einstellung wird deshalb nur einmal je Instanz gelesen.
         $this->systemConfig
             ->expects($this->once())
             ->method('getBool')
@@ -87,7 +91,7 @@ final class LoggingMetricsRecorderTest extends TestCase
 
     public function testConfigFailureIsNotRetriedOnEveryCall(): void
     {
-        // Eine werfende Config darf den Hot-Path nicht bei jedem Aufruf erneut belasten.
+        // Wirft das Lesen der Einstellung, wird es nicht bei jedem Aufruf wiederholt.
         $this->systemConfig
             ->expects($this->once())
             ->method('getBool')
@@ -102,7 +106,7 @@ final class LoggingMetricsRecorderTest extends TestCase
 
     public function testLoggerFailureNeverPropagates(): void
     {
-        // Fail-Safe: ein werfender Logger darf den Aufrufer (Hot-Path) nie stören.
+        // Ein werfender Logger erreicht den Aufrufer nie; die Metrik ist Beiwerk, der Warenkorb nicht.
         $this->systemConfig->method('getBool')->willReturn(true);
         $this->logger->method('info')->willThrowException(new \RuntimeException('boom'));
 
@@ -114,7 +118,7 @@ final class LoggingMetricsRecorderTest extends TestCase
 
     public function testConfigFailureFallsBackToDisabled(): void
     {
-        // Kann die Config nicht gelesen werden, gilt der sichere Default: Metriken aus.
+        // Lässt sich die Einstellung nicht lesen, bleiben die Metriken aus.
         $this->systemConfig->method('getBool')->willThrowException(new \RuntimeException('config down'));
 
         $this->inner->expects($this->once())->method('increment')->with('key', []);

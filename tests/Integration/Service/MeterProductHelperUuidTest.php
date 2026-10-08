@@ -16,13 +16,13 @@ use Shopware\Core\Framework\Uuid\Uuid;
 /**
  * Was passiert, wenn die Produktkennung gar keine ist.
  *
- * Der Subscriber hängt am Warenkorb-Zugang und liest `referencedId` als Produktkennung.
- * Bei einem Gutschein-Platzhalter steht dort aber der **Code** — Shopwares eigener
- * `PromotionItemBuilder` setzt ihn so. Genau daran ist RcCartSplitter gescheitert: Die
- * Ausnahme riss den ganzen Vorgang mit, und kein Gutscheincode war mehr einlösbar.
+ * Der Subscriber hängt am Warenkorb-Zugang und liest `referencedId` als Produktkennung. Bei einem
+ * Gutschein-Platzhalter steht dort der Code, so setzt ihn Shopwares eigener `PromotionItemBuilder`.
+ * Wirft die Produktsuche dann eine Ausnahme, reißt sie den ganzen Vorgang mit, und kein
+ * Gutscheincode ist mehr einlösbar.
  *
- * Dieser Test klärt die offene Frage für dieses Plugin an der echten Datenbankschicht,
- * nicht an einer Attrappe: Wirft die Produktsuche bei einer Kennung, die keine UUID ist?
+ * Geprüft wird an der echten Datenbankschicht, weil nur sie entscheidet, ob eine Kennung, die
+ * keine UUID ist, zu einer Ausnahme führt.
  */
 class MeterProductHelperUuidTest extends TestCase
 {
@@ -37,15 +37,15 @@ class MeterProductHelperUuidTest extends TestCase
     {
         $helper = $this->createHelper();
 
-        $ergebnis = $helper->loadProduct('Sommer2026', Context::createDefaultContext());
+        $result = $helper->loadProduct('Sommer2026', Context::createDefaultContext());
 
-        self::assertNull($ergebnis);
+        self::assertNull($result);
     }
 
     /**
      * Was: Eine gültige, aber unbekannte Kennung.
-     * Warum: Gegenprobe — der Normalfall „Produkt gibt es nicht" muss weiterhin still null
-     *        liefern und darf sich nicht anders verhalten als der Fehlerfall darüber.
+     * Warum: Gegenprobe. Der Normalfall „Produkt gibt es nicht" liefert still null und verhält
+     *        sich nicht anders als der Fall mit dem Gutscheincode darüber.
      * Erwartet: kein Wurf, Ergebnis null.
      */
     public function testLoadingAnUnknownButValidIdReturnsNull(): void

@@ -5,8 +5,9 @@ declare(strict_types=1);
 namespace Ruhrcoder\RcDynamicPrice\Service;
 
 /**
- * Quelle, aus der ein einzelnes Feld im aufgelösten Meterpreis-Config stammt.
- * Dient der Nachvollziehbarkeit (Logging, Debugging) — keine Geschäftslogik.
+ * Woher ein einzelner Wert der aufgelösten Meterpreis-Einstellungen stammt. Er steht im Protokoll,
+ * damit sich bei „warum kostet das so viel?" sehen lässt, welche Ebene gewonnen hat; entschieden wird
+ * damit nichts.
  */
 enum ConfigScope: string
 {

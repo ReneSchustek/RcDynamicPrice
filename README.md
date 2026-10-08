@@ -6,10 +6,10 @@ Produkte (z. B. Kabel, Stoffe, Profile) werden nach Meterlänge verkauft. Der Gr
 
 ## Funktionen
 
-- Längeneingabe in Millimetern auf der Produktdetailseite
+- Längeneingabe auf der Produktdetailseite, in Millimetern oder mit Einheit („4,2 m", „420 cm")
 - Popup mit konfigurierbarem Hinweistext beim ersten Fokus auf das Eingabefeld
 - Live-Preisberechnung: `Grundpreis ÷ 1000 × eingegebene mm`
-- Validierung: nur positive Ganzzahlen, Mindest- und Maximalwert konfigurierbar
+- Validierung: Länge über null, Mindest- und Maximalwert konfigurierbar; ohne Einheit heißt eine Zahl mit Komma Meter, eine ganze Zahl Millimeter, eine einzelne Ziffer fragt nach
 - Produktspezifische Min/Max-Länge (mit Fallback auf globale Konfiguration)
 - Optional: Eingabe auf nächsten vollen Meter aufrunden (pro Produkt konfigurierbar)
 - **Längen-Splitting:** Eingaben über einer konfigurierbaren Teilstücklänge werden entweder automatisch in gleichmäßige oder „max + Rest"-Teilstücke aufgeteilt, oder der Kunde erhält einen konfigurierbaren Hinweis zum manuellen Aufteilen
@@ -28,6 +28,10 @@ Produkte (z. B. Kabel, Stoffe, Profile) werden nach Meterlänge verkauft. Der Gr
 
 ## Installation
 
+Das Plugin gehört als Ordner `custom/plugins/RcDynamicPrice` in die Shopware-Installation. Übertragen wird er von Hand — per FTP in dieses Verzeichnis kopieren; ein Composer-Paket gibt es nicht. Danach registriert Shopware ihn über die folgenden Befehle:
+
+Als Archiv geht es auch ohne FTP: In der Administration unter **Erweiterungen → Meine Erweiterungen → Erweiterung hochladen** nimmt Shopware eine ZIP-Datei entgegen und legt sie selbst an die richtige Stelle; auf der Konsole tut `plugin:zip-import` dasselbe. Danach folgen dieselben Schritte wie unten. Wer das Archiv unter macOS packt, entfernt vorher den Ordner `__MACOSX` — sonst weist Shopware die Datei ab.
+
 Das vorkompilierte Storefront-JS liegt dem Plugin bei (`Resources/app/storefront/dist`) — auf dem Server ist **kein Node-Build** nötig.
 
 ```bash
@@ -36,6 +40,8 @@ php bin/console plugin:install --activate RcDynamicPrice
 php bin/console theme:compile
 php bin/console cache:clear
 ```
+
+**Aktualisierungen laufen denselben Weg.** Den neuen Ordner per FTP über den alten legen, danach `plugin:refresh` und `plugin:update RcDynamicPrice`. Eine Aktualisierung von selbst gibt es nicht — ohne Composer-Paket und ohne Shopware-Store bleibt sie Sache des Betreibers. Vor einem Sprung über eine Hauptversion gehört ein Datenbank-Abzug dazu.
 
 ## Konfiguration
 
@@ -73,7 +79,7 @@ Der Meterpreis kann auf drei Ebenen konfiguriert werden; die Prioritäten werden
 
 ### Kategorie-Custom-Fields
 
-Im Admin am Kategorie-Eintrag → **Individuelle Felder** → **Dynamischer Meterpreis (Kategorie)**. Dieselben Felder wie am Produkt, jeweils leer = „vererben / nicht setzen". Untergeordnete Kategorien erben von der Elternkette.
+Im Admin am Kategorie-Eintrag → **Individuelle Felder** → **Dynamischer Meterpreis (Kategorie)**. Dieselben Felder wie am Produkt, jeweils leer = „vererben / nicht setzen". Untergeordnete Kategorien erben von der Elternkette. Längenschalter, geführte Auswahl, „Größen nur über die Länge" und die Längengruppen gibt es auch an der Kategorie. Ein dort eingeschalteter Schalter lässt sich am Produkt nicht ausschalten; die Längengruppen werden über die ganze Kette gesammelt, die nächste Stelle zuerst, und es gilt die erste, die der Artikel hat.
 
 ### Produktspezifische Custom Fields
 
@@ -88,6 +94,10 @@ Im Admin unter dem jeweiligen Produkt → **Individuelle Felder** → **Dynamisc
 | Split-Modus | Select | `Gleichmäßig aufteilen`, `Volle Stücke plus Rest`, `Nur Hinweis`. Leer = globaler Fallback. |
 | Max. Teilstücklänge (mm) | Zahl | Ab dieser Länge wird aufgeteilt oder der Hinweis angezeigt. Leer = kein Splitting. |
 | Hinweistext für Splitting | Text | Kundenspezifische Vorlage mit Platzhaltern `{length}`, `{maxPiece}`, `{pieces}`, `{pieceLength}`, `{remainder}`. |
+| Eingegebene Länge wählt die Größe | Schalter | Stellt auf die passende Größenstufe um, wenn die eingetragene Länge nicht zur gewählten passt. Liest Bereiche (`96 - 116 cm`) und feste Maße (`1,5 m`). Längen verschiedener Größen gehen Schritt für Schritt in den Warenkorb. Wirkt nur an Artikeln mit TMMS-Längenfeld. Auch an der Kategorie setzbar. |
+| Geführte Auswahl: erst die Länge | Schalter | Fragt zuerst die Länge ab und zeigt danach nur die dazu kaufbaren Optionen; Preis und Kaufknopf erscheinen, wenn die Variante feststeht. Wirkt nur mit Längengruppen. Auch an der Kategorie setzbar. |
+| Größen nur über die Länge | Schalter | Blendet die Knöpfe der Längengruppe aus; der Kunde gibt nur die Länge ein, darunter steht die berechnete Größe. Für Stangenmaterial. Wirkt nur mit Längenschalter und Längengruppen. Auch an der Kategorie setzbar. |
+| Längengruppen | Eigenschaftsgruppen (mehrere) | Die Gruppen, deren Werte Längen sind („Maße", „Länge"); es gilt die erste, die der Artikel hat. Auch an der Kategorie setzbar; der Wert am Produkt hat Vorrang. |
 
 ### Splitting-Verhalten
 
@@ -149,9 +159,10 @@ Ob ein Split vorliegt, entscheidet die Zahl der **Teilstücke** (`rc_billed_piec
 Anzeigegruppen: Drei gleich lange Stücke ergeben nur eine Gruppe, sind aber sehr wohl ein Split.
 
 Die Migration `Migration1784000000RemoveMeterLengthFromOrderConfirmationMail` entfernt den früher in
-die Mail-Vorlagen geschriebenen Längen-Block wieder, weil die Angabe sonst doppelt erschiene. Wurde
-dieser Block im Shop von Hand verändert, findet die Migration ihn nicht wortgleich und lässt die
-Vorlage unangetastet — dort steht die Länge dann zweimal, und der Block gehört von Hand entfernt.
+die Mail-Vorlagen geschriebenen Längen-Block wieder, weil die Angabe sonst doppelt erschiene. Gefunden
+wird der Block über seinen Marker und geschnitten bis zum zugehörigen `{% endif %}`, auch wenn er im
+Shop von Hand umgestaltet wurde. Fehlt der Marker oder das Blockende, bleibt die Vorlage unangetastet;
+dort steht die Länge dann zweimal, und der Block gehört von Hand entfernt.
 
 ### Schnittlänge und Abrechnungslänge sind zweierlei
 
@@ -241,8 +252,8 @@ Beim Update auf eine neue Plugin-Version gelten diese Schritte pro Shop-Instanz.
 # 1. Sicherheitsnetz: DB-Snapshot vor jedem Minor- oder Major-Sprung
 mysqldump "$DATABASE_URL" > backup_pre_<neue-version>.sql
 
-# 2. Neue Plugin-Version ziehen
-composer require ruhrcoder/rc-dynamic-price:^<neue-version>
+# 2. Neuen Stand in custom/plugins/RcDynamicPrice legen
+#    (git pull im Plugin-Ordner oder Archiv der gewünschten Fassung entpacken)
 php bin/console plugin:refresh
 
 # 3. Migrations und Container-Cache — zwingend in dieser Reihenfolge
@@ -297,9 +308,10 @@ Falls ein Release zurückgerollt werden muss, gelten diese Schritte. Vorab **DB-
 
 ### Rollback 1.6.x → 1.5.x
 
-1. **Plugin-Version herunterziehen**
+1. **Plugin-Ordner auf die Zielfassung zurücksetzen**
    ```bash
-   composer require ruhrcoder/rc-dynamic-price:^1.5.3
+   # Stand 1.5.x in custom/plugins/RcDynamicPrice wiederherstellen
+   # (Sicherung des Ordners oder älterer Stand des Repositories)
    php bin/console plugin:refresh
    php bin/console plugin:update RcDynamicPrice
    ```
@@ -315,9 +327,10 @@ Falls ein Release zurückgerollt werden muss, gelten diese Schritte. Vorab **DB-
 
 ### Rollback 1.5.x → 1.4.x
 
-1. **Plugin-Version herunterziehen**
+1. **Plugin-Ordner auf die Zielfassung zurücksetzen**
    ```bash
-   composer require ruhrcoder/rc-dynamic-price:^1.4.0
+   # Stand 1.4.x in custom/plugins/RcDynamicPrice wiederherstellen
+   # (Sicherung des Ordners oder älterer Stand des Repositories)
    php bin/console plugin:refresh
    php bin/console plugin:update RcDynamicPrice
    ```
@@ -362,3 +375,21 @@ Falls ein Release zurückgerollt werden muss, gelten diese Schritte. Vorab **DB-
 composer install
 composer quality   # cs-check + phpstan + test
 ```
+
+## Geschwindigkeit messen
+
+Das Messprojekt unter `benchmarks/` läuft getrennt vom Testlauf und gehört in kein Ausrollpaket
+(`export-ignore`). Ein Lauf misst gegen eine Testinstanz mit Shopware (ddev):
+
+```bash
+bash benchmarks/run.sh <instanz>
+```
+
+Zuerst Produktseite, Warenkorb und Warenkorb-Leiste mit einem Zuschnitt über HTTP (Median aus 12
+Aufrufen), dann mit PHPBench das Auflösen der Einstellungen gegen den Bestand und das Aufteilen in
+Teilstücke bis zur Grenze von 1 km. Jeder Lauf hängt seine Werte mit Datum, Fassung und Rechner an
+`benchmarks/results.csv` an. Verglichen wird die Reihe derselben Instanz.
+
+## Lizenz
+
+MIT — siehe [LICENSE](LICENSE).

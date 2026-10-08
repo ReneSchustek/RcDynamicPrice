@@ -16,9 +16,13 @@ use Shopware\Core\Framework\DataAbstractionLayer\EntityRepository;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\Criteria;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\EntitySearchResult;
 
+/**
+ * Der Helfer lädt den Artikel zum Warenkorb-Zugang und rundet Längen auf die eingestellte Stufe.
+ * Die Rundung bestimmt die abgerechnete Länge und damit den Preis.
+ */
 final class MeterProductHelperTest extends TestCase
 {
-    /** Eine echte UUID: Der Helfer weist inzwischen alles ab, was keine ist. */
+    /** Eine echte UUID, weil der Helfer alles abweist, was keine ist. */
     private const PRODUCT_ID = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
 
     /** @var EntityRepository<ProductCollection>&MockObject */
@@ -77,14 +81,14 @@ final class MeterProductHelperTest extends TestCase
         $this->helper->loadProduct(self::PRODUCT_ID, Context::createDefaultContext());
     }
 
-    // --- roundUp: Modus none ---
+    // roundUp im Modus none
 
     public function testRoundUpNoneReturnsExactValue(): void
     {
         $this->assertSame(4050, $this->helper->roundUp(4050, 'none'));
     }
 
-    // --- roundUp: Modus cm (10 mm) ---
+    // roundUp im Modus cm (10 mm)
 
     public function testRoundUpCmRoundsUp(): void
     {
@@ -101,7 +105,7 @@ final class MeterProductHelperTest extends TestCase
         $this->assertSame(10, $this->helper->roundUp(1, 'cm'));
     }
 
-    // --- roundUp: Modus quarter_m (250 mm) ---
+    // roundUp im Modus quarter_m (250 mm)
 
     public function testRoundUpQuarterMeterRoundsUp(): void
     {
@@ -118,7 +122,7 @@ final class MeterProductHelperTest extends TestCase
         $this->assertSame(250, $this->helper->roundUp(1, 'quarter_m'));
     }
 
-    // --- roundUp: Modus half_m (500 mm) ---
+    // roundUp im Modus half_m (500 mm)
 
     public function testRoundUpHalfMeterRoundsUp(): void
     {
@@ -130,7 +134,7 @@ final class MeterProductHelperTest extends TestCase
         $this->assertSame(2000, $this->helper->roundUp(2000, 'half_m'));
     }
 
-    // --- roundUp: Modus full_m (1000 mm) ---
+    // roundUp im Modus full_m (1000 mm)
 
     public function testRoundUpFullMeterRoundsUp(): void
     {
@@ -147,14 +151,14 @@ final class MeterProductHelperTest extends TestCase
         $this->assertSame(1000, $this->helper->roundUp(1, 'full_m'));
     }
 
-    // --- roundUp: unbekannter Modus ---
+    // roundUp mit unbekanntem Modus
 
     public function testRoundUpUnknownModeReturnsExactValue(): void
     {
         $this->assertSame(4050, $this->helper->roundUp(4050, 'invalid'));
     }
 
-    // --- Metrik-Hook: Timing der Rundung ---
+    // Die Rundung meldet ihre Dauer an die Metrik.
 
     public function testRoundUpRecordsTimingMetric(): void
     {
@@ -172,11 +176,11 @@ final class MeterProductHelperTest extends TestCase
 
     public function testRoundUpResultIsUnaffectedByMetricsRecorder(): void
     {
-        // Geld-Korrektheit: der Metrik-Hook darf das Rundungsergebnis nicht verändern.
+        // Die Metrik darf das Ergebnis der Rundung nicht verändern; es ist der Preis.
         $this->assertSame(1510, $this->helper->roundUp(1505, 'cm'));
     }
 
-    // --- ROUNDING_STEPS-Konstante (Single-Source für Server + Client) ---
+    // ROUNDING_STEPS ist die eine Tabelle, nach der Server und Produktseite runden.
 
     public function testRoundingStepsConstantHasExpectedShape(): void
     {

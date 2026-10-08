@@ -7,19 +7,17 @@ namespace Ruhrcoder\RcDynamicPrice\Tests\Unit\Resources;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Regression-Guard: im Admin-Backend sichtbare Labels dürfen keine technischen
- * Prefixe wie "Rc " oder "rc_" tragen, keinen Platzhalter "Custom Field"/"Custom Fields"
- * stehen lassen, und im de-DE-Pfad keine Ersatzschreibweisen (`ae`/`ue`/`ss` statt
- * Umlauten) enthalten. Im Admin muss immer eine sprachlich passende Bezeichnung stehen.
+ * Was im Verwaltungsbereich als Bezeichnung erscheint, trägt keine technischen Vorsilben wie
+ * „Rc " oder „rc_", keinen Platzhalter „Custom Field" und im Deutschen keine Ersatzschreibung
+ * (`ae`, `ue`, `ss` statt Umlaut). Der Betreiber liest diese Texte, nicht der Entwickler.
  *
- * Geprüft werden:
- * - `config.xml` (Card-Title, Input-Labels, HelpText, Placeholder, Option-Names)
- * - Alle Migrations (`label`/`helpText`-JSON-Maps in `custom_field_set` und `custom_field`)
+ * Geprüft werden die `config.xml` (Kartentitel, Feldbezeichnungen, Hilfetexte, Platzhalter,
+ * Optionen) und die `label`- und `helpText`-Angaben aller Migrationen.
  */
 final class AdminLabelCleanlinessTest extends TestCase
 {
     /**
-     * Locale-unabhängige Verbote — gelten für jeden labelführenden Text.
+     * Verbote, die in jeder Sprache gelten.
      */
     private const FORBIDDEN_PATTERNS = [
         '/^Rc\s/u',                    // "Rc Something"
@@ -31,16 +29,15 @@ final class AdminLabelCleanlinessTest extends TestCase
      * Locale-spezifische Verbote. Schlüssel ist die Ziel-Locale (`de-DE`, `en-GB`, …),
      * Wert ist die Pattern-Liste, die in dieser Locale verboten ist.
      *
-     * Für `de-DE`: typische Wortstämme mit `ae`/`ue`/`ss`-Ersatz statt Umlauten.
-     * Englische Strings dürfen weiterhin „length", „for", „pieces" etc. enthalten —
-     * dort sind das keine Ersatzschreibweisen.
+     * Für `de-DE` typische Wortstämme mit `ae`, `ue` oder `ss` statt Umlaut. Englische Texte
+     * enthalten „length", „for" oder „pieces" zu Recht; dort sind es keine Ersatzschreibungen.
      *
      * @var array<string, list<string>>
      */
     private const LOCALE_SPECIFIC_PATTERNS = [
         'de-DE' => [
-            // Kein führendes `\b` — die Wortstämme stehen oft mitten in Komposita (`Mindestlaenge`,
-            // `Teilstuecklaenge`). Trailing `\w*\b` verhindert Spillover über Wortgrenzen.
+            // Kein führendes `\b`, weil die Wortstämme oft mitten in Zusammensetzungen stehen
+            // (`Mindestlaenge`, `Teilstuecklaenge`). Das abschließende `\w*\b` hält den Treffer im Wort.
             '/(laenge|fuer|ueber|stueck|gleichmaess|hoeher|prioritaet|kuerz|aend(?:er|ert|ern)|naechst|loesch|ausschliesslich|frueher|ausgeloest|duerfen|pruefen|zusaetzlich)\w*\b/iu',
         ],
     ];
@@ -119,8 +116,8 @@ final class AdminLabelCleanlinessTest extends TestCase
     }
 
     /**
-     * Wendet alle Pattern-Listen an: erst die locale-unabhängigen, dann — falls eine Locale
-     * vorliegt — die locale-spezifischen.
+     * Wendet erst die Verbote für alle Sprachen an, dann, wenn eine Sprache bekannt ist, die für
+     * diese Sprache.
      *
      * @return list<string>
      */
@@ -219,8 +216,8 @@ final class AdminLabelCleanlinessTest extends TestCase
         $depth = 1;
         $pendingKey = null;
 
-        // Die Tiefe wird unten beim Erreichen von 0 mit `break` verlassen — eine
-        // zusätzliche Abbruchbedingung hier wäre toter Code.
+        // Die Schleife endet unten mit `break`, sobald die Tiefe 0 erreicht; eine Abbruchbedingung
+        // hier wäre toter Code.
         while ($i < $count) {
             $token = $tokens[$i];
 

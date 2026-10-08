@@ -6,6 +6,10 @@ namespace Ruhrcoder\RcDynamicPrice\Enum;
 
 use Ruhrcoder\RcDynamicPrice\DynamicPriceConstants;
 
+/**
+ * Der Schalter des Meterpreises an Produkt und Kategorie: erben, an oder aus. Drei Werte statt
+ * eines Hakens, weil ein Produkt eine eingeschaltete Kategorie auch abwählen können muss.
+ */
 enum ActiveState: string
 {
     case Inherit = DynamicPriceConstants::ACTIVE_INHERIT;
@@ -13,10 +17,10 @@ enum ActiveState: string
     case Off = DynamicPriceConstants::ACTIVE_OFF;
 
     /**
-     * Wandelt Custom-Field-Werte tolerant in einen Zustand:
-     * - Strings `inherit` / `on` / `off` werden direkt gemappt
-     * - `bool true` -> `On` (BC: vor der Migration auf Tri-State lagen Werte als bool vor)
-     * - `bool false` / `null` / leerer String / unbekannte Werte -> `Inherit` (Default: nicht entschieden)
+     * Wandelt Zusatzfeld-Werte duldsam in einen Zustand:
+     * - `inherit`, `on` und `off` werden direkt übernommen.
+     * - `true` gilt als `On`: Felder aus der Zeit des Hakens tragen noch einen Wahrheitswert.
+     * - `false`, `null`, ein leerer Text und Unbekanntes gelten als `Inherit`, also nicht entschieden.
      */
     public static function fromMixed(mixed $value): self
     {

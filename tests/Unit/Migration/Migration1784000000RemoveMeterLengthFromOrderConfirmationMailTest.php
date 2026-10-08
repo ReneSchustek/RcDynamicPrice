@@ -9,11 +9,11 @@ use Ruhrcoder\RcDynamicPrice\Migration\Migration1783900000AddMeterLengthToOrderC
 use Ruhrcoder\RcDynamicPrice\Migration\Migration1784000000RemoveMeterLengthFromOrderConfirmationMail;
 
 /**
- * Der Längen-Block muss sich rückstandsfrei wieder aus den Mail-Vorlagen entfernen lassen — sonst
- * nennt die Bestellbestätigung die Länge doppelt, weil sie jetzt schon im Positionsnamen steht.
+ * Der Längen-Block muss sich rückstandsfrei aus den Mail-Vorlagen entfernen lassen; sonst nennt
+ * die Bestellbestätigung die Länge doppelt, weil sie auch im Positionsnamen steht.
  *
- * Der schärfste Test ist der Rundlauf: einfügen, entfernen, und die Vorlage muss Zeichen für
- * Zeichen wieder die ursprüngliche sein.
+ * Am schärfsten prüft der Rundlauf: einfügen, entfernen, und die Vorlage ist Zeichen für Zeichen
+ * wieder die ursprüngliche.
  */
 final class Migration1784000000RemoveMeterLengthFromOrderConfirmationMailTest extends TestCase
 {
@@ -49,13 +49,10 @@ final class Migration1784000000RemoveMeterLengthFromOrderConfirmationMailTest ex
     }
 
     /**
-     * Der Grund, warum nicht auf Zeichengleichheit mit dem heutigen Blocktext geprüft wird.
-     *
-     * Im Live-Bestand steht in der Vorlage ein echter Zeilenumbruch, wo der Code heute die
-     * Zeichenfolge `\n` schreibt: Der Block stammt dort aus einer Zwischenfassung der
-     * v1.16.0-Entwicklung, und die einfügende Migration ist idempotent — sie lief nie wieder. Ein
-     * zeichengenauer Vergleich hätte den Block stehen lassen, und die Bestellbestätigung nennte die
-     * Länge zweimal. Genau so ist es beim ersten Rückbau-Versuch passiert.
+     * Im Live-Bestand steht in der Vorlage ein echter Zeilenumbruch, wo die einfügende Migration
+     * die Zeichenfolge `\n` schreibt; der Block stammt dort aus einer älteren Fassung, und die
+     * einfügende Migration läuft kein zweites Mal. Ein zeichengenauer Vergleich mit dem Blocktext
+     * ließe den Block deshalb stehen, und die Bestellbestätigung nennte die Länge zweimal.
      */
     public function testRemovesAnOlderVariantOfTheBlockAsFoundInTheWild(): void
     {
@@ -92,9 +89,9 @@ final class Migration1784000000RemoveMeterLengthFromOrderConfirmationMailTest ex
     }
 
     /**
-     * Umgestaltete Blöcke werden weiterhin entfernt — geschnitten wird über die Twig-Struktur, nicht
-     * über den Wortlaut. Nur wenn das schließende `{% endif %}` fehlt, wäre der Schnitt geraten;
-     * dann bleibt die Vorlage unangetastet.
+     * Geschnitten wird über die Twig-Struktur, nicht über den Wortlaut; deshalb verschwinden auch
+     * umgestaltete Blöcke. Fehlt das schließende `{% endif %}`, wäre der Schnitt geraten, und die
+     * Vorlage bleibt unangetastet.
      */
     public function testTemplateWithoutClosingEndifIsLeftUntouched(): void
     {

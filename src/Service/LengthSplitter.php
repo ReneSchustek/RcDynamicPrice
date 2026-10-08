@@ -9,16 +9,23 @@ use Ruhrcoder\RcDynamicPrice\Enum\SplitMode;
 use Ruhrcoder\RcDynamicPrice\Exception\DynamicPriceException;
 
 /**
- * Berechnet die Aufteilung einer Gesamtlänge in Teilstücke.
- * Zustandslos und rein funktional — gesamte Geschäftslogik des Splittings liegt hier.
+ * Berechnet die Aufteilung einer Gesamtlänge in Teilstücke. Zustandslos; die ganze Regel der Teilung
+ * steht hier und nirgends sonst.
  *
- * Vorbedingung: $totalMm muss vom Aufrufer auf eine realistische Obergrenze begrenzt sein.
- * Der Service akzeptiert bis 1.000.000 mm (1 km); darüber wird eine Exception geworfen,
- * um Memory-Exhaustion durch absurd viele Teilstücke auszuschließen.
+ * Vorbedingung: $totalMm muss vom Aufrufer auf eine realistische Obergrenze begrenzt sein; davor
+ * steht die Höchstlänge der Einstellungen (Vorgabe 10 m). Der Service akzeptiert bis 1.000.000 mm
+ * (1 km) und wirft darüber eine Exception.
  */
 final class LengthSplitter implements LengthSplitterInterface
 {
-    /** Obergrenze für die Gesamtlänge (1 km). Schützt vor absurden Array-Allokationen. */
+    /**
+     * Obergrenze für die Gesamtlänge (1 km).
+     *
+     * Die Rechnung selbst ist auch an der Grenze harmlos: 1 km in 1-mm-Stücken, also eine Million
+     * Teilstücke, braucht gemessen rund 13 ms und 4 MB (`benchmarks/LengthSplitterBench.php`). Teuer
+     * wäre, was danach kommt: Die Teilstücke stehen in der Warenkorbposition, werden mit ihr
+     * gespeichert und im Bestellvorgang angezeigt. Davor schützt die Grenze.
+     */
     public const MAX_TOTAL_MM = 1_000_000;
 
     /**
@@ -40,7 +47,7 @@ final class LengthSplitter implements LengthSplitterInterface
             throw DynamicPriceException::totalLengthExceedsMaximum($totalMm, self::MAX_TOTAL_MM);
         }
 
-        // Kein Split, wenn Modus unbekannt, deaktiviert oder die Stückelungsgrenze nicht greift
+        // Keine Teilung ohne Modus, beim reinen Hinweis oder wenn die Länge unter der Grenze bleibt.
         if ($mode === null || $mode === SplitMode::Hint || $maxPieceMm <= 0 || $totalMm <= $maxPieceMm) {
             return [$totalMm];
         }
@@ -52,28 +59,28 @@ final class LengthSplitter implements LengthSplitterInterface
     }
 
     /**
-     * Gleichmäßige Teilung: minimale Anzahl Teile, bei der jedes Teil <= maxPiece bleibt.
-     * Die kleinste Stückzahl liefert zugleich die größten und damit min-freundlichsten Teile.
+     * Gleichmäßige Teilung: die kleinste Zahl an Teilen, bei der jedes höchstens maxPiece lang ist.
+     * Die kleinste Stückzahl ergibt zugleich die längsten Teile, die am seltensten unter die
+     * Mindestlänge fallen.
      *
-     * Zwei Varianten (Händler-Konfiguration, Geld-relevant):
-     *  - `cut_length` (Standard): jedes Teil erhält dieselbe **aufgerundete** Länge
-     *    (`ceil(total / pieceCount)`). Die Stück-Summe kann die Eingabe übersteigen — der
-     *    Shop schneidet und berechnet die gleichlangen Stücke. So war das bisherige Verhalten.
-     *  - `exact`: die Länge wird exakt verteilt (Summe der Teile == $total); die ersten
-     *    $remainder Teile sind 1 mm länger. Der Kunde zahlt genau die bestellte Länge.
+     * Zwei Varianten, vom Händler eingestellt, weil sie den Preis bestimmen:
+     *  - `cut_length` (Vorgabe): Jedes Teil bekommt dieselbe aufgerundete Länge
+     *    (`ceil(total / pieceCount)`). Die Summe kann die Eingabe übersteigen; der Shop schneidet
+     *    und berechnet die gleich langen Stücke.
+     *  - `exact`: Die Länge wird genau verteilt (Summe gleich $total), die ersten $remainder Teile
+     *    sind 1 mm länger. Der Kunde zahlt genau die bestellte Länge.
      *
-     * Die Mindestlänge kommt hier nicht vor — ein Teilstück unter ihr wird geschnitten wie
-     * berechnet und lediglich mit der Mindestlänge **abgerechnet** (im Processor).
+     * Die Mindestlänge kommt hier nicht vor. Ein Teilstück darunter wird geschnitten wie berechnet
+     * und erst im Processor mit der Mindestlänge abgerechnet.
      *
      * @return non-empty-list<int>
      */
     private function splitEqual(int $total, int $max, string $equalBilling): array
     {
-        // Bei $total > $max ist $pieceCount >= 2; der Guard im Aufrufer garantiert diese Vorbedingung.
+        // Der Aufrufer teilt nur bei $total > $max, also ist $pieceCount mindestens 2.
         $pieceCount = \max(1, (int) \ceil($total / $max));
 
         if ($equalBilling === DynamicPriceConstants::EQUAL_BILLING_EXACT) {
-            // Exakte Verteilung: Summe der Teile == $total.
             $base = \intdiv($total, $pieceCount);
             $remainder = $total - $base * $pieceCount;
             $pieces = [];
@@ -81,7 +88,6 @@ final class LengthSplitter implements LengthSplitterInterface
                 $pieces[] = $i < $remainder ? $base + 1 : $base;
             }
         } else {
-            // Schnittlänge: jedes Teil auf dieselbe aufgerundete Länge.
             $pieceLength = (int) \ceil($total / $pieceCount);
             $pieces = \array_fill(0, $pieceCount, $pieceLength);
         }
@@ -93,16 +99,16 @@ final class LengthSplitter implements LengthSplitterInterface
     /**
      * Max-Rest-Teilung: volle maxPiece-Stücke plus Rest.
      *
-     * Das Reststück behält seine tatsächliche Länge, auch wenn es unter der Mindestlänge liegt.
-     * Die Mindestlänge ist eine **Abrechnungsregel** („ein Zuschnitt kostet mindestens $min"), keine
-     * Fertigungsregel: Wer 5.100 mm bestellt, soll 5.000 + 100 mm bekommen und nicht 5.000 + 1.000 mm.
-     * Die Anhebung auf die Mindestlänge passiert im Processor, wo der Preis entsteht.
+     * Das Reststück behält seine tatsächliche Länge, auch unter der Mindestlänge. Die Mindestlänge ist
+     * eine Abrechnungsregel („ein Zuschnitt kostet mindestens $min"), keine Fertigungsregel: Wer
+     * 5.100 mm bestellt, bekommt 5.000 + 100 mm und nicht 5.000 + 1.000 mm. Angehoben wird erst im
+     * Processor, wo der Preis entsteht.
      *
      * @return non-empty-list<int>
      */
     private function splitMaxRest(int $total, int $max): array
     {
-        // Vorbedingung $total > $max durch den Aufrufer: intdiv ergibt garantiert >= 1
+        // Der Aufrufer teilt nur bei $total > $max; intdiv ergibt also mindestens 1.
         $fullPieces = \intdiv($total, $max);
         $remainder = $total - $fullPieces * $max;
 

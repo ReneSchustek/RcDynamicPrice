@@ -9,10 +9,12 @@ use Shopware\Core\Framework\Migration\MigrationStep;
 use Shopware\Core\Framework\Uuid\Uuid;
 
 /**
- * Ergänzt drei Custom Fields für das Längen-Splitting:
- *  - rc_meter_price_split_mode        (select: equal | max_rest | hint)
- *  - rc_meter_price_max_piece_length  (int, mm)
- *  - rc_meter_price_split_hint        (text mit Platzhaltern)
+ * Ergänzt am Produkt-Set die drei Felder, mit denen zu lange Zuschnitte aufgeteilt werden: die
+ * Betriebsart (`rc_meter_price_split_mode`: gleichmäßig, volle Stücke plus Rest oder nur Hinweis), die
+ * größte Teilstücklänge in Millimetern und den Hinweistext mit Platzhaltern.
+ *
+ * Jedes Feld wird nur angelegt, wenn es fehlt; eine spätere Migration ergänzt, was in manchen Shops
+ * trotzdem nicht ankam.
  */
 final class Migration1745200000AddSplittingCustomFields extends MigrationStep
 {

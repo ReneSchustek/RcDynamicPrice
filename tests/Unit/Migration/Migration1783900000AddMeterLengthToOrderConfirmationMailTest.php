@@ -7,6 +7,11 @@ namespace Ruhrcoder\RcDynamicPrice\Tests\Unit\Migration;
 use PHPUnit\Framework\TestCase;
 use Ruhrcoder\RcDynamicPrice\Migration\Migration1783900000AddMeterLengthToOrderConfirmationMail;
 
+/**
+ * Die Migration fügt den Längen-Block in die Vorlagen der Bestellbestätigung ein; die Nachfolgerin
+ * `Migration1784000000RemoveMeterLengthFromOrderConfirmationMail` nimmt ihn wieder heraus. Geprüft
+ * wird, dass sie an der richtigen Stelle einfügt, nur einmal und nie in eine angepasste Vorlage.
+ */
 final class Migration1783900000AddMeterLengthToOrderConfirmationMailTest extends TestCase
 {
     private Migration1783900000AddMeterLengthToOrderConfirmationMail $migration;
@@ -26,7 +31,7 @@ final class Migration1783900000AddMeterLengthToOrderConfirmationMailTest extends
         self::assertStringContainsString(Migration1783900000AddMeterLengthToOrderConfirmationMail::MARKER, $patched);
         self::assertStringContainsString('nestedItem.payload.rc_split_summary', $patched);
 
-        // Der Block sitzt hinter dem schließenden </div> des Labels, nicht davor
+        // Der Block sitzt hinter dem schließenden </div> des Labels, nicht davor.
         $markerPos = strpos($patched, Migration1783900000AddMeterLengthToOrderConfirmationMail::MARKER);
         $anchorPos = strpos($patched, '{{ nestedItem.label|u.wordwrap(80) }}');
         self::assertIsInt($markerPos);
@@ -46,8 +51,8 @@ final class Migration1783900000AddMeterLengthToOrderConfirmationMailTest extends
     }
 
     /**
-     * Idempotenz: Ein zweiter Lauf darf die Vorlage nicht erneut patchen — sonst stünde der Block
-     * nach jedem Plugin-Update ein weiteres Mal in der Mail.
+     * Ein zweiter Lauf ändert die Vorlage nicht; sonst stünde der Block nach jedem Update der
+     * Erweiterung ein weiteres Mal in der Mail.
      */
     public function testSecondRunDoesNotPatchAgain(): void
     {
@@ -65,8 +70,8 @@ final class Migration1783900000AddMeterLengthToOrderConfirmationMailTest extends
     }
 
     /**
-     * Schutz für shop-spezifisch angepasste Vorlagen: Fehlt der Default-Anker, wird nicht geraten,
-     * sondern gar nicht gepatcht. Die manuelle Ergänzung steht in der README.
+     * Fehlt der Anker der Standardvorlage, wurde die Vorlage im Shop angepasst. Dann wird sie nicht
+     * geändert, statt den Block an einer geratenen Stelle einzufügen.
      */
     public function testShopCustomisedTemplateWithoutAnchorIsLeftUntouched(): void
     {

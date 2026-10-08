@@ -8,6 +8,10 @@ use PHPUnit\Framework\TestCase;
 use Ruhrcoder\RcDynamicPrice\Service\Metrics\MetricsRecorderInterface;
 use Ruhrcoder\RcDynamicPrice\Service\Metrics\NullMetricsRecorder;
 
+/**
+ * Der leere Rekorder ist die Vorgabe, wenn keine Metrik gewünscht ist; er darf nichts tun und nie
+ * werfen.
+ */
 final class NullMetricsRecorderTest extends TestCase
 {
     public function testImplementsRecorderInterface(): void
@@ -19,7 +23,7 @@ final class NullMetricsRecorderTest extends TestCase
     {
         $recorder = new NullMetricsRecorder();
 
-        // Es gibt keinen beobachtbaren Seiteneffekt — der No-Op darf lediglich nicht werfen.
+        // Beobachten lässt sich nichts; geprüft wird nur, dass der Aufruf nicht wirft.
         $recorder->increment('cart.meter_item.processed', ['mode' => 'full_m']);
 
         $this->expectNotToPerformAssertions();

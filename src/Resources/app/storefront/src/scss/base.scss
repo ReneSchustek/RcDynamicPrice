@@ -1,5 +1,7 @@
-// Theme-Variablen aus Bootstrap nutzen, damit Dark-Themes und Custom-Themes
-// nicht gegen hartkodierte Farben kämpfen müssen.
+// Das Hinweisfenster der Meterpreis-Eingabe (`util/hint-modal.js`). Farben kommen aus den
+// Bootstrap-Variablen, damit dunkle und eigene Themes nicht gegen feste Werte arbeiten müssen.
+// 1050 und 1051 sind die Ebenen von Bootstraps eigener Abdunklung und Dialog: über Kopfzeile und
+// mitlaufender Kaufleiste, in derselben Reihenfolge wie ein Fenster des Kerns.
 .rc-dynamic-price-backdrop {
     position: fixed;
     inset: 0;
@@ -17,6 +19,7 @@
     border: 1px solid var(--bs-border-color, rgba(0, 0, 0, .175));
     border-radius: .5rem;
     padding: 1.5rem;
+    // 28rem trägt zwei, drei Sätze Hinweis ohne lange Zeilen; 90 % lässt am Telefon einen Rand.
     max-width: 28rem;
     width: 90%;
     z-index: 1051;
@@ -25,4 +28,30 @@
 
 .rc-dynamic-price-modal__content p {
     margin-bottom: 1rem;
+}
+
+// Geführte Auswahl. Die Klassen setzt nur das Skript; ohne Skript bleibt die Auswahl des Kerns.
+// `!important`, weil die Optionen und Gruppen des Kerns ihre Anzeige über Bootstrap-Hilfsklassen
+// (`d-inline-flex`) bekommen, die ihrerseits `!important` tragen.
+.rc-guided-hidden {
+    display: none !important;
+}
+
+// Bis die Variante feststeht: kein Preis, keine Lieferzeit, kein Kaufknopf, auch nicht in der
+// mitlaufenden Kaufleiste des Themes oder bei PayPal (Ratenhinweis, Express-Kauf). Ein Preis zu einer
+// Variante, die der Kunde nicht gewählt hat, wäre eine Aussage über etwas anderes als das, was er
+// gerade zusammenstellt. PayPal wird nur über seine Kennzeichen am Element verborgen, nicht angefasst.
+.rc-guided-incomplete {
+    .product-detail-price-container,
+    .product-detail-delivery-information,
+    .buy-widget-container,
+    .rc-buy-bar,
+    [data-swag-paypal-installment-banner],
+    [data-swag-paypal-express-button] {
+        display: none !important;
+    }
+}
+
+.rc-guided-selection__hint {
+    margin-top: 1rem;
 }

@@ -11,17 +11,15 @@ use Shopware\Core\Checkout\Cart\Cart;
 use Shopware\Core\Checkout\Cart\LineItem\LineItem;
 
 /**
- * Baut die Cart-Situation für einen Meter-Artikel:
- *  - nutzt den LengthSplitter für die Split-Mathematik
- *  - schreibt Eingabelänge und Aufteilung in den Payload der Position
+ * Schreibt einen Zuschnitt-Auftrag in eine Warenkorbposition: Eingabelänge, Teilstücke aus dem
+ * LengthSplitter und die Angaben, die der Processor für den Preis braucht.
  *
- * Eine Position bildet einen **Zuschnitt-Auftrag** ab, kein Teilstück. Die Teilstücke sind eine
- * Fertigungsfolge und werden als Payload mitgeführt, nicht als eigene Cart-Einträge. Vorher war
- * jedes Teilstück ein eigenes LineItem — der Kunde konnte damit ein Reststück einzeln löschen und
- * bestellte kommentarlos eine kürzere Länge als eingegeben.
+ * Eine Position ist ein Auftrag, kein Teilstück. Die Teilstücke sind eine Fertigungsfolge im Payload
+ * und keine eigenen Warenkorbeinträge; als eigene Einträge ließe sich ein Reststück einzeln löschen,
+ * und der Kunde bestellte kommentarlos weniger, als er eingegeben hat.
  *
- * Der Service ist Request-agnostisch — die Mode-Ermittlung inkl. ID-Controller-Fallback
- * liegt im Subscriber, damit der Assembler ohne HTTP-Kontext testbar bleibt.
+ * Den Modus einschließlich des Rückfalls bei fremden ID-Controllern bestimmt der Subscriber; der
+ * Assembler kommt so ohne Request aus und bleibt ohne HTTP-Kontext testbar.
  */
 final class CartItemSplitAssembler implements CartItemSplitAssemblerInterface
 {
@@ -40,7 +38,8 @@ final class CartItemSplitAssembler implements CartItemSplitAssemblerInterface
             $config->equalSplitBilling,
         );
 
-        // Bei Merging liefert Shopware eine abweichende Instanz über Cart::get() — immer den Cart-Stand verwenden
+        // Beim Zusammenführen liefert Cart::get() eine andere Instanz als das eingehende Objekt;
+        // beschrieben wird die im Warenkorb.
         $cartItem = $cart->get($incoming->getId()) ?? $incoming;
 
         if (\count($pieces) > 1) {
@@ -71,11 +70,11 @@ final class CartItemSplitAssembler implements CartItemSplitAssemblerInterface
     }
 
     /**
-     * Werden Teilstücke unter der Mindestlänge mit der Mindestlänge **abgerechnet**?
+     * Werden Teilstücke unter der Mindestlänge mit der Mindestlänge abgerechnet?
      *
-     * Geschnitten werden sie immer in ihrer tatsächlichen Länge — die Mindestlänge ist eine
-     * Abrechnungsregel. Beim `max_rest`-Split gilt sie immer (ein Reststück kostet mindestens ein
-     * Mindeststück), beim `equal`-Split entscheidet die Händler-Option `equalSplitEnforceMin`.
+     * Geschnitten werden sie immer in ihrer tatsächlichen Länge; die Mindestlänge ist eine
+     * Abrechnungsregel. Beim `max_rest`-Split gilt sie immer, weil ein Reststück mindestens ein
+     * Mindeststück kostet. Beim `equal`-Split entscheidet die Händler-Option `equalSplitEnforceMin`.
      */
     private function billsShortPiecesAtMinimum(MeterSplittingConfig $config): bool
     {

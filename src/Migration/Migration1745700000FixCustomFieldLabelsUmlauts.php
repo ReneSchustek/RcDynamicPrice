@@ -8,30 +8,28 @@ use Doctrine\DBAL\Connection;
 use Shopware\Core\Framework\Migration\MigrationStep;
 
 /**
- * Heilt bestehende Installationen: ersetzt in den Admin-Labels und HelpTexts der Splitting- und
- * Kategorie-Custom-Felder die historischen Ersatzschreibweisen `ae`/`ue`/`ss` durch korrekte Umlaute.
+ * Ersetzt in Beschriftung und Hilfetext der Felder zum Aufteilen und der Kategoriefelder die
+ * Ersatzschreibung (`ae`, `ue`, `ss`) durch Umlaute und ß, in Shops, in denen die Felder bisher so
+ * angelegt sind.
  *
- * Betrifft ausschließlich `de-DE`-Strings. Englische Labels bleiben unverändert.
- *
- * Idempotent: Felder, deren Config bereits die korrekten Umlaute enthält, werden ohne UPDATE
- * übersprungen — Pre-Hash auf der ursprünglichen Config-Spalte vergleicht sich mit dem Post-Replace
- * und schreibt nur, wenn sich tatsächlich etwas geändert hat.
+ * Geändert werden nur Texte unter `de-DE`. Geschrieben wird nur, wenn die bereinigte Konfiguration
+ * anders aussieht als die gespeicherte; ein zweiter Lauf schreibt deshalb nichts mehr.
  */
 final class Migration1745700000FixCustomFieldLabelsUmlauts extends MigrationStep
 {
     /**
-     * Custom-Field-Namen, die Ersatzschreibweisen-Lasten tragen können (Migrations 1745200000,
-     * 1745400000, 1745500000). Andere Felder (Produkt-Active, Min/Max am Produkt aus 1743*) wurden
-     * historisch direkt mit korrekten Umlauten erzeugt und brauchen keine Heilung.
+     * Die Felder, die mit Ersatzschreibung angelegt sein können: aus den Migrationen 1745200000,
+     * 1745400000 und 1745500000. Die älteren Produktfelder (Meterpreis, Mindest- und Höchstlänge) sind mit
+     * Umlauten angelegt und fehlen hier deshalb.
      *
      * @var list<string>
      */
     private const AFFECTED_FIELDS = [
-        // Produkt-Custom-Fields aus Migration1745200000
+        // Produktfelder aus Migration1745200000
         'rc_meter_price_split_mode',
         'rc_meter_price_max_piece_length',
         'rc_meter_price_split_hint',
-        // Kategorie-Custom-Fields aus Migration1745500000
+        // Kategoriefelder aus Migration1745500000
         'rc_meter_price_cat_min_length',
         'rc_meter_price_cat_max_length',
         'rc_meter_price_cat_rounding',
@@ -41,14 +39,14 @@ final class Migration1745700000FixCustomFieldLabelsUmlauts extends MigrationStep
     ];
 
     /**
-     * Ersetzungs-Tabelle (Ersatzschreibweise → Korrektur). Wird ausschließlich auf
-     * `de-DE`-Strings angewandt. Reihenfolge so gewählt, dass längere Phrasen zuerst greifen,
-     * damit kein Teilersatz innerhalb eines bereits korrigierten Worts entsteht.
+     * Ersatzschreibung und richtige Schreibung, ganze Texte und einzelne Begriffe. Die Reihenfolge
+     * entscheidet nichts: `strtr()` mit einem Feld nimmt an jeder Stelle den längsten passenden Schlüssel,
+     * ein Begriff innerhalb eines ganzen Textes wird also nicht vorher einzeln ersetzt.
      *
      * @var array<string, string>
      */
     private const REPLACEMENTS = [
-        // Mehrwort-Phrasen zuerst
+        // Ganze Texte
         'Split-Modus fuer Langstuecke' => 'Split-Modus für Langstücke',
         'Wie wird eine Eingabe oberhalb der maximalen Teilstuecklaenge behandelt?'
             => 'Wie wird eine Eingabe oberhalb der maximalen Teilstücklänge behandelt?',
@@ -110,7 +108,7 @@ final class Migration1745700000FixCustomFieldLabelsUmlauts extends MigrationStep
 
         $newConfig = json_encode($repaired, \JSON_THROW_ON_ERROR | \JSON_UNESCAPED_UNICODE);
         if ($newConfig === $rawConfig) {
-            // Idempotenz: Config hat keine Ersatzschreibweisen mehr — kein UPDATE nötig.
+            // Nichts ersetzt und gleich kodiert: kein Schreiben, ein zweiter Lauf bleibt folgenlos.
             return;
         }
 
@@ -124,9 +122,8 @@ final class Migration1745700000FixCustomFieldLabelsUmlauts extends MigrationStep
     }
 
     /**
-     * Walks the config tree and applies the replacement table to every string that lives under a
-     * `de-DE` key. English strings (`en-GB`) and locale-unabhängige Schlüssel (`componentName`,
-     * `customFieldType`, `customFieldPosition`, `value`, …) bleiben unangetastet.
+     * Geht die Konfiguration durch und ersetzt in jedem Text unter einem Schlüssel `de-DE`. Englische Texte
+     * und sprachunabhängige Werte wie `componentName` oder `value` bleiben, wie sie sind.
      *
      * @param array<int|string, mixed> $node
      *

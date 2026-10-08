@@ -9,8 +9,9 @@ use PHPUnit\Framework\TestCase;
 use Ruhrcoder\RcDynamicPrice\Migration\Migration1745700000FixCustomFieldLabelsUmlauts;
 
 /**
- * Verifiziert Heilungs-Migration über Connection-Mock — keine echte DB nötig. Drei Eigenschaften
- * werden geprüft: Korrektur, Locale-Schutz (en-GB unverändert), Idempotenz.
+ * Die Migration ersetzt Ersatzschreibungen in den deutschen Feldtexten durch echte Umlaute. Geprüft
+ * werden drei Eigenschaften an einer nachgebildeten Verbindung: Sie berichtigt, sie lässt die
+ * englischen Texte unberührt, und ein zweiter Lauf ändert nichts mehr.
  */
 final class Migration1745700000FixCustomFieldLabelsUmlautsTest extends TestCase
 {
@@ -119,10 +120,11 @@ final class Migration1745700000FixCustomFieldLabelsUmlautsTest extends TestCase
     }
 
     /**
-     * Hilfsmethode: simuliert ein einzelnes betroffenes Feld in der DB. Die Migration iteriert über
-     * mehrere Feldnamen — fetchAssociative liefert nur für den gesuchten Namen einen Treffer, alle
-     * anderen liefern false. Liefert das `config`-Argument des einzigen executeStatement zurück
-     * (oder null, wenn keiner ausgeführt wurde).
+     * Bildet ein einzelnes betroffenes Feld in der Datenbank nach. Die Migration fragt mehrere
+     * Feldnamen ab; `fetchAssociative` liefert nur für den gesuchten einen Treffer, für alle anderen
+     * `false`.
+     *
+     * @return string|null das `config`-Argument des einzigen `executeStatement`, `null` ohne Änderung
      */
     private function captureUpdateForSingleRow(string $fieldName, string $oldConfig): ?string
     {

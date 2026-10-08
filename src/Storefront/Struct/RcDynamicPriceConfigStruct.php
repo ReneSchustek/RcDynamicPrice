@@ -8,26 +8,31 @@ use Ruhrcoder\RcDynamicPrice\DynamicPriceConstants;
 use Ruhrcoder\RcDynamicPrice\Exception\DynamicPriceException;
 use Shopware\Core\Framework\Struct\Struct;
 
+/**
+ * Was das Meterpreis-Widget der Produktseite braucht, um Preis und Teilung vorab so zu zeigen, wie
+ * der Warenkorb sie rechnet. Der Konstruktor weist widersprüchliche Grenzen ab, statt sie an die
+ * Seite durchzureichen.
+ */
 final class RcDynamicPriceConfigStruct extends Struct
 {
     /**
-     * @param array<string, int> $roundingSteps Modus → Schrittweite-Map; wird vom Storefront-JS
-     *                                          als `data-rounding-steps`-JSON gelesen, damit
-     *                                          Server und Client gegen dieselbe Tabelle runden.
+     * @param array<string, int> $roundingSteps Modus → Schrittweite; das Storefront-Skript liest sie
+     *                                          als `data-rounding-steps`, damit Seite und Server mit
+     *                                          derselben Tabelle runden.
      */
     public function __construct(
         private readonly string $hintText,
         private readonly int $minLength,
         private readonly int $maxLength,
         private readonly string $roundingMode = 'none',
-        // Als String statt SplitMode-Enum, damit Twig ohne expliziten .value-Cast auf das Data-Attribut
-        // serialisieren kann. Zentrale Quelle bleibt der Enum; die Konvertierung erfolgt im Subscriber.
+        // Als Text statt SplitMode, damit Twig ihn ohne `.value` ins Datenattribut schreibt. Maßgeblich
+        // bleibt das Enum; umgewandelt wird im ProductPageSubscriber.
         private readonly string $splitMode = '',
         private readonly int $maxPieceLength = 0,
         private readonly string $splitHintTemplate = '',
         private readonly array $roundingSteps = [],
-        // equal-Modus-Abrechnung für die Storefront-Vorschau (muss serverseitig identisch sein,
-        // sonst weicht die angezeigte Stückelung vom berechneten Cart-Preis ab).
+        // Abrechnung im equal-Modus für die Vorschau; weicht sie vom Server ab, zeigt die Seite eine
+        // andere Stückelung als der Warenkorb berechnet.
         private readonly string $equalSplitBilling = DynamicPriceConstants::EQUAL_BILLING_CUT_LENGTH,
         private readonly bool $equalSplitEnforceMin = true,
     ) {

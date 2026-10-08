@@ -4,28 +4,84 @@ declare(strict_types=1);
 
 namespace Ruhrcoder\RcDynamicPrice;
 
+/**
+ * Die Namen, die Erweiterung, Datenbank, Vorlagen und Skripte teilen: Zusatzfelder, Einstellungen,
+ * Payload-Schlüssel, Cache-Tags und Rundungsmodi. An einer Stelle, damit ein Tippfehler nicht still
+ * eine Funktion abschaltet.
+ */
 final class DynamicPriceConstants
 {
-    // --- Custom-Field-Set-Namen ---
+    // Feldsätze
 
-    /** Custom-Field-Set am Produkt */
+    /** Feldsatz am Produkt */
     public const SET_PRODUCT = 'rc_dynamic_price';
 
-    /** Custom-Field-Set an der Kategorie (Scope-Override auf Kategorie-Ebene) */
+    /** Feldsatz an der Kategorie, deren Werte die Produkte darunter erben */
     public const SET_CATEGORY = 'rc_dynamic_price_category';
 
-    // --- Custom-Field-Namen am Produkt ---
+    // Zusatzfelder am Produkt
 
-    /** Steuert ob das Meterartikel-Widget angezeigt wird (Tri-State: inherit/on/off) */
+    /** Schaltet den Meterpreis: erben, an oder aus (siehe ActiveState) */
     public const FIELD_METER_ACTIVE = 'rc_meter_price_active';
 
-    // --- Active-Zustände (Tri-State) ---
+    /**
+     * Steuert, ob die eingegebene Länge die Variante wählt.
+     *
+     * Der Name bricht mit dem Vorsatz `rc_meter_price_` der übrigen Felder, weil das Feld mit dem
+     * Preis nichts zu tun hat: Es schaltet ein Verhalten der Produktseite, und wer es sucht, sucht
+     * nach „Länge". Im selben Feldsatz liegt es trotzdem, als dieselbe Sache und dieselbe Karte im
+     * Verwaltungsbereich.
+     */
+    public const FIELD_LENGTH_VARIANT_SWITCH = 'rc_length_variant_switch';
+
+    /**
+     * Geführte Variantenauswahl: erst die Länge, dann nur die dazu kaufbaren Optionen der übrigen
+     * Gruppen. Ein Haken, kein Dreifachwert: Gesetzt am Produkt oder an einer Kategorie seiner
+     * Kette schaltet er ein; abwählen lässt er sich je Produkt nicht.
+     */
+    public const FIELD_GUIDED_SELECTION = 'rc_guided_selection';
+
+    /**
+     * Die Eigenschaftsgruppen, deren Werte Längen sind („Maße", „Länge"), als Mehrfachauswahl. Ein
+     * Artikel nimmt die Gruppe, die er hat; so passt eine Einstellung an der Kategorie auch dort, wo
+     * Artikel ihre Längen unterschiedlich benennen. Geführte Auswahl und Längenschalter lesen beide
+     * dieselben Gruppen.
+     */
+    public const FIELD_LENGTH_GROUPS = 'rc_length_groups';
+
+    /** Kategorie-Ebene der Längengruppen. */
+    public const CAT_FIELD_LENGTH_GROUPS = 'rc_length_groups_cat';
+
+    /** Kategorie-Ebene der geführten Auswahl, vererbt wie die übrigen Kategoriefelder. */
+    public const CAT_FIELD_GUIDED_SELECTION = 'rc_guided_selection_cat';
+
+    /** Kategorie-Ebene des Längenschalters. */
+    public const CAT_FIELD_LENGTH_VARIANT_SWITCH = 'rc_length_variant_switch_cat';
+
+    /**
+     * Die Größen nur über die Länge wählen: Die Knöpfe der Längengruppe verschwinden, der Kunde gibt
+     * nur seine Länge ein, und die nächstgrößere Größe wird berechnet. Gedacht für Stangenmaterial.
+     */
+    public const FIELD_LENGTH_ONLY = 'rc_length_only';
+
+    /** Kategorie-Ebene von „Größen nur über die Länge". */
+    public const CAT_FIELD_LENGTH_ONLY = 'rc_length_only_cat';
+
+    /**
+     * Die Einzelfelder der Längengruppe aus 1.23.0 und 1.23.1. Sie kamen nie auf Staging oder Live;
+     * `Migration1788400000ReplaceLengthGroupWithLengthGroups` übernimmt ihre Werte und entfernt sie.
+     */
+    public const LEGACY_FIELD_GUIDED_LENGTH_GROUP = 'rc_guided_length_group';
+
+    public const LEGACY_CAT_FIELD_GUIDED_LENGTH_GROUP = 'rc_guided_length_group_cat';
+
+    // Zustände des Meterpreis-Schalters
 
     public const ACTIVE_INHERIT = 'inherit';
     public const ACTIVE_ON = 'on';
     public const ACTIVE_OFF = 'off';
 
-    // --- Plugin-Config-Schlüssel ---
+    // Schlüssel der Grundeinstellung
 
     public const CONFIG_APPLY_TO_ALL_PRODUCTS = 'RcDynamicPrice.config.applyToAllProducts';
     public const CONFIG_MIN_LENGTH = 'RcDynamicPrice.config.minLength';
@@ -37,39 +93,38 @@ final class DynamicPriceConstants
     public const CONFIG_EQUAL_BILLING = 'RcDynamicPrice.config.equalSplitBilling';
     public const CONFIG_EQUAL_ENFORCE_MIN = 'RcDynamicPrice.config.equalSplitEnforceMin';
 
-    /** Optionale Observability: aktiviert den LoggingMetricsRecorder-Decorator (Default aus) */
+    /** Schaltet das Protokollieren von Kennzahlen im LoggingMetricsRecorder (Vorgabe aus) */
     public const CONFIG_ENABLE_METRICS = 'RcDynamicPrice.config.enableMetrics';
 
-    // --- equal-Modus: Abrechnungslänge der Teilstücke ---
+    // Abrechnung der Teilstücke im equal-Modus
 
     /**
-     * Schnittlänge (Verkäufer-Default): jedes Teilstück wird auf dieselbe
-     * aufgerundete Länge gebracht; die Stück-Summe kann die Eingabe übersteigen,
-     * der Kunde zahlt die tatsächlich geschnittene Länge.
+     * Schnittlänge, die Vorgabe: Jedes Teilstück bekommt dieselbe aufgerundete Länge. Die Summe kann
+     * die Eingabe übersteigen; der Kunde zahlt die tatsächlich geschnittene Länge.
      */
     public const EQUAL_BILLING_CUT_LENGTH = 'cut_length';
 
     /**
-     * Exakte Länge: die Teilstücke summieren sich genau zur Eingabe; der Kunde
-     * zahlt die bestellte Länge (der Shop trägt den Verschnitt).
+     * Exakte Länge: Die Teilstücke ergeben zusammen genau die Eingabe. Der Kunde zahlt die bestellte
+     * Länge, den Verschnitt trägt der Shop.
      */
     public const EQUAL_BILLING_EXACT = 'exact';
 
-    // --- Metrik-Schlüssel (optionale Observability) ---
+    // Schlüssel der optionalen Kennzahlen
 
-    /** Counter: erfolgreich im Cart verarbeitete Meterposition */
+    /** Zähler: im Warenkorb berechnete Meterposition */
     public const METRIC_CART_ITEM_PROCESSED = 'cart.meter_item.processed';
 
-    /** Counter: Meterposition, für die kein Preis ermittelt werden konnte (blockiert die Bestellung) */
+    /** Zähler: Meterposition ohne ermittelbaren Preis, die die Bestellung sperrt */
     public const METRIC_CART_ITEM_REJECTED = 'cart.meter_item.rejected';
 
-    /** Timing: Dauer der Rundungs-Arithmetik in Millisekunden */
+    /** Dauer: Rundung in Millisekunden */
     public const METRIC_ROUNDING_DURATION = 'rounding.duration_ms';
 
-    /** Counter: auf der Produktseite eingeblendetes Meter-Widget (Vorschau) */
+    /** Zähler: auf der Produktseite gezeigtes Meterpreis-Widget */
     public const METRIC_PRODUCT_PAGE_WIDGET_SHOWN = 'product_page.meter_widget.shown';
 
-    // --- Cache-Tags ---
+    // Cache-Tags der Produktseiten, verworfen vom CacheInvalidationSubscriber
 
     public const CACHE_TAG_GLOBAL = 'rc-dynamic-price-global';
     public const CACHE_TAG_CATEGORY_PREFIX = 'rc-dynamic-price-category-';
@@ -86,17 +141,17 @@ final class DynamicPriceConstants
     /** Split-Modus für Langstücke (equal, max_rest, hint; leer = kein Split) */
     public const FIELD_SPLIT_MODE = 'rc_meter_price_split_mode';
 
-    /** Maximallänge pro Teilstück in mm — Schwelle für Splitting */
+    /** Höchstlänge je Teilstück in mm; darüber wird geteilt */
     public const FIELD_MAX_PIECE_LENGTH = 'rc_meter_price_max_piece_length';
 
-    /** Kundenspezifischer Hinweistext mit Platzhaltern, wenn mehr als maxPieceLength eingegeben wurde */
+    /** Eigener Hinweistext mit Platzhaltern für Eingaben über der Höchstlänge je Teilstück */
     public const FIELD_SPLIT_HINT = 'rc_meter_price_split_hint';
 
-    // --- Kategorie-Custom-Field-Namen ---
-    // Shopware erzwingt globales UNIQUE auf `custom_field.name` — Kategorie-Felder brauchen
-    // einen eigenen Namespace. `_cat`-Suffix hält den Zusammenhang zum Produktpendant sichtbar.
+    // Zusatzfelder an der Kategorie. `custom_field.name` ist in Shopware über alle Feldsätze
+    // eindeutig; die Kategoriefelder brauchen deshalb eigene Namen, der Zusatz `_cat` zeigt das
+    // Gegenstück am Produkt.
 
-    /** Kategorie-Ebene: Tri-State analog zum Produktfeld */
+    /** Kategorie-Ebene: erben, an oder aus wie am Produkt */
     public const CAT_FIELD_METER_ACTIVE = 'rc_meter_price_cat_active';
 
     /** Kategorie-Ebene: Mindestlänge-Fallback für Produkte dieser Kategorie */
@@ -117,19 +172,25 @@ final class DynamicPriceConstants
     /** Kategorie-Ebene: Split-Hint-Template-Fallback */
     public const CAT_FIELD_SPLIT_HINT = 'rc_meter_price_cat_split_hint';
 
-    // --- Payload-Schlüssel (LineItem) ---
+    // Schlüssel im Payload der Warenkorbposition
 
     /**
-     * Vom Kunden eingegebene und validierte Gesamtlänge des Zuschnitt-Auftrags in Millimetern.
-     * Eine Position bildet einen Auftrag ab, nicht ein Teilstück — die Aufteilung steht in
-     * PAYLOAD_SPLIT_PIECES.
+     * Die vom Kunden eingegebene und geprüfte Gesamtlänge des Zuschnitt-Auftrags in Millimetern. Eine
+     * Position ist ein Auftrag, kein Teilstück; die Aufteilung steht in PAYLOAD_SPLIT_PIECES.
      */
     public const PAYLOAD_LENGTH_MM = 'meterLengthMm';
 
-    /** Flag das der Subscriber gesetzt hat — zweite Absicherung im Processor */
+    /** Kennzeichen des Subscribers, dass die Position ein Meterartikel ist; nur dann rechnet der Processor */
     public const PAYLOAD_METER_ACTIVE = 'rc_meter_price_active';
 
-    /** Rundungsmodus, vom Subscriber aus dem Produkt gelesen */
+    /**
+     * Die Nummer des TMMS-Längenfelds bei Artikeln mit Längenschalter. Der Warenkorb zeigt für genau
+     * dieses Feld „Gewünschte Länge" statt der Anleitung; ob der Schalter vom Produkt oder von der
+     * Kategorie kommt, sieht die Position sonst nicht.
+     */
+    public const PAYLOAD_LENGTH_SWITCH = 'rc_length_switch';
+
+    /** Rundungsmodus aus den aufgelösten Einstellungen */
     public const PAYLOAD_ROUNDING = 'rc_rounding_mode';
 
     /** Produktspezifische Mindestlänge, vom Subscriber gesetzt */
@@ -139,8 +200,8 @@ final class DynamicPriceConstants
     public const PAYLOAD_MAX_LENGTH = 'rc_max_length_mm';
 
     /**
-     * Schnittlängen der Teilstücke in mm, vom Assembler gesetzt — das, was die Fertigung schneidet.
-     * Ohne Split genau ein Eintrag.
+     * Schnittlängen der Teilstücke in mm, vom Assembler gesetzt, also das, was die Fertigung schneidet.
+     * Ohne Teilung genau ein Eintrag.
      *
      * Ein Teilstück unter der Mindestlänge behält hier seine tatsächliche Länge: Wer 5.100 mm
      * bestellt, bekommt 5.000 + 100 mm. Die Mindestlänge ist eine Abrechnungsregel und wirkt erst
@@ -151,10 +212,9 @@ final class DynamicPriceConstants
     /**
      * Werden Teilstücke unter der Mindestlänge mit der Mindestlänge abgerechnet?
      *
-     * `max_rest` immer, `equal` nach Händler-Option `equalSplitEnforceMin`. Fehlt der Schlüssel,
-     * wird nicht angehoben — Bestandspositionen aus der Zeit vor der Trennung von Schnitt- und
-     * Abrechnungslänge tragen die Anhebung bereits in ihren Schnittlängen, ihr Preis bleibt damit
-     * unverändert.
+     * `max_rest` immer, `equal` nach der Händler-Option `equalSplitEnforceMin`. Fehlt der Schlüssel,
+     * wird nicht angehoben: Positionen aus der Zeit vor der Trennung von Schnitt- und Abrechnungslänge
+     * tragen die Anhebung schon in ihren Schnittlängen, ihr Preis bleibt so unverändert.
      */
     public const PAYLOAD_MIN_BILLING = 'rc_min_billing';
 
@@ -162,10 +222,10 @@ final class DynamicPriceConstants
     public const PAYLOAD_BILLED_PIECES = 'rc_billed_pieces';
 
     /**
-     * Gesamt-Abrechnungslänge des Auftrags in mm = Summe der abgerechneten Teilstücke.
+     * Abgerechnete Gesamtlänge des Auftrags in mm, die Summe der abgerechneten Teilstücke.
      *
-     * Vor der Umstellung auf Auftrags-Positionen bezeichnete der Schlüssel die Länge eines
-     * einzelnen Teilstücks. Bestandspositionen tragen noch diese alte Bedeutung.
+     * Positionen aus der Zeit, als jedes Teilstück eine eigene Position war, tragen hier noch die
+     * Länge eines einzelnen Teilstücks.
      */
     public const PAYLOAD_BILLED_LENGTH_MM = 'rc_billed_length_mm';
 
@@ -177,25 +237,23 @@ final class DynamicPriceConstants
 
     /**
      * Gruppierte Aufteilung für die Anzeige: Liste aus `['length' => int, 'count' => int]`,
-     * z. B. `[['length' => 5000, 'count' => 1], ['length' => 1000, 'count' => 1]]` für „1× 5.000 mm
-     * + 1× 1.000 mm". Einmal berechnet, weil sie in Warenkorb, Bestellbestätigungs-Mail, Rechnung
-     * und Lieferschein gebraucht wird — die Mail-Vorlage liegt in der Datenbank und soll keine
-     * Gruppierungslogik enthalten.
+     * etwa `[['length' => 5000, 'count' => 1], ['length' => 1000, 'count' => 1]]` für „1× 5.000 mm
+     * + 1× 1.000 mm". Einmal berechnet, weil Warenkorb, Bestellbestätigung, Rechnung und Lieferschein
+     * sie brauchen; die Mail-Vorlage liegt in der Datenbank und soll keine Gruppierung enthalten.
      */
     public const PAYLOAD_SPLIT_SUMMARY = 'rc_split_summary';
 
     /**
      * Der unveränderte Produktname der Position, bevor der Processor Länge und Aufteilung anhängt.
      *
-     * Der Positionsname ist die einzige Stelle, die Shopware überallhin mitführt — in den Admin, in
-     * die Bestellbestätigung, auf die Belege und über die Bestellung in jede Warenwirtschaft. Er
-     * trägt deshalb die Längenangabe. Damit der Zusatz bei jedem Neuberechnen des Warenkorbs
-     * identisch bleibt und sich nicht anhäuft, wird das Label immer aus diesem Basisnamen **neu
-     * gebildet** — niemals an den Bestand angehängt.
+     * Der Positionsname ist die einzige Angabe, die Shopware überallhin mitführt: in die Verwaltung,
+     * die Bestellbestätigung, die Belege und über die Bestellung in jede Warenwirtschaft. Er trägt
+     * deshalb die Längenangabe. Damit der Zusatz bei jedem Neuberechnen gleich bleibt und sich nicht
+     * anhäuft, wird der Name immer aus diesem Grundnamen neu gebildet und nie an den Bestand angehängt.
      */
     public const PAYLOAD_BASE_LABEL = 'rc_base_label';
 
-    // --- Rundungsmodi ---
+    // Rundungsmodi; die Schrittweiten stehen in MeterProductHelper::ROUNDING_STEPS
 
     public const ROUNDING_NONE = 'none';
     public const ROUNDING_CM = 'cm';

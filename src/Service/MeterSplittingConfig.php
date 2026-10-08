@@ -8,9 +8,8 @@ use Ruhrcoder\RcDynamicPrice\DynamicPriceConstants;
 use Ruhrcoder\RcDynamicPrice\Enum\SplitMode;
 
 /**
- * Unveränderliche Konfiguration für einen Split-Vorgang.
- * Kapselt die Produkt- und Sales-Channel-spezifischen Werte, die der Subscriber
- * aus MeterProductHelper ermittelt und an den Assembler weiterreicht.
+ * Unveränderliche Einstellungen für einen Teilungsvorgang. Der Subscriber baut sie aus der
+ * aufgelösten Konfiguration und reicht sie an den Assembler weiter, der so ohne Request auskommt.
  */
 final readonly class MeterSplittingConfig
 {

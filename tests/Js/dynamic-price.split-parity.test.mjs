@@ -1,10 +1,9 @@
-// Vertrags-Test für dynamic-price.plugin.js → _previewSplit-Methode.
-// Liest die geteilte Fixture tests/Fixtures/split-cases.json (gleiche Datei wie der PHP-Test
-// LengthSplitterTest::testMatchesSharedFixture) und prüft, dass die JS-Implementierung
-// für jeden Fall identische Ergebnisse liefert wie der serverseitige LengthSplitter.
-// Drift zwischen PHP und JS wird damit sofort rot — kein silent Mismatch in der Preview.
+// Prüft _previewSplit aus dynamic-price.plugin.js gegen die Fälle in tests/Fixtures/split-cases.json,
+// dieselbe Datei, die LengthSplitterTest::testMatchesSharedFixture auf dem Server prüft. Rechnen
+// Vorschau und Server verschieden, zeigt die Produktseite eine Aufteilung, die der Warenkorb nicht
+// übernimmt, und dieser Test schlägt an.
 //
-// Zero-Dependency: Node-Standardbibliothek (node:test).
+// Ohne Abhängigkeiten, nur mit der Standardbibliothek von Node (node:test).
 
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -28,6 +27,10 @@ const pluginSourcePath = join(
 );
 const fixturePath = join(__dirname, '..', 'Fixtures', 'split-cases.json');
 
+const parseLengthSource = readFileSync(
+    join(__dirname, '..', '..', 'src', 'Resources', 'app', 'storefront', 'src', 'util', 'parse-length.js'),
+    'utf8',
+).replace(/^export /m, '');
 const rawSource = readFileSync(pluginSourcePath, 'utf8');
 const stripped = rawSource
     .replace(/^import [^\n]*\n/gm, '')
@@ -38,6 +41,7 @@ const wrapped = `
         init() {}
         destroy() {}
     }
+    ${parseLengthSource}
     ${stripped}
     return DynamicPricePlugin;
 `;
@@ -50,8 +54,8 @@ const fixture = JSON.parse(readFileSync(fixturePath, 'utf8'));
 describe('split-parity — PHP↔JS-Vertrag gegen split-cases.json', () => {
     for (const testCase of fixture.cases) {
         test(testCase.name, () => {
-            // equalBilling wird im Plugin aus dem Data-Attribut gelesen; hier über ein
-            // Fake-Element gespiegelt, damit dieselben Fälle wie in PHP greifen.
+            // equalBilling liest das Plugin aus einem Data-Attribut; hier steht es an einem
+            // nachgebildeten Element, damit dieselben Fälle wie auf dem Server greifen.
             instance.el = {
                 dataset: {
                     equalBilling: testCase.equalBilling ?? 'cut_length',
@@ -59,8 +63,8 @@ describe('split-parity — PHP↔JS-Vertrag gegen split-cases.json', () => {
                 },
             };
 
-            // Geprüft werden die Schnittlängen. Die Mindestlänge kommt hier nicht mehr vor —
-            // sie ist eine Abrechnungsregel und wirkt erst in _billedPieces().
+            // Geprüft werden die Schnittlängen. Die Mindestlänge kommt hier nicht vor; sie ist eine
+            // Abrechnungsregel und wirkt erst in _billedPieces().
             const result = instance._previewSplit(
                 testCase.total,
                 testCase.maxPiece,

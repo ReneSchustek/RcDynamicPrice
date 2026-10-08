@@ -25,9 +25,9 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
 
 /**
- * Integrationstest: der komplette Add-to-Cart-Pfad mit echtem Resolver, echtem Assembler
- * und echtem Splitter. Nur DAL-/Product-Helper-Grenzen sind gestubt. Fängt Regressions
- * in der Wiring-Logik, die reine Subscriber-Unit-Tests mit gemockten Services übersehen.
+ * Der Weg „In den Warenkorb" mit echtem Resolver, Assembler und Splitter; nur Produktsuche und
+ * Kategoriekette sind nachgebildet. Die Unit-Tests des Subscribers ersetzen diese Dienste durch
+ * Attrappen und sehen deshalb nicht, ob sie zusammen das Richtige in die Position schreiben.
  */
 final class LineItemSubscriberIntegrationTest extends TestCase
 {
@@ -56,7 +56,7 @@ final class LineItemSubscriberIntegrationTest extends TestCase
         self::assertSame(1, $cart->getLineItems()->count(), 'Kein Split bei Standard-Länge');
     }
 
-    public function testAutoSplitAddsSiblingLineItemsViaRealSplitter(): void
+    public function testAutoSplitKeepsOnePositionWithPiecesViaRealSplitter(): void
     {
         $request = new Request();
         $request->request->set('mmLength', '8000');
@@ -109,9 +109,9 @@ final class LineItemSubscriberIntegrationTest extends TestCase
             $this->event($cart, $lineItem)
         );
 
-        // 15000 bei maxPiece=5000 -> 3 gleichgroße Teilstücke, aber nur eine Position.
-        // Wären die Teilstücke eigene Positionen, könnte der Kunde eines davon einzeln entfernen
-        // und bestellte kommentarlos 10.000 mm statt der eingegebenen 15.000 mm.
+        // 15000 mm bei 5000 mm Höchstmaß ergeben drei gleich große Teilstücke, aber nur eine
+        // Position. Wären die Teilstücke eigene Positionen, könnte der Kunde eines davon einzeln
+        // entfernen und bestellte kommentarlos 10.000 mm statt der eingegebenen 15.000 mm.
         self::assertSame(1, $cart->getLineItems()->count());
         self::assertSame(
             [5000, 5000, 5000],
@@ -127,9 +127,9 @@ final class LineItemSubscriberIntegrationTest extends TestCase
     }
 
     /**
-     * Eine Länge jenseits der Grenzen wird nicht bepreist — die Position wird aber als
-     * Meter-Position markiert, damit der Processor sie ablehnt und die Bestellung blockiert.
-     * Ohne Markierung überspringt er sie und der Zuschnitt-Artikel ginge zum Stückpreis durch.
+     * Eine Länge jenseits der Grenzen wird nicht bepreist, die Position aber als Meterposition
+     * markiert, damit der Prozessor sie ablehnt und die Bestellung sperrt. Ohne Markierung
+     * überspränge er sie, und der Zuschnitt ginge zum Stückpreis durch.
      */
     public function testLengthOutsideResolvedBoundsIsNotPricedButBlocks(): void
     {

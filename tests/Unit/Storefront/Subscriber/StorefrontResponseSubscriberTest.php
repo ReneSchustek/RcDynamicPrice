@@ -16,8 +16,9 @@ use Symfony\Component\HttpKernel\HttpKernelInterface;
 use Symfony\Component\HttpKernel\KernelEvents;
 
 /**
- * Pinning-Tests gegen die HTTP-Cache-Tag-Anhängung — der Header `sw-cache-tags`
- * ist Sicherheits-/Konsistenz-relevant, weil HTTP-Cache-Invalidierung darauf basiert.
+ * Der Subscriber hängt die Cache-Tags der Erweiterung an den Header `sw-cache-tags`. An ihm hängt
+ * das gezielte Leeren des HTTP-Caches; ein falsch geschriebener Header bringt die Seite beim
+ * Speichern im Cache zum Absturz.
  */
 #[CoversClass(StorefrontResponseSubscriber::class)]
 final class StorefrontResponseSubscriberTest extends TestCase
@@ -30,7 +31,7 @@ final class StorefrontResponseSubscriberTest extends TestCase
 
         self::assertArrayHasKey(StorefrontRenderEvent::class, $events);
         self::assertArrayHasKey(KernelEvents::RESPONSE, $events);
-        // Niedrige Priorität (-1024): läuft nach allen Standard-Subscribern, damit Tags nicht überschrieben werden.
+        // Priorität -1024: Er läuft nach den Subscribern des Kerns, damit die Tags nicht überschrieben werden.
         self::assertSame(['onResponse', -1024], $events[KernelEvents::RESPONSE]);
     }
 
@@ -49,14 +50,12 @@ final class StorefrontResponseSubscriberTest extends TestCase
 
     /**
      * Was: Der geschriebene Header wird exakt so gelesen, wie Shopware ihn liest.
-     * Warum: REGRESSION. Der Subscriber schrieb `implode(',', $tags)`. Beide
-     *        Leser im Core — `CacheStore::write()` und `ReverseProxyCache::write()` —
-     *        rufen aber `json_decode($header, true, 512, JSON_THROW_ON_ERROR)`.
-     *        Jede Produktseite mit Dynamic-Price-Tags starb daher mit einer
-     *        `JsonException` und HTTP 500, sobald der HTTP-Cache die Antwort
-     *        ablegen wollte (`SHOPWARE_HTTP_CACHE_ENABLED=1`).
-     * Erwartet: `json_decode` mit `JSON_THROW_ON_ERROR` liefert ein Array mit
-     *           genau den gesetzten Tags — kein Throw.
+     * Warum: Beide Leser im Kern, `CacheStore::write()` und `ReverseProxyCache::write()`, rufen
+     *        `json_decode($header, true, 512, JSON_THROW_ON_ERROR)`. Eine durch Kommas getrennte
+     *        Liste ließe jede Produktseite mit Tags der Erweiterung mit `JsonException` und HTTP 500
+     *        abbrechen, sobald der HTTP-Cache die Antwort ablegt (`SHOPWARE_HTTP_CACHE_ENABLED=1`).
+     * Erwartet: `json_decode` mit `JSON_THROW_ON_ERROR` liefert genau die gesetzten Tags und wirft
+     *           nicht.
      */
     public function testHeaderIsValidJsonAsShopwareExpects(): void
     {
@@ -102,7 +101,7 @@ final class StorefrontResponseSubscriberTest extends TestCase
         self::assertContains('sw-product-bar', $tags);
         self::assertContains('rc-dynamic-price-global', $tags);
         self::assertContains('rc-dynamic-price-category-foo', $tags);
-        // Duplikat: rc-dynamic-price-global darf nur einmal vorkommen.
+        // rc-dynamic-price-global steht in beiden Listen und kommt trotzdem nur einmal vor.
         self::assertSame(1, $this->countOccurrences($tags, 'rc-dynamic-price-global'));
     }
 
@@ -188,8 +187,8 @@ final class StorefrontResponseSubscriberTest extends TestCase
      */
     private function parseHeader(string $value): array
     {
-        // Exakt so liest Shopware den Header: CacheStore::write() und
-        // ReverseProxyCache::write() rufen json_decode(..., JSON_THROW_ON_ERROR).
+        // So liest Shopware den Header: CacheStore::write() und ReverseProxyCache::write() rufen
+        // json_decode(..., JSON_THROW_ON_ERROR).
         $decoded = json_decode($value, true, 512, \JSON_THROW_ON_ERROR);
         self::assertIsArray($decoded, 'sw-cache-tags muss ein JSON-Array sein');
 

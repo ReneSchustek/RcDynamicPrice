@@ -16,6 +16,11 @@ use Shopware\Core\Content\Seo\MainCategory\MainCategoryEntity;
 use Shopware\Core\Framework\Context;
 use Shopware\Core\System\SystemConfig\SystemConfigService;
 
+/**
+ * Der Resolver entscheidet je Artikel über Meterpreis, Grenzen, Rundung und Aufteilung, in der
+ * Reihenfolge Produkt, Kategoriekette, Grundeinstellung, Vorgabe. Eine falsch aufgelöste Ebene
+ * verkauft einen Zuschnitt zum Stückpreis oder rundet anders, als der Betreiber eingestellt hat.
+ */
 final class MeterConfigResolverTest extends TestCase
 {
     private SystemConfigService&MockObject $systemConfig;
@@ -33,7 +38,7 @@ final class MeterConfigResolverTest extends TestCase
         $this->systemConfig->method('getString')->willReturn('');
     }
 
-    // --- Active-Logik: Produkt-Entscheidung ---
+    // Ob der Meterpreis gilt: Das Produkt entscheidet zuerst.
 
     public function testProductOffShortCircuitsAlways(): void
     {
@@ -98,7 +103,7 @@ final class MeterConfigResolverTest extends TestCase
         $chain = [
             $this->category(['rc_meter_price_cat_active' => 'inherit']),      // leaf
             $this->category(['rc_meter_price_cat_active' => 'on']),           // mid
-            $this->category(['rc_meter_price_cat_active' => 'off']),          // root — ignoriert, weil mid gewonnen hat
+            $this->category(['rc_meter_price_cat_active' => 'off']),          // root, zählt nicht mehr, mid hat entschieden
         ];
 
         $config = $this->resolver->resolve(['rc_meter_price_active' => 'inherit'], $chain, 'sc-id');
@@ -129,7 +134,7 @@ final class MeterConfigResolverTest extends TestCase
         $this->assertSame(ConfigScope::Product, $config->activeScope);
     }
 
-    // --- Numeric fields: Produkt > Kategorie > Global > Default ---
+    // Zahlenfelder: Produkt vor Kategorie vor Grundeinstellung vor Vorgabe.
 
     public function testMinLengthFromProduct(): void
     {
@@ -209,11 +214,12 @@ final class MeterConfigResolverTest extends TestCase
 
         $config = $resolver->resolve(['rc_meter_price_active' => 'on'], [], 'sc-id');
 
-        // Global liefert 0 = explizit kein Splitting. Default greift, weil wir 0 akzeptieren.
+        // Die Grundeinstellung 0 heißt ausdrücklich „nicht aufteilen" und wird übernommen, statt auf
+        // eine Vorgabe zurückzufallen.
         $this->assertSame(0, $config->maxPieceLength);
     }
 
-    // --- Rounding ---
+    // Rundung
 
     public function testRoundingFromProductWins(): void
     {
@@ -259,7 +265,7 @@ final class MeterConfigResolverTest extends TestCase
         $this->assertSame(ConfigScope::Category, $config->roundingModeScope);
     }
 
-    // --- SplitMode ---
+    // Aufteilung
 
     public function testSplitModeFromProduct(): void
     {
@@ -293,7 +299,7 @@ final class MeterConfigResolverTest extends TestCase
         $this->assertSame(ConfigScope::Default, $config->splitModeScope);
     }
 
-    // --- Invariante: minLength <= maxLength ---
+    // Die Mindestlänge liegt nie über der Höchstlänge.
 
     public function testSwappedMinMaxIsNormalised(): void
     {
@@ -307,7 +313,7 @@ final class MeterConfigResolverTest extends TestCase
         $this->assertLessThanOrEqual($config->maxLength, $config->minLength);
     }
 
-    // --- Cache-Tags ---
+    // Cache-Tags
 
     public function testCacheTagsContainGlobalAndEachCategory(): void
     {
@@ -332,16 +338,17 @@ final class MeterConfigResolverTest extends TestCase
         $config = $this->resolver->resolve(['rc_meter_price_active' => 'inherit'], $chain, 'sc-id');
 
         $this->assertFalse($config->active);
-        // Auch auf inaktiven Seiten braucht es Invalidierungs-Tags, damit Kategorie-Änderungen dort greifen.
+        // Auch Seiten ohne Meterpreis brauchen die Tags; sonst bliebe eine Kategorie, an der der
+        // Meterpreis eingeschaltet wird, im Cache ohne ihn stehen.
         $this->assertContains('rc-dynamic-price-category-cat-id', $config->cacheTags);
     }
 
-    // --- Deterministische Primär-Kategorie ---
+    // Die maßgebliche Kategorie ist immer dieselbe.
 
     public function testPrimaryCategoryUsesSmallestIdDeterministicallyWhenNoMainCategory(): void
     {
-        // DAL-Reihenfolge ist nicht stabil; ohne Sortierung erbte das Produkt je nach
-        // Ladereihenfolge unterschiedliche Configs. Erwartet: kleinste ID gewinnt stabil.
+        // Die Reihenfolge der DAL ist nicht fest; ohne Sortierung erbte das Produkt je nach
+        // Ladereihenfolge andere Einstellungen. Die kleinste Kennung gewinnt.
         $product = new ProductEntity();
         $product->setId('p-1');
         $product->setCategoryIds(['cat-zzz', 'cat-aaa', 'cat-mmm']);
@@ -383,11 +390,11 @@ final class MeterConfigResolverTest extends TestCase
 
         $this->resolver->resolveForProduct($product, 'sc-1', Context::createDefaultContext());
 
-        // Händler-Intent gewinnt vor der sortierten Fallback-Kategorie (cat-aaa).
+        // Die gepflegte Hauptkategorie gewinnt gegen die sortierte Ersatzkategorie (cat-aaa).
         $this->assertSame('cat-bbb', $captured);
     }
 
-    // --- Hilfsfunktionen ---
+    // Hilfsfunktionen
 
     /**
      * @param array<string, mixed>                                          $productFields

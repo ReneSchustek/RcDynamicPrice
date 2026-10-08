@@ -11,10 +11,9 @@ use Shopware\Core\Framework\DataAbstractionLayer\EntityRepository;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\Criteria;
 
 /**
- * Lädt die Kette einer Primärkategorie plus aller Eltern in einem einzigen
- * DAL-Aufruf. Der Shopware-Kern hält den kompletten Pfad bereits als
- * `category.path` (|parent1|parent2|...) vor — daraus ergibt sich die
- * Vorfahren-Menge ohne N+1.
+ * Lädt eine Primärkategorie und alle ihre Vorfahren mit zwei Abfragen. Der Kern führt den Pfad
+ * schon als `category.path` (`|eltern1|eltern2|`); daraus kommen die Vorfahren in einem Zug statt
+ * einer Abfrage je Ebene.
  */
 final class CategoryChainLoader implements CategoryChainLoaderInterface
 {
@@ -39,7 +38,7 @@ final class CategoryChainLoader implements CategoryChainLoaderInterface
         $ancestors = $this->loadCategories($ancestorIds, $context);
 
         $chain = [$this->toEntry($primary)];
-        // Pfad ist von Root zu Blatt — wir wollen "nächste zuerst", also umkehren.
+        // Der Pfad läuft von der Wurzel zum Blatt; die Kette braucht die nächste Kategorie zuerst.
         foreach (array_reverse($ancestorIds) as $ancestorId) {
             $entity = $ancestors[$ancestorId] ?? null;
             if ($entity instanceof CategoryEntity) {
@@ -72,14 +71,13 @@ final class CategoryChainLoader implements CategoryChainLoaderInterface
         }
 
         $criteria = new Criteria($ids);
-        // Kategorie-Bäume sind in Shopware typischerweise unter 10 Ebenen tief; explizites Limit verhindert Ausrutscher.
+        // Mehr Treffer als gesuchte Kennungen kann es nicht geben.
         $criteria->setLimit(\count($ids));
 
         $result = $this->categoryRepository->search($criteria, $context);
 
         $map = [];
-        // Die Sammlung führt laut Typangabe nur Kategorien — eine Prüfung darauf kann nicht
-        // fehlschlagen.
+        // Die Sammlung führt laut Typangabe nur Kategorien; eine Prüfung darauf entfällt.
         foreach ($result->getEntities() as $category) {
             $map[$category->getId()] = $category;
         }

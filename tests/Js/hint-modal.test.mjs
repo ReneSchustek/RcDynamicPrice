@@ -1,8 +1,7 @@
-// Unit-Tests für die extrahierte HintModal-Klasse.
-// Zero-dependency: node:test plus ein minimaler Fake-DOM, der genau die von
-// HintModal genutzten DOM-APIs abbildet (createElement, appendChild, textContent,
-// setAttribute). Direkter ESM-Import ist möglich, weil hint-modal.js keine
-// Shopware-Aliase importiert.
+// Prüft das Hinweisfenster HintModal: Aufbau, Fokus und Schutz vor eingeschleustem Markup.
+// Ohne Abhängigkeiten, mit node:test und einem kleinen nachgebildeten DOM, der genau die
+// Schnittstellen abbildet, die HintModal nutzt (createElement, appendChild, textContent,
+// setAttribute). Das Modul lässt sich direkt importieren, weil es keine Shopware-Aliase lädt.
 
 import { describe, test, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
@@ -16,11 +15,11 @@ const modulePath = join(
     'src', 'Resources', 'app', 'storefront', 'src', 'util', 'hint-modal.js',
 );
 
-// pathToFileURL statt roher Pfad: der ESM-Loader akzeptiert unter Windows nur
-// file://-URLs — ein absoluter Pfad wie F:\... wird sonst als Protokoll "f:" gelesen.
+// pathToFileURL statt eines rohen Pfads: Der ESM-Loader nimmt unter Windows nur file://-Adressen;
+// ein absoluter Pfad wie F:\... würde als Protokoll „f:" gelesen.
 const { default: HintModal } = await import(pathToFileURL(modulePath).href);
 
-// --- Minimaler Fake-DOM ---------------------------------------------------
+// Der nachgebildete DOM
 
 class FakeStyle {
     constructor() {
@@ -186,7 +185,7 @@ function keyEvent(key, shiftKey = false) {
     };
 }
 
-// --- Tests ----------------------------------------------------------------
+// Die Tests
 
 describe('HintModal', () => {
     let doc;
@@ -306,7 +305,7 @@ describe('HintModal', () => {
     });
 
     test('titleId kann nicht aus dem id-Attribut ausbrechen', () => {
-        // Regression: früher wurde titleId roh in einen id="..."-String interpoliert.
+        // Würde titleId roh in eine id="..."-Zeichenkette eingesetzt, entstünde ein zweites Attribut.
         const modal = new HintModal({ text: 'Hint', titleId: '" onload="alert(1)', document: doc });
         modal.open();
 
@@ -316,9 +315,9 @@ describe('HintModal', () => {
     });
 
     test('die Quelle verwendet kein innerHTML (Regressions-Gate gegen DOM-XSS)', () => {
-        // Der Fake-DOM oben modelliert innerHTML bewusst nicht. Ohne diese Prüfung
-        // würde eine Rückkehr zur String-Konkatenation von keinem Test bemerkt.
-        // Kommentare werden entfernt, damit die Doku das Wort nennen darf.
+        // Der nachgebildete DOM kennt innerHTML nicht. Ohne diese Prüfung bemerkte kein Test, wenn
+        // das Fenster wieder aus zusammengesetzten Zeichenketten gebaut würde. Kommentare werden
+        // vorher entfernt, damit die Dokumentation das Wort nennen darf.
         const code = readFileSync(modulePath, 'utf8')
             .replace(/\/\*[\s\S]*?\*\//g, '')
             .replace(/\/\/.*$/gm, '');

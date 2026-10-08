@@ -10,17 +10,15 @@ use Symfony\Component\HttpKernel\Event\ResponseEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
 
 /**
- * Heftet die vom ProductPageSubscriber im Request hinterlegten Cache-Tags an
- * die HTTP-Antwort. Shopware's Reverse-Proxy/HTTP-Cache liest den Header
- * `sw-cache-tags` und ermöglicht damit gezielte Invalidierung pro Kategorie
- * bzw. für den Plugin-Global-Scope.
+ * Heftet die vom ProductPageSubscriber am Request gesammelten Cache-Tags an die HTTP-Antwort. Shopwares
+ * HTTP-Cache und Reverse-Proxy lesen den Header `sw-cache-tags`; so lässt sich je Kategorie oder für
+ * die Grundeinstellung gezielt verwerfen.
  *
- * Die Header-Sammlung im Request existiert bereits — wir ergänzen nur die
- * Meterpreis-spezifischen Tags, ohne Shopware-Defaults zu überschreiben.
+ * Tags, die schon im Header stehen, bleiben erhalten; ergänzt werden nur die des Meterpreises.
  *
- * Header-Format: **JSON-Array**, nicht kommasepariert. Der Core schreibt ihn mit
- * `json_encode` und liest ihn in `CacheStore::write()` sowie
- * `ReverseProxyCache::write()` mit `json_decode(..., JSON_THROW_ON_ERROR)`.
+ * Der Header ist ein JSON-Array, keine kommagetrennte Liste. Der Kern schreibt ihn mit `json_encode`
+ * und liest ihn in `CacheStore::write()` und `ReverseProxyCache::write()` mit
+ * `json_decode(..., JSON_THROW_ON_ERROR)`.
  */
 final class StorefrontResponseSubscriber implements EventSubscriberInterface
 {
@@ -30,7 +28,7 @@ final class StorefrontResponseSubscriber implements EventSubscriberInterface
     public static function getSubscribedEvents(): array
     {
         return [
-            // Schreibt während des Rendervorgangs, sodass der Response-Listener die Tags sieht.
+            // Schreibt während des Renderns, damit der Response-Listener die Tags noch findet.
             StorefrontRenderEvent::class => 'onStorefrontRender',
             KernelEvents::RESPONSE => ['onResponse', -1024],
         ];
@@ -43,7 +41,7 @@ final class StorefrontResponseSubscriber implements EventSubscriberInterface
             return;
         }
 
-        // Re-Injektion, damit der später feuernde ResponseEvent die Tags wieder findet.
+        // Wieder ans Request-Attribut, damit das später ausgelöste ResponseEvent die Tags findet.
         $event->getRequest()->attributes->set(
             ProductPageSubscriber::getCacheTagsRequestAttribute(),
             $tags,
@@ -72,12 +70,10 @@ final class StorefrontResponseSubscriber implements EventSubscriberInterface
     /**
      * Der Header transportiert ein JSON-Array, keine kommaseparierte Liste.
      *
-     * Beide Leser im Core — `CacheStore::write()` und `ReverseProxyCache::write()` —
-     * rufen `json_decode($tagHeader, true, 512, JSON_THROW_ON_ERROR)`. Ein
-     * `implode(',', …)` liess deshalb jede betroffene Seite mit einer
-     * `JsonException` und HTTP 500 aussteigen, sobald der HTTP-Cache die Antwort
-     * ablegen wollte. Geschrieben wird im Core mit `json_encode` (siehe
-     * `ScriptController`).
+     * Beide Leser im Kern, `CacheStore::write()` und `ReverseProxyCache::write()`, rufen
+     * `json_decode($tagHeader, true, 512, JSON_THROW_ON_ERROR)`. Ein `implode(',', …)` ließe jede
+     * betroffene Seite mit einer `JsonException` und HTTP 500 aussteigen, sobald der HTTP-Cache die
+     * Antwort ablegen will. Der Kern schreibt mit `json_encode` (siehe `ScriptController`).
      *
      * @return list<string>
      */
@@ -90,8 +86,8 @@ final class StorefrontResponseSubscriber implements EventSubscriberInterface
         try {
             $decoded = json_decode($header, true, 512, \JSON_THROW_ON_ERROR);
         } catch (\JsonException) {
-            // Fremder Header in unerwartetem Format: lieber verwerfen als die
-            // Antwort mit einer Exception zu zerreissen.
+            // Ein fremder Header in unerwartetem Format wird verworfen, statt die Antwort mit einer
+            // Exception abzubrechen.
             return [];
         }
 

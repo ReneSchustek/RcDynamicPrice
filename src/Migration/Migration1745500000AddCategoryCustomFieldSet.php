@@ -10,11 +10,11 @@ use Shopware\Core\Framework\Migration\MigrationStep;
 use Shopware\Core\Framework\Uuid\Uuid;
 
 /**
- * Legt das Custom-Field-Set `rc_dynamic_price_category` an und
- * relationiert es an `category`. Enthält dieselben Felder wie am Produkt,
- * inklusive Active-Select (inherit/on/off, Default inherit).
+ * Legt das Feldset `rc_dynamic_price_category` an der Kategorie an, mit den Meterpreis-Feldern des
+ * Produkts, damit eine ganze Kategorie ihre Vorgaben erbt statt jedes Produkt einzeln.
  *
- * Idempotent: Set/Relation/Felder werden nur angelegt, wenn sie fehlen.
+ * Die Feldnamen tragen ein `_cat`, weil Shopware Zusatzfeldnamen über alle Sets eindeutig verlangt.
+ * Set, Zuordnung und Felder werden nur angelegt, wenn sie fehlen; die Migration darf mehrfach laufen.
  */
 final class Migration1745500000AddCategoryCustomFieldSet extends MigrationStep
 {
@@ -187,6 +187,7 @@ final class Migration1745500000AddCategoryCustomFieldSet extends MigrationStep
         $setId = Uuid::randomBytes();
 
         $connection->executeStatement(
+            // Position 2: in der Verwaltung hinter dem Produkt-Set, das Position 1 trägt.
             'INSERT INTO `custom_field_set` (`id`, `name`, `config`, `active`, `global`, `position`, `created_at`)
              VALUES (:id, :name, :config, 1, 0, 2, NOW())',
             [

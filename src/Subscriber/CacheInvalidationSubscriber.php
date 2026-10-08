@@ -12,31 +12,24 @@ use Shopware\Core\System\SystemConfig\Event\SystemConfigChangedEvent;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 
 /**
- * Hält den Meterpreis-bezogenen HTTP-Cache konsistent.
- * - Änderungen und Löschungen an Kategorien invalidieren den
- *   `rc-dynamic-price-category-{id}`-Tag.
- * - Änderungen an Plugin-Config-Werten, die in die Resolver-Kette einfließen,
- *   invalidieren den globalen `rc-dynamic-price-global`-Tag.
+ * Verwirft zwischengespeicherte Produktseiten, deren Meterpreis-Einstellungen sich geändert haben.
  *
- * Produkte, die ihre Konfiguration aus dem Resolver ziehen, hängen diese Tags
- * an ihre Produktseiten an (siehe ProductPageSubscriber). Gezielte Invalidierung
- * verhindert eine Vollinvalidierung des gesamten HTTP-Caches.
+ * Eine geänderte oder gelöschte Kategorie verwirft den Tag `rc-dynamic-price-category-{id}`, eine
+ * geänderte Grundeinstellung den Tag `rc-dynamic-price-global`. Die Produktseiten tragen diese Tags
+ * (siehe ProductPageSubscriber); so muss nicht der ganze HTTP-Cache geleert werden.
  */
 final class CacheInvalidationSubscriber implements EventSubscriberInterface
 {
     /**
-     * Plugin-Config-Keys, die eine globale Invalidierung auslösen.
-     * Nur die Keys, die wirklich in Resolver-Ergebnisse einfließen — andere
-     * Plugin-Einstellungen (z. B. reine UI-Texte) bleiben unberührt.
+     * Jede Einstellung der Erweiterung verwirft den globalen Tag, nicht nur eine Liste ausgewählter.
+     *
+     * Fast jede geht in die Produktseite ein: die Grenzen und die Stückelung über
+     * `MeterConfigResolver`, die Abrechnung der gleichmäßigen Teilung und der Hinweistext über
+     * `ProductPageSubscriber`. Eine Liste müsste bei jeder neuen Einstellung nachgezogen werden und
+     * vergäße die erste, die niemand einträgt. Einstellungen ändern sich selten; ein Leeren zu viel
+     * kostet nichts, ein vergessenes zeigt Kunden alte Preise.
      */
-    private const INVALIDATING_CONFIG_KEYS = [
-        DynamicPriceConstants::CONFIG_APPLY_TO_ALL_PRODUCTS,
-        DynamicPriceConstants::CONFIG_MIN_LENGTH,
-        DynamicPriceConstants::CONFIG_MAX_LENGTH,
-        DynamicPriceConstants::CONFIG_SPLIT_MODE,
-        DynamicPriceConstants::CONFIG_MAX_PIECE_LENGTH,
-        DynamicPriceConstants::CONFIG_SPLIT_HINT_TEMPLATE,
-    ];
+    private const CONFIG_PREFIX = 'RcDynamicPrice.config.';
 
     public function __construct(
         private readonly CacheInvalidator $cacheInvalidator,
@@ -45,9 +38,8 @@ final class CacheInvalidationSubscriber implements EventSubscriberInterface
 
     public static function getSubscribedEvents(): array
     {
-        // Write- und Delete-Event getrennt abonnieren, damit das Entfernen einer Kategorie
-        // ihre Meterpreis-Cache-Tags zuverlässig invalidiert. `EntityWrittenContainerEvent`
-        // allein deckt Delete nicht in allen Shopware-Versionen ab.
+        // Schreiben und Löschen getrennt, damit auch eine entfernte Kategorie ihren Tag verwirft;
+        // `EntityWrittenContainerEvent` allein deckt das Löschen nicht in allen Shopware-Fassungen ab.
         return [
             CategoryEvents::CATEGORY_WRITTEN_EVENT => 'onCategoryWritten',
             CategoryEvents::CATEGORY_DELETED_EVENT => 'onCategoryWritten',
@@ -71,7 +63,7 @@ final class CacheInvalidationSubscriber implements EventSubscriberInterface
 
     public function onSystemConfigChanged(SystemConfigChangedEvent $event): void
     {
-        if (!\in_array($event->getKey(), self::INVALIDATING_CONFIG_KEYS, true)) {
+        if (!str_starts_with($event->getKey(), self::CONFIG_PREFIX)) {
             return;
         }
 

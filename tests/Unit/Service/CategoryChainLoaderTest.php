@@ -13,6 +13,10 @@ use Shopware\Core\Framework\Context;
 use Shopware\Core\Framework\DataAbstractionLayer\EntityRepository;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\EntitySearchResult;
 
+/**
+ * Die Kategoriekette trägt die vererbten Einstellungen von der eigenen Kategorie bis zur Wurzel.
+ * Stimmt ihre Reihenfolge nicht, gewinnt eine entferntere Kategorie gegen eine nähere.
+ */
 final class CategoryChainLoaderTest extends TestCase
 {
     /** @var EntityRepository<CategoryCollection>&MockObject */
@@ -79,7 +83,7 @@ final class CategoryChainLoaderTest extends TestCase
     {
         $primary = $this->buildCategory('leaf-id', '|root-id|mid-id|', []);
         $root = $this->buildCategory('root-id', null, []);
-        // mid-id fehlt — Loader muss robust die Reste liefern.
+        // mid-id fehlt; der Loader liefert die übrigen, statt abzubrechen.
 
         $this->categoryRepository
             ->method('search')
@@ -122,7 +126,6 @@ final class CategoryChainLoaderTest extends TestCase
         return $result;
     }
 
-    /** @param list<CategoryEntity> $entities */
     /**
      * @param list<CategoryEntity> $entities
      *

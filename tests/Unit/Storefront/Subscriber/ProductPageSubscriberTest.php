@@ -25,6 +25,11 @@ use Shopware\Storefront\Page\Product\ProductPageLoadedEvent;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
 
+/**
+ * Der Subscriber gibt der Produktseite die Einstellungen des Meterpreises und merkt die Cache-Tags
+ * der Kategoriekette vor. Fehlen die Tags, bleibt nach einer Änderung an der Kategorie die alte
+ * Seite im Cache stehen.
+ */
 final class ProductPageSubscriberTest extends TestCase
 {
     private SystemConfigService&MockObject $systemConfig;
@@ -63,7 +68,7 @@ final class ProductPageSubscriberTest extends TestCase
         $page->method('getProduct')->willReturn(new SalesChannelProductEntity());
         $page->expects($this->never())->method('addExtension');
 
-        // Inaktives Widget -> kein Vorschau-Zähler.
+        // Ohne Meterpreis wird auch keine eingeblendete Vorschau gezählt.
         $this->metrics->expects($this->never())->method('increment');
 
         $this->subscriber->onProductPageLoaded($this->createProductPageEvent($page, 'sc-id'));

@@ -1,0 +1,9 @@
+datum;fassung;rechner;instanz;art;messung;ms;streuung
+2026-10-05;1.23.0;devbox;live-clone;seite;Produktseite;779;HTTP 200
+2026-10-05;1.23.0;devbox;live-clone;seite;Warenkorb;746;HTTP 200
+2026-10-05;1.23.0;devbox;live-clone;seite;Warenkorb-Leiste;418;HTTP 200
+2026-10-05;1.23.0;devbox;live-clone;dienst;LengthSplitterBench::benchSplit (Handlauf 6 m in 2-m-Stücken);0.001;±41.46% Speicher 13.048mb
+2026-10-05;1.23.0;devbox;live-clone;dienst;LengthSplitterBench::benchSplit (Höchstlänge 10 m in 1-m-Stücken);0.000;±22.22% Speicher 13.048mb
+2026-10-05;1.23.0;devbox;live-clone;dienst;LengthSplitterBench::benchSplit (Grenze 1 km in 6-m-Stücken);0.001;±31.62% Speicher 13.048mb
+2026-10-05;1.23.0;devbox;live-clone;dienst;LengthSplitterBench::benchSplit (Grenze 1 km in 1-mm-Stücken);13.420;±2.65% Speicher 17.441mb
+2026-10-05;1.23.0;devbox;live-clone;dienst;MeterConfigBench::benchResolveForProduct;3.137;±2.36% Speicher 18.089mb

@@ -8,15 +8,13 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Warenkorb-Fehler werden in Shopware über **zwei** Wege übersetzt:
+ * Shopware übersetzt Warenkorb-Fehler auf zwei Wegen: `StorefrontController::addCartErrors()`
+ * zeigt sie als Hinweis oben auf der Seite und sucht den Text unter `checkout.<messageKey>`,
+ * `cart-alerts.html.twig` zeigt sie auf der Warenkorbseite und sucht unter `error.<messageKey>`.
  *
- * - `StorefrontController::addCartErrors()` gibt sie als Flash-Message aus und sucht das Snippet
- *   unter `checkout.<messageKey>`.
- * - `cart-alerts.html.twig` rendert sie auf der Warenkorb-Seite und sucht unter `error.<messageKey>`.
- *
- * Fehlt einer der beiden Schlüssel, liest der Kunde den rohen Schlüssel — genau das ist im
- * Storefront-Smoke passiert („checkout.rc-dynamic-price-meter-price-unavailable"). Unit-Tests auf
- * die Fehlerklasse können das nicht sehen, deshalb dieser Guard auf die Snippet-Dateien.
+ * Fehlt einer der beiden Schlüssel, liest der Kunde den rohen Schlüssel, etwa
+ * „checkout.rc-dynamic-price-meter-price-unavailable". Tests der Fehlerklasse sehen das nicht,
+ * deshalb prüft dieser Test die Textbausteine selbst.
  */
 final class CartErrorSnippetTest extends TestCase
 {

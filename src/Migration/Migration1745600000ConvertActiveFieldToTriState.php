@@ -9,19 +9,15 @@ use Ruhrcoder\RcDynamicPrice\Exception\DynamicPriceException;
 use Shopware\Core\Framework\Migration\MigrationStep;
 
 /**
- * Konvertiert `rc_meter_price_active` am Produkt von `bool` (Checkbox)
- * auf `select` mit den Werten `inherit` / `on` / `off`. Das Feld behält Namen
- * und ID — vorhandene Beziehungen bleiben intakt.
+ * Macht aus dem Haken `rc_meter_price_active` am Produkt eine Auswahl mit „vererben", „aktiv" und
+ * „inaktiv", damit ein Produkt der Vorgabe seiner Kategorie folgen oder ihr ausdrücklich widersprechen
+ * kann. Das Feld behält Namen und Kennung; was daran hängt, bleibt gültig.
  *
- * Backfill:
- *   true    -> "on"
- *   false   -> "inherit"
- *   fehlend -> bleibt fehlend (wird im Resolver als "inherit" behandelt)
- *
- * Idempotent: bricht ab, sobald der `custom_field`-Row-Type bereits `select` ist
- * und kein `bool`-Rest mehr in `product_translation.custom_fields` vorliegt.
- * Verifikations-Query am Ende wirft, falls nach dem Backfill noch boolesche
- * Werte existieren.
+ * Gesetzte Haken werden zu „aktiv", nicht gesetzte zu „vererben"; ein fehlender Wert bleibt fehlend und
+ * gilt im Resolver als „vererben". Die Migration darf mehrfach laufen: Die Felddefinition wird nur
+ * umgestellt, solange sie noch ein Haken ist, und die Übertragung trifft nur boolesche Werte. Bleibt
+ * danach ein boolescher Wert übrig, bricht sie mit einer Ausnahme ab, statt einen halb umgestellten
+ * Bestand zu hinterlassen.
  */
 final class Migration1745600000ConvertActiveFieldToTriState extends MigrationStep
 {
@@ -51,7 +47,7 @@ final class Migration1745600000ConvertActiveFieldToTriState extends MigrationSte
         );
 
         if ($row === false) {
-            // Plugin-Neuinstallation hat noch keinen Active-Feldeintrag — nichts zu konvertieren.
+            // Bei einer Neuinstallation gibt es das Feld an dieser Stelle noch nicht; nichts umzustellen.
             return;
         }
 
@@ -85,16 +81,13 @@ final class Migration1745600000ConvertActiveFieldToTriState extends MigrationSte
     }
 
     /**
-     * Backfill via Single-Statement-UPDATE gegen `product_translation` (dort liegen die
-     * Custom-Fields — Tabelle `product` selbst hat keine `custom_fields`-Spalte).
-     * Zwei separate UPDATEs; beide Mappings sind disjunkt.
+     * Überträgt die Werte mit je einem `UPDATE` auf `product_translation`; dort liegen die Zusatzfelder,
+     * `product` hat keine solche Spalte. Die beiden Abbildungen treffen sich nicht, die Reihenfolge ist
+     * also gleichgültig.
      *
-     * Die WHERE-Klauseln arbeiten ausschließlich über `JSON_TYPE` plus
-     * `JSON_UNQUOTE(JSON_EXTRACT(...))`-String-Vergleich, damit ein bereits
-     * migrierter String-Wert (z. B. `"on"`) nicht als Zahl gecastet wird — genau das
-     * hat in einer früheren Version `Truncated incorrect DECIMAL value: 'on'`
-     * ausgelöst, sobald die Migration idempotent auf bereits migrierten Daten
-     * nochmal lief.
+     * Verglichen wird über `JSON_TYPE` und den entpackten Text, nie als Zahl. Ein Zahlenvergleich läse
+     * einen schon umgestellten Wert wie `"on"` als Dezimalzahl, und ein zweiter Lauf bräche mit
+     * `Truncated incorrect DECIMAL value: 'on'` ab.
      */
     private function backfillProductCustomFields(Connection $connection): void
     {
@@ -116,8 +109,8 @@ final class Migration1745600000ConvertActiveFieldToTriState extends MigrationSte
             ['jsonPath' => $jsonPath, 'newValue' => 'on']
         );
 
-        // false / 0 / "0" -> "inherit" (1.4.x kannte kein "off"; nicht-aktive Bool-Werte
-        // entsprechen "vererben" an die neue Entscheidungskette)
+        // false / 0 / "0" -> "inherit". Der Haken kennt kein „aus", ein nicht gesetzter Haken heißt bisher
+        // nur „kein Meterpreis von hier"; in der neuen Kette entspricht das dem Vererben.
         $connection->executeStatement(
             'UPDATE `product_translation`
              SET `custom_fields` = JSON_SET(`custom_fields`, :jsonPath, :newValue)

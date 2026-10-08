@@ -1,11 +1,9 @@
-// Transparenz der Mehrlänge im max_rest-Modus.
+// Die Mehrlänge im max_rest-Modus, bevor der Kunde in den Warenkorb legt.
 //
-// Fällt das Reststück unter die Mindestlänge, hebt der Splitter es darauf an — der Kunde zahlt
-// dann mehr, als er eingegeben hat. Zwei Fehler steckten darin:
-//   1. Die Preisvorschau rechnete auf der gerundeten Eingabe statt auf der Summe der Teilstücke
-//      und zeigte deshalb einen zu niedrigen Preis.
-//   2. Der Kunde erfuhr von der Mehrlänge erst im Warenkorb.
-// Beides muss vor dem Klick auf "In den Warenkorb" sichtbar sein.
+// Fällt das Reststück unter die Mindestlänge, wird es für die Abrechnung darauf angehoben, und der
+// Kunde zahlt mehr, als er eingegeben hat. Die Preisvorschau rechnet deshalb auf der Summe der
+// abgerechneten Teilstücke, nicht auf der Eingabe, sonst zeigte sie einen zu niedrigen Preis. Und
+// der Hinweis auf die Mehrlänge steht auf der Produktseite, nicht erst im Warenkorb.
 
 import { describe, test, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
@@ -19,6 +17,10 @@ const sourcePath = join(
     'src', 'Resources', 'app', 'storefront', 'src', 'dynamic-price', 'dynamic-price.plugin.js',
 );
 
+const parseLengthSource = readFileSync(
+    join(__dirname, '..', '..', 'src', 'Resources', 'app', 'storefront', 'src', 'util', 'parse-length.js'),
+    'utf8',
+).replace(/^export /m, '');
 const rawSource = readFileSync(sourcePath, 'utf8');
 const stripped = rawSource
     .replace(/^import [^\n]*\n/gm, '')
@@ -29,6 +31,7 @@ const DynamicPricePlugin = new Function(`
         init() {}
         destroy() {}
     }
+    ${parseLengthSource}
     ${stripped}
     return DynamicPricePlugin;
 `)();
@@ -42,7 +45,7 @@ function makePlugin() {
         dataset: {
             minLength: '1000',
             maxLength: '50000',
-            // Keine Rundung — die Mehrlänge kommt hier allein aus der Mindestlängen-Anhebung.
+            // Keine Rundung; die Mehrlänge kommt hier allein aus der Anhebung auf die Mindestlänge.
             roundingMode: 'none',
             splitMode: 'max_rest',
             maxPieceLength: '6000',
@@ -64,7 +67,8 @@ function makePlugin() {
     plugin._hidden = { value: '' };
     plugin._infoEl = { textContent: '', hidden: true };
 
-    // Preisvorschau mitschneiden statt rendern — sie ist der eigentliche Geld-Beweis.
+    // Die Preisvorschau wird mitgeschnitten statt gezeichnet; an ihr hängt der Betrag, den der
+    // Kunde sieht.
     plugin.billedMm = null;
     plugin._updatePrice = (mm) => { plugin.billedMm = mm; };
 
@@ -93,8 +97,8 @@ describe('Mehrlänge durch Mindestlängen-Anhebung (max_rest)', () => {
         plugin = makePlugin();
     });
 
-    // 6100 bei maxPiece 6000 -> Stücke [6000, 100]. 100 < min 1000 -> angehoben auf 1000.
-    // Berechnet werden 7000 mm, eingegeben waren 6100 mm.
+    // 6100 mm bei 6000 mm Höchstmaß ergeben [6000, 100]; der Rest liegt unter 1000 mm und wird
+    // für die Abrechnung auf 1000 mm angehoben. Berechnet werden 7000 mm statt der eingegebenen 6100.
     test('Preisvorschau rechnet auf der Summe der Teilstücke, nicht auf der Eingabe', () => {
         typeLength(plugin, '6100');
 
@@ -111,7 +115,7 @@ describe('Mehrlänge durch Mindestlängen-Anhebung (max_rest)', () => {
     });
 
     test('kein Hint, wenn das Reststück die Mindestlänge erreicht', () => {
-        // 7500 -> [6000, 1500]. 1500 >= min 1000, keine Anhebung, Summe == Eingabe.
+        // 7500 ergeben [6000, 1500]; der Rest erreicht die Mindestlänge, die Summe ist die Eingabe.
         typeLength(plugin, '7500');
 
         assert.equal(plugin.billedMm, 7500);
@@ -137,7 +141,7 @@ describe('Mehrlänge durch Mindestlängen-Anhebung (max_rest)', () => {
     });
 
     test('ohne Rest bleibt die Summe gleich der Eingabe', () => {
-        // 12000 -> [6000, 6000], kein Rest, keine Anhebung.
+        // 12000 ergeben [6000, 6000], ohne Rest und ohne Anhebung.
         typeLength(plugin, '12000');
 
         assert.equal(plugin.billedMm, 12000);
@@ -151,7 +155,7 @@ describe('Zusammenspiel von Rundung und Anhebung', () => {
         // Rundung auf volle Meter zusätzlich zur Anhebung.
         plugin.el.dataset.roundingMode = 'full_m';
 
-        // 6100 -> [6000, 100] -> Anhebung auf [6000, 1000] -> Rundung je Stück -> 6000 + 1000 = 7000.
+        // 6100 ergeben [6000, 100], angehoben [6000, 1000], je Stück gerundet 6000 + 1000 = 7000.
         plugin._input.value = '6100';
         plugin._onInput();
 
@@ -161,13 +165,13 @@ describe('Zusammenspiel von Rundung und Anhebung', () => {
     test('Rundung je Teilstück, nicht auf der Gesamtlänge', () => {
         const plugin = makePlugin();
         plugin.el.dataset.roundingMode = 'full_m';
-        plugin.el.dataset.maxPieceLength = '6000';
+        plugin.el.dataset.maxPieceLength = '2500';
         plugin.el.dataset.minLength = '100';
 
-        // 6500 -> [6000, 500] -> 500 >= min 100, keine Anhebung.
-        // Rundung je Stück: 6000 + 1000 = 7000. Auf der Gesamtlänge wären es 7000 -> gleich,
-        // aber der Weg dorthin muss über die Stücke laufen (PHP rundet ebenfalls je Position).
-        plugin._input.value = '6500';
+        // 5200 ergeben [2500, 2500, 200]. Je Stück auf volle Meter gerundet sind es 3000 + 3000 + 1000
+        // = 7000; die Gesamtlänge gerundet wären nur 6000. Der Server rundet je Teilstück, die Vorschau
+        // muss es genauso tun, sonst zeigt sie einen Meter zu wenig.
+        plugin._input.value = '5200';
         plugin._onInput();
 
         assert.equal(plugin.billedMm, 7000);

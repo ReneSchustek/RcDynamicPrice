@@ -27,6 +27,11 @@ use Shopware\Core\System\Locale\LanguageLocaleCodeProvider;
 use Shopware\Core\System\SalesChannel\SalesChannelContext;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
+/**
+ * Der Prozessor rechnet aus Länge und Meterpreis den Preis einer Zuschnitt-Position, schreibt die
+ * Abrechnungslänge und den Positionsnamen und sperrt die Bestellung bei unzulässiger Länge. Jeder
+ * Fehler hier ist ein falscher Preis oder ein falscher Zuschnitt in der Fertigung.
+ */
 final class DynamicPriceProcessorTest extends TestCase
 {
     private QuantityPriceCalculator&MockObject $calculator;
@@ -58,14 +63,14 @@ final class DynamicPriceProcessorTest extends TestCase
     }
 
     /**
-     * Übersetzt gegen die echten Snippet-Dateien statt gegen einen Mock. Ein Mock würde jede
-     * Umbenennung und jeden fehlenden Platzhalter durchgehen lassen — der Positionsname ist aber
-     * genau der Text, den Kunde, Sachbearbeiter und Warenwirtschaft lesen.
+     * Übersetzt gegen die echten Textbausteine statt gegen eine Attrappe. Eine Attrappe ließe jede
+     * Umbenennung und jeden fehlenden Platzhalter durchgehen; der Positionsname ist aber der Text,
+     * den Kunde, Sachbearbeiter und Warenwirtschaft lesen.
      *
-     * Das Locale wird ausgewertet, nicht ignoriert: Ohne explizites Locale übersetzt Shopwares
-     * Translator im Cart-Processor gegen den Default `en-GB` — ein deutscher Kunde bekam dadurch
-     * „Cut to length 5.100 mm" in den Positionsnamen, und zwar dauerhaft, weil der Name mit der
-     * Bestellung gespeichert wird. Ein Translator-Fake ohne Locale-Prüfung hätte das nicht gezeigt.
+     * Die Sprache wird ausgewertet: Ohne ausdrückliche Sprache übersetzt Shopwares Translator im
+     * Warenkorb-Prozessor nach `en-GB`, und ein deutscher Kunde läse „Cut to length 5.100 mm" im
+     * Positionsnamen, dauerhaft, weil der Name mit der Bestellung gespeichert wird. Eine Attrappe,
+     * die die Sprache übergeht, zeigte das nicht.
      */
     private function snippetTranslator(): TranslatorInterface
     {
@@ -352,7 +357,8 @@ final class DynamicPriceProcessorTest extends TestCase
 
     public function testRoundingAppliesPerSiblingWhenCartHasSplitItems(): void
     {
-        // Splitting-Szenario: 3x 4750 mm landen im Cart (vom Subscriber erzeugt), full_m rundet pro Teilstück auf 5000 mm.
+        // Drei getrennte Positionen zu je 4750 mm, wie sie ältere Warenkörbe noch tragen; full_m rundet
+        // jede für sich auf 5000 mm.
         $primary = $this->createMeterLineItemWithId('primary-id', 4750, 100.0);
         $primary->setPayloadValue(DynamicPriceConstants::PAYLOAD_ROUNDING, 'full_m');
 
@@ -450,7 +456,7 @@ final class DynamicPriceProcessorTest extends TestCase
 
     public function testDoesNotRecordCounterMetricForSkippedItem(): void
     {
-        // Position ohne aktives Meter-Flag wird übersprungen -> keine Metrik.
+        // Eine Position ohne Meterkennzeichen wird übersprungen und nicht gezählt.
         $lineItem = new LineItem('item-1', LineItem::PRODUCT_LINE_ITEM_TYPE);
         $lineItem->setPayloadValue('meterLengthMm', 1500);
 
@@ -460,10 +466,10 @@ final class DynamicPriceProcessorTest extends TestCase
     }
 
     /**
-     * Der Preis eines Zuschnitt-Auftrags ist die Summe der **einzeln aufgerundeten** Teilstücke,
-     * nicht die aufgerundete Eingabelänge. Beispiel aus der Live-Konfiguration: 5.100 mm, max_rest,
-     * maxPiece 5.000, min 1.000, Rundung full_m. Der Rest von 100 mm wird auf die Mindestlänge
-     * von 1.000 mm angehoben — berechnet werden 5.000 + 1.000 = 6.000 mm zu je 301,54 EUR/m.
+     * Der Preis eines Zuschnitt-Auftrags ist die Summe der einzeln aufgerundeten Teilstücke, nicht
+     * die aufgerundete Eingabelänge. Beispiel aus der Live-Konfiguration: 5.100 mm, max_rest,
+     * Höchstmaß 5.000, Mindestlänge 1.000, Rundung full_m. Der Rest von 100 mm wird auf die
+     * Mindestlänge angehoben; berechnet werden 5.000 + 1.000 = 6.000 mm zu je 301,54 € je Meter.
      */
     public function testPriceIsSumOfIndividuallyRoundedPieces(): void
     {
@@ -491,8 +497,8 @@ final class DynamicPriceProcessorTest extends TestCase
 
     /**
      * Die längenbasierten Versandregeln (`cartLineItemDimensionLength`) entscheiden über die
-     * Versandart. Sie müssen die **längste Einzellänge** sehen, nicht die Gesamtlänge des Auftrags —
-     * versendet werden die einzelnen Zuschnitte.
+     * Versandart. Sie sehen die längste Einzellänge, nicht die Gesamtlänge des Auftrags, weil die
+     * einzelnen Zuschnitte versendet werden.
      */
     public function testDeliveryLengthIsLongestPieceNotTotal(): void
     {
@@ -537,7 +543,7 @@ final class DynamicPriceProcessorTest extends TestCase
         $this->calculator->expects($this->once())
             ->method('calculate')
             ->with($this->callback(static function (QuantityPriceDefinition $definition): bool {
-                // (100.0 / 1000) * 3000 = 300.0 — exakt wie vor dem Umbau
+                // (100,00 € je m / 1000) × 3000 mm = 300,00 €, wie bei einer einzigen Schnittlänge
                 return \abs($definition->getPrice() - 300.0) < 0.001;
             }))
             ->willReturn($this->createPrice(300.0));
@@ -547,11 +553,9 @@ final class DynamicPriceProcessorTest extends TestCase
         self::assertSame(3000, $lineItem->getPayloadValue(DynamicPriceConstants::PAYLOAD_BILLED_LENGTH_MM));
     }
 
-    // --- Schnittlänge und Abrechnungslänge sind zweierlei ---
-    //
-    // Die Mindestlänge ist eine Abrechnungsregel, keine Fertigungsregel. Wer 5.100 mm bestellt,
-    // bekommt 5.000 + 100 mm geschnitten und zahlt 6.000 mm (das Reststück zur Mindestlänge).
-    // Vorher hob der Splitter das Reststück physisch an — der Kunde bekam 900 mm zu viel.
+    // Schnittlänge und Abrechnungslänge sind zweierlei. Die Mindestlänge ist eine Abrechnungsregel,
+    // keine Fertigungsregel: Wer 5.100 mm bestellt, bekommt 5.000 + 100 mm geschnitten und zahlt
+    // 6.000 mm. Höbe der Splitter das Reststück an, bekäme der Kunde 900 mm zu viel.
 
     public function testShortRemainderIsBilledAtTheMinimumButCutAsOrdered(): void
     {
@@ -569,7 +573,7 @@ final class DynamicPriceProcessorTest extends TestCase
         $this->calculator->expects($this->once())
             ->method('calculate')
             ->with($this->callback(static function (QuantityPriceDefinition $definition): bool {
-                // (100,00 EUR/m / 1000) * 6000 mm = 600,00 EUR — wie vor der Trennung
+                // (100,00 € je m / 1000) × 6000 mm = 600,00 €
                 return \abs($definition->getPrice() - 600.0) < 0.001;
             }))
             ->willReturn($this->createPrice(600.0));
@@ -590,8 +594,8 @@ final class DynamicPriceProcessorTest extends TestCase
     }
 
     /**
-     * Ohne die Abrechnungs-Option (equal-Modus mit `equalSplitEnforceMin` = aus) wird das kurze
-     * Teilstück auch nicht angehoben — geschnitten und berechnet wird die tatsächliche Länge.
+     * Ohne die Abrechnungsoption (equal-Modus mit `equalSplitEnforceMin` aus) wird das kurze
+     * Teilstück auch nicht angehoben; geschnitten und berechnet wird die tatsächliche Länge.
      */
     public function testShortPieceIsNotRaisedWhenMinimumBillingIsOff(): void
     {
@@ -610,7 +614,7 @@ final class DynamicPriceProcessorTest extends TestCase
 
     /**
      * Bestandswarenkörbe tragen kein `rc_min_billing`, ihre Schnittlängen sind aber bereits
-     * angehoben. Sie dürfen nicht ein zweites Mal angehoben werden — ihr Preis bleibt unverändert.
+     * angehoben. Ein zweites Anheben änderte ihren Preis.
      */
     public function testLegacyCartWithAlreadyRaisedPiecesKeepsItsPrice(): void
     {
@@ -626,12 +630,11 @@ final class DynamicPriceProcessorTest extends TestCase
         self::assertSame(6000, $lineItem->getPayloadValue(DynamicPriceConstants::PAYLOAD_BILLED_LENGTH_MM));
     }
 
-    // --- Der Positionsname trägt Länge und Aufteilung ---
-    //
-    // Er ist die einzige Angabe, die Shopware bis in die Bestellung durchreicht und die jede
-    // Warenwirtschaft übernimmt (orgaMAX liest ihn als "abweichenderArtikeltext"). Stünde die Länge
-    // nur im Payload, wüsste die Fertigung aus dem ERP nicht, was zu schneiden ist, und die
-    // Admin-Bestellansicht zeigte einen vierstelligen Betrag für "1 Stück" ohne Erklärung.
+    // Der Positionsname trägt Länge und Aufteilung. Er ist die einzige Angabe, die Shopware bis in
+    // die Bestellung durchreicht und die jede Warenwirtschaft übernimmt (orgaMAX liest ihn als
+    // „abweichenderArtikeltext"). Stünde die Länge nur in den Positionsdaten, wüsste die Fertigung
+    // aus der Warenwirtschaft nicht, was zu schneiden ist, und die Bestellansicht der Verwaltung
+    // zeigte einen vierstelligen Betrag für „1 Stück" ohne Erklärung.
 
     public function testLabelCarriesLengthWithoutSplit(): void
     {
@@ -662,9 +665,9 @@ final class DynamicPriceProcessorTest extends TestCase
     }
 
     /**
-     * Der Fehler, den in v1.16.0 erst der Storefront-Smoke fand: Drei gleich lange Stücke ergeben
-     * nur **eine** Anzeigegruppe. Wer auf die Gruppen zählt, hält einen equal-Split für "kein Split"
-     * und unterschlägt die Aufteilung. Gezählt werden muss die Teilstück-Liste.
+     * Drei gleich lange Stücke ergeben nur eine Anzeigegruppe. Wer die Gruppen zählt, hält eine
+     * gleichmäßige Aufteilung für „keine Aufteilung" und unterschlägt sie; gezählt wird deshalb die
+     * Teilstück-Liste.
      */
     public function testEqualSplitIntoIdenticalPiecesIsStillShownAsSplit(): void
     {
@@ -700,8 +703,8 @@ final class DynamicPriceProcessorTest extends TestCase
     }
 
     /**
-     * Nach dem Umbau auf Auftrags-Positionen setzt der Core das Label bei jedem Durchlauf neu aus
-     * dem Produkt. Auch dann darf nur der Basisname als Grundlage dienen — und der bleibt gemerkt.
+     * Der Kern setzt das Label bei jedem Durchlauf neu aus dem Produkt. Grundlage bleibt der
+     * gemerkte Basisname.
      */
     public function testLabelSurvivesCoreResettingItToTheProductName(): void
     {
@@ -719,9 +722,9 @@ final class DynamicPriceProcessorTest extends TestCase
 
     /**
      * Der Positionsname wird mit der Bestellung gespeichert und wandert von dort in Beleg und
-     * Warenwirtschaft — er muss beim ersten Mal in der Sprache des Warenkorbs stehen. Im
-     * Store-API-Smoke bekam ein deutscher Warenkorb „Cut to length 5.100 mm", weil der Translator
-     * im Cart-Processor ohne explizites Locale gegen Shopwares Default en-GB übersetzt.
+     * Warenwirtschaft; er muss beim ersten Mal in der Sprache des Warenkorbs stehen. Ohne
+     * ausdrückliche Sprache übersetzt der Translator im Warenkorb-Prozessor nach `en-GB`, und ein
+     * deutscher Warenkorb bekäme „Cut to length 5.100 mm".
      */
     public function testLabelUsesTheLanguageOfTheSalesChannelNotTheRequestDefault(): void
     {
@@ -806,10 +809,9 @@ final class DynamicPriceProcessorTest extends TestCase
         );
     }
 
-    // --- Verworfene Meter-Positionen erzeugen einen blockierenden Warenkorb-Fehler ---
-    //
-    // Vorher fielen sie still auf den Basispreis zurück: der Kunde bestellte zu einem Preis,
-    // der die Länge ignoriert — bei Meterware praktisch immer zu billig.
+    // Eine verworfene Meterposition sperrt die Bestellung. Fiele sie still auf den Grundpreis
+    // zurück, bestellte der Kunde zu einem Preis, der die Länge übergeht, bei Meterware fast immer
+    // zu billig.
 
     public function testAddsBlockingErrorForInvalidLength(): void
     {
@@ -885,8 +887,8 @@ final class DynamicPriceProcessorTest extends TestCase
     }
 
     /**
-     * Eine Position ohne Meter-Flag ist kein Meterartikel — sie darf keinen Fehler auslösen,
-     * auch wenn ihr die Meter-Payload fehlt.
+     * Eine Position ohne Meterkennzeichen ist kein Meterartikel und löst keinen Fehler aus, auch
+     * wenn ihr die Längenangaben fehlen.
      */
     public function testNonMeterLineItemAddsNoError(): void
     {

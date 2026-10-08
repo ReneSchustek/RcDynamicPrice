@@ -1,3 +1,169 @@
+# 1.23.4
+
+- **Behoben: Die Ja/Nein-Felder klebten in der Verwaltung aneinander.** „Geführte Auswahl: erst die Länge",
+  „Eingegebene Länge wählt die Größe" und „Größen nur über die Länge" erscheinen an Produkt und Kategorie
+  jetzt als Schalter mit Abstand statt als gerahmte Ankreuzfelder ohne Abstand. Gesetzte Werte bleiben,
+  im Shop ändert sich nichts. Die Migration stellt nur Felder um, die noch Ankreuzfelder sind.
+
+# 1.23.3
+
+- **Behoben: Eine Unterkategorie mit eigener Längengruppe verdeckte die ihrer Elternkategorie.** Trägt
+  „Balkongeländer" die Gruppe „Länge" und „Bausätze" darüber „Maße", bekam ein Relinggeländer unter
+  „Balkongeländer" keine Längengruppe: keine geführte Auswahl, und der Längenschalter blieb still, weil er
+  dann alle Optionen der Seite lesen musste, auch „2 Pfosten". Die Längengruppen werden jetzt über die
+  ganze Kette gesammelt, die nächste Stelle zuerst; es gilt die erste, die der Artikel hat.
+
+# 1.23.2
+
+- **Neu: Die Länge in jeder Einheit.** „4,2 m", „420 cm", „4200 mm" oder „4.2m" im Längenfeld und im
+  Meterpreis-Feld; ohne Einheit gilt eine Zahl mit Komma als Meter, eine ganze Zahl als Millimeter, bei
+  einer einzelnen Ziffer fragt der Shop nach. Danach steht die Länge in Millimetern im Feld.
+- **Neu: Längenschalter und Längengruppen auch an der Kategorie.** Die Längengruppe ist jetzt eine
+  Mehrfachauswahl („Maße" und „Länge"); es gilt die, die der Artikel hat. Der Schalter liest sie auch
+  ohne geführte Auswahl und fällt bei zwei Gruppen nicht mehr aus. Er wirkt nur an Artikeln mit
+  TMMS-Längenfeld. Eine Migration übernimmt die bisherigen Einzelwerte.
+- **Neu: „Größen nur über die Länge"** für Stangenmaterial: Die Größenknöpfe verschwinden, unter dem
+  Feld steht „Für 4200 mm berechnen wir 4,5 m".
+- **Geändert: Längen verschiedener Größen gehen Schritt für Schritt in den Warenkorb** statt abgewiesen
+  zu werden. Nach „In den Warenkorb" stellt die Seite auf die nächste Größe um; die Positionen trennt
+  RcCartSplitter.
+- **Geändert: Beim Tippen wartet die Seite kurz nach der letzten Taste**, ein Semikolon am Ende löst
+  nichts aus; „1200; 4200" lässt sich so eintippen, ohne dass die Seite nach „1200" springt.
+- **Behoben:** Im Warenkorb erschien „Gewünschte Länge" nur, wenn der Schalter am Produkt stand, und
+  galt für jede Kundeneingabe des Artikels; jetzt für das Längenfeld, gleich wo der Schalter steht.
+- Bei der geführten Auswahl meldet der erste Sprung kein „passt nicht zu …" mehr; gewählt war da noch
+  nichts.
+
+# 1.23.1
+
+- **Behoben: Eine geänderte Einstellung blieb auf zwischengespeicherten Produktseiten unsichtbar.** Die
+  Abrechnung der gleichmäßigen Teilung, „Mindestlänge je Teilstück erzwingen" und der Hinweistext gehen
+  in die Produktseite ein, leerten den Zwischenspeicher aber nicht; die Seite zeigte die alte Stückelung,
+  bis der Speicher von selbst verfiel. Jetzt leert jede Einstellung der Erweiterung den Speicher.
+- Intern: eine Anmeldung auf ein Ereignis, das Shopware 6.7 nicht meldet, entfernt; ein Parametername
+  im Preisrechner nennt jetzt, was er trägt (Schnittlängen); README zur Bestätigungsmail berichtigt;
+  Tests mit englischen Bezeichnern und einem Testfall, der den Unterschied je Teilstück wirklich prüft.
+- Kommentare im ganzen Bestand nachgezogen; ein Wächter hält fest, dass jeder Typ einen Kopf hat.
+
+# Unveröffentlicht
+
+- **Messprojekt `benchmarks/`** mit PHPBench und einer Seitenmessung über HTTP, Ablage je Lauf in
+  `benchmarks/results.csv`; kommt in kein Ausrollpaket. Ausgangswerte vom 05.10. an einer Kopie des Shops:
+  Einstellungen auflösen 3 ms je Produktseite oder „In den Warenkorb"; Aufteilen in Teilstücke
+  praktisch ohne Zeit, im schlimmsten erlaubten Fall (1 km in 1-mm-Stücken) 13 ms und 4 MB.
+- Wächter im Testlauf für diesen schlimmsten Fall. PHPStan und PHP CS Fixer prüfen auch `benchmarks/`.
+
+# 1.23.0
+
+- **Neu: geführte Variantenauswahl.** Bei Geländern steht die Länge oben und lässt sich auch frei eingeben;
+  darunter erscheint zunächst nichts. Erst wenn die Länge feststeht, lassen sich die dazu passenden Pfosten
+  wählen, und was zu dieser Länge nicht lieferbar ist, wird gar nicht erst angezeigt.
+
+  Die Produktseite fragt zuerst die Länge ab und zeigt danach nur die Optionen, die es zu dieser Länge
+  zu kaufen gibt; nichts erscheint durchgestrichen. Gibt es zu einem Schritt nur eine Möglichkeit, wird
+  sie gesetzt statt gefragt. Preis, Lieferzeit, Kaufknopf, die mitlaufende Kaufleiste und PayPal
+  erscheinen, sobald die Variante feststeht. Wählt der Kunde die Option der gezeigten Variante, wird nur
+  bestätigt, ohne Neuladen. Kaufbar heißt dasselbe wie beim Kern: aktiv, sichtbar, verfügbar.
+
+  Eingeschaltet wird sie mit zwei neuen Zusatzfeldern, am Produkt oder an der Kategorie:
+  **„Geführte Auswahl: erst die Länge"** (Haken, `rc_guided_selection`) und **„Geführte Auswahl:
+  Längengruppe"** (Eigenschaftsgruppe, `rc_guided_length_group`). Ohne beide bleibt die Seite, wie der
+  Kern sie baut, ebenso ohne Skript.
+
+  An einer Kopie des Shops geprüft am Relinggeländer `EB270100-2-0` (Maße und Pfosten) und am
+  Balkongeländer-Bausatz `BGB0100-IA-0` (nur Länge, als Auswahlfeld), auch bei 375 px.
+
+- **Der Längenschalter versteht feste Maße.** Neben Bereichen wie `96 - 116 cm` liest er jetzt
+  `1,5 m`, `150 cm` und `1500 mm`; zugeordnet wird auf das nächstgrößere Maß (1370 mm → 1,5 m). Mit
+  geführter Auswahl liest er nur deren Längengruppe. Fertig ist eine Eingabe nach so vielen Ziffern wie
+  die längste Stufe hat, mindestens vier: Bei Bausätzen bis 15 m ist `1500` noch nicht fertig.
+
+- **Behoben: Der Längenschalter blieb aus, sobald eine Größe nicht kombinierbar war.** Der Kern hängt
+  solchen Größen „(Diese Option ist zurzeit nicht verfügbar.)" für Vorleseprogramme an. Das Skript las
+  den Zusatz mit, hielt die Beschriftung für unlesbar und schaltete die Automatik für die ganze Seite ab.
+  Auf Live war der Haken an keinem Artikel gesetzt; dort ist es nicht aufgetreten.
+
+- Intern: Die Bestimmung der Hauptkategorie steht in einer eigenen Klasse (`PrimaryCategory`), die
+  Meterpreis und geführte Auswahl gemeinsam nutzen. Der Entwicklungsstand zieht Kern 6.7.15.0.
+
+# 1.22.2
+
+- **Das Fenster wird nicht mehr verschoben.** Es erschien erst oben und rutschte dann in die Mitte.
+
+  In 1.21.1 kam ein `modal-dialog-centered` dazu, gesetzt im Rückruf **nach** dem Öffnen — und
+  genau daher kam der Ruck: Zu diesem Zeitpunkt ist das Fenster bereits sichtbar und steht oben;
+  die Klasse zieht es danach in die Mitte, und der Weg dorthin ist zu sehen. Ein Fenster, das an
+  seinem Platz erscheint, ist ruhiger als eines, das an den richtigen Platz wandert.
+
+  Der Riegel gegen ein zweites Fenster aus 1.22.1 bleibt unverändert; er hängt jetzt am Fenster
+  selbst statt am Dialog darin.
+
+# 1.22.1
+
+- **Behoben: Nach dem Bestätigen blieb die Seite gesperrt.** Nach dem Hinweis auf eine überschrittene
+  Höchstlänge war das Fenster zwar geschlossen, die Seite dahinter aber weiter gesperrt.
+
+  Es wurden **zwei** Fenster geöffnet, nicht eines. Der Sprung hängt an zwei Ereignissen — `input`
+  beim Tippen und `change` beim Verlassen des Feldes —, die Sperre gegen doppelte Beurteilung aus
+  1.21.1 saß aber nur im Weg über das Tippen. Eine vierstellige Eingabe wurde deshalb zweimal
+  beurteilt, und jeder Lauf brachte seine eigene Abdunklung mit. Das Bestätigen schloss eine
+  davon; die zweite blieb liegen und sperrte die Seite, ohne dass noch etwas zu sehen war.
+
+  Am Bildschirm nachgemessen (1440 px, Eingabe `9999`): vorher zwei Abdunklungen und
+  nach dem Bestätigen eine übrig, dazu `overflow: hidden` am Dokument. Jetzt **eine** Abdunklung
+  und nach dem Bestätigen **null**.
+
+  Der Vergleich sitzt jetzt an der Beurteilung statt an einem ihrer Zugänge. Dazu ein Riegel um
+  das Öffnen selbst: Solange ein Fenster offen ist, geht kein zweites auf — das deckt auch jeden
+  Weg ab, der später dazukommt.
+
+- **Die abgewiesene Länge bleibt nicht mehr stehen.** Passt die Eingabe zu keiner Stufe oder
+  gehören mehrere Längen zu verschiedenen Stufen, ist das Feld danach leer. Umgesetzt als leeres
+  Feld und nicht als Ziffer `0`: Eine `0` wäre selbst eine ungültige Länge und brächte dem Kunden
+  für denselben Handgriff die zweite Abfuhr. Eine Länge, die nur die Stufe wechselt, bleibt
+  selbstverständlich stehen — sie war ja richtig.
+
+# 1.22.0
+
+- **Der Sprung bedient jetzt beide Formen der Größenwahl.** Ob ein Artikel die Stufen als Knopffeld
+  oder als Auswahlfeld zeigt, entscheidet die Anzeigeart der Eigenschaftsgruppe im
+  Verwaltungsbereich — das ist eine Einstellung, kein Code. Das Skript legt sich auf keine von
+  beiden fest: Beim Knopffeld klickt es das Radiofeld, beim Auswahlfeld setzt es den Wert und löst
+  dessen `change` aus. Anlass war die Entscheidung „Auswahlfeld statt Knopffeld": Neunzehn Knöpfe
+  kosteten 226 Pixel und schoben den Kaufknopf unter die Falz — mit dem Auswahlfeld sind es 70, und
+  der Knopf rückt um 156 Pixel nach oben.
+
+# 1.21.1
+
+Drei Nachbesserungen aus der Prüfung am Bildschirm.
+
+- **Der Sprung greift jetzt beim Tippen, nicht erst beim Verlassen des Feldes.** Wer zwei Längen
+  einträgt, die zu verschiedenen Größen gehören, erfuhr es bisher erst, wenn er längst
+  weitergeklickt hatte. Gehandelt wird, sobald eine Angabe fertig ist: nach **vier Ziffern**, nach
+  einem **Semikolon** — oder weiterhin beim Verlassen des Feldes. Eine dreistellige Angabe bleibt
+  unentschieden, sie könnte der Anfang einer vierstelligen sein.
+- **Das Fenster steht in der Mitte des Bildschirms.** Es stand oben: Inhalt bei 28 Pixeln, darunter
+  860 Pixel leer.
+- Dieselbe Eingabe wird nicht mehr mehrfach beurteilt — ohne diesen Vergleich feuerte jedes weitere
+  Zeichen hinter einer fertigen Angabe erneut, etwa das Leerzeichen nach dem Semikolon.
+
+# 1.21.0
+
+- **Die eingegebene Länge wählt die Größe.** Bei Artikeln, deren Größen als Bereiche beschriftet
+  sind (»96 - 116 cm«), stellt der Shop auf die passende Größe um, sobald der Kunde eine Länge
+  einträgt, die nicht dazu passt — und sagt ihm in einem Fenster, was er getan hat. Beispiel: Gewählt ist 96 - 116 cm, eingetragen
+  sind 135 cm; die Seite springt auf 130 - 140 cm. Die Zuordnung nimmt die nächst größere
+  Stufe; genau an der Grenze gilt die untere (1300 mm → 116 - 130 cm).
+- **Die Menge folgt der Zahl der Längen.** Zwei mit Semikolon getrennte Angaben ergeben zwei
+  Stück. Vorher blieb die Menge bei eins — zwei Zuschnitte, einmal bezahlt. Ändert der Kunde die
+  Menge danach von Hand, hat er das letzte Wort.
+- **Längen aus verschiedenen Größen führen zu keinem Sprung**, sondern zum Hinweis, sie getrennt
+  zu bestellen: Eine Warenkorbposition kann nur eine Größe haben.
+- **Im Bestellvorgang steht die Länge statt der Anleitung** — »Gewünschte Länge: 1350 mm« statt
+  des vollständigen Hinweistextes, den der Kunde beim Ausfüllen brauchte und hier hinter sich hat.
+- **Neues Zusatzfeld am Produkt** `rc_length_variant_switch` im bestehenden Set. Ohne Haken ändert
+  sich an einem Artikel nichts.
+
 # 1.20.2
 
 - **Vorbereitung auf die nächste Shopware-Hauptversion.** Der Zugriff auf Suchergebnisse folgt der Schreibweise, die Shopware 6.8 verlangt. Am Verhalten ändert sich nichts.

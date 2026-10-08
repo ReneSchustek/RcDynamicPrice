@@ -7,12 +7,12 @@ namespace Ruhrcoder\RcDynamicPrice\Cart\Error;
 use Shopware\Core\Checkout\Cart\Error\Error;
 
 /**
- * Blockierender Warenkorb-Fehler für eine Meter-Position, deren Preis nicht ermittelt werden kann.
+ * Blockierender Warenkorbfehler für eine Meterposition, deren Preis sich nicht ermitteln lässt.
  *
- * Vorher fiel eine solche Position still auf den Basispreis des Produkts zurück. Der Kunde
- * bestellte damit zu einem Preis, der die Länge nicht berücksichtigt — bei Meterware praktisch
- * immer zu billig, und niemand bemerkte es bis zur Auslieferung. Fail-Fast statt falscher Preis:
- * die Position bleibt sichtbar, die Bestellung ist aber blockiert, bis die Ursache behoben ist.
+ * Fiele eine solche Position still auf den Grundpreis des Produkts zurück, bestellte der Kunde zu
+ * einem Preis ohne Länge, bei Meterware praktisch immer zu billig, und niemand bemerkte es vor der
+ * Auslieferung. Deshalb bleibt die Position sichtbar, die Bestellung aber gesperrt, bis die Ursache
+ * behoben ist.
  */
 final class MeterPriceError extends Error
 {
@@ -48,7 +48,7 @@ final class MeterPriceError extends Error
     }
 
     /**
-     * Blockiert die Bestellung. Ein falscher Preis darf nicht in eine Bestellung laufen.
+     * Ein falscher Preis darf nicht in eine Bestellung laufen.
      */
     public function blockOrder(): bool
     {

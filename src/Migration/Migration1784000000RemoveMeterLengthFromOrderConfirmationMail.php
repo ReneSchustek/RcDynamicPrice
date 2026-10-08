@@ -8,20 +8,14 @@ use Doctrine\DBAL\Connection;
 use Shopware\Core\Framework\Migration\MigrationStep;
 
 /**
- * Entfernt den Längen-Block wieder aus den Mail-Templates vom Typ order_confirmation_mail.
+ * Nimmt den Längen-Block, den `Migration1783900000AddMeterLengthToOrderConfirmationMail` eingefügt hat,
+ * wieder aus den Vorlagen der Bestellbestätigung, in HTML und Klartext.
  *
- * Länge und Aufteilung stehen jetzt im Positionsnamen — die Mail gibt den Namen ohnehin aus und
- * nennt die Angabe sonst doppelt.
- *
- * Entfernt wird der **exakt bekannte Textblock**, den Migration1783900000 erzeugt hat, nicht ein
- * Suchmuster: Der Block trug nur einen öffnenden Marker, ein Schnitt "von Marker bis Blockende"
- * wäre also geraten. Der Blocktext wird dort geholt, wo er entstanden ist — eine Kopie würde beim
- * ersten Tippfehler auseinanderdriften und den Block unentfernbar machen.
- *
- * Findet sich der Block nicht wortgleich, hat der Shop die Vorlage von Hand geändert. Dann bleibt
- * sie **unangetastet**: Eine doppelte Längenangabe ist ärgerlich, eine zerschossene
- * Bestellbestätigung wäre schlimmer. Der Fall ist im CHANGELOG benannt, damit der Betreiber die
- * Vorlage prüfen kann.
+ * Länge und Aufteilung stehen im Positionsnamen, und den gibt die Mail ohnehin aus; mit dem Block stünde
+ * die Angabe doppelt da. Gefunden wird der Block über seinen Marker, dessen Text aus der einfügenden
+ * Migration kommt statt aus einer Kopie. Fehlt der Marker oder lässt sich das Blockende nicht eindeutig
+ * finden, bleibt die Vorlage unangetastet: Eine doppelte Längenangabe ist ärgerlich, eine zerschossene
+ * Bestellbestätigung wäre schlimmer.
  */
 final class Migration1784000000RemoveMeterLengthFromOrderConfirmationMail extends MigrationStep
 {
@@ -73,27 +67,27 @@ final class Migration1784000000RemoveMeterLengthFromOrderConfirmationMail extend
 
     public function updateDestructive(Connection $connection): void
     {
-        // Forward-only, keine destruktive Phase.
+        // Nichts zu tun: Entfernt wird nur, was die Migration eindeutig als ihren Block erkennt.
     }
 
     /**
      * Schneidet den Block vom Marker bis zu dem `{% endif %}`, das ihn schließt.
      *
-     * Ein Vergleich mit dem heute erzeugten Blocktext wäre naheliegend, ist aber falsch: Auf
-     * Im Live-Bestand steht in der Vorlage `{{ "` + echter Zeilenumbruch + `" }}`, wo der Code heute
-     * die Zeichenfolge `{{ "\n" }}` schreibt — der Block stammt dort aus einer Zwischenfassung der
-     * v1.16.0-Entwicklung, und weil die einfügende Migration idempotent ist, lief sie nie wieder.
-     * Ein zeichengenauer Vergleich hätte den Block stehen lassen und die Länge doppelt ausgegeben.
+     * Ein Vergleich mit dem Blocktext, den die einfügende Migration erzeugt, läge nahe, träfe aber nicht
+     * jeden Shop. Im Live-Bestand steht in der Vorlage `{{ "`, ein echter Zeilenumbruch und `" }}`, wo
+     * der Code die Zeichenfolge `{{ "\n" }}` schreibt; der Block stammt dort aus einer früheren Fassung,
+     * und die einfügende Migration läuft kein zweites Mal. Ein zeichengenauer Vergleich ließe den Block
+     * stehen und die Länge doppelt ausgeben.
      *
-     * Deshalb wird über die Twig-Struktur geschnitten: ab der Zeile mit dem Marker, dann `{% if %}`
-     * und `{% endif %}` mitzählen, bis das erste geöffnete `if` wieder geschlossen ist. Das ist
-     * unabhängig davon, wie der Blockinhalt im Einzelnen geschrieben wurde.
+     * Deshalb wird über die Twig-Struktur geschnitten: ab der Zeile mit dem Marker, `{% if %}` und
+     * `{% endif %}` mitzählend, bis das erste geöffnete `if` wieder geschlossen ist. Wie der Inhalt
+     * dazwischen geschrieben ist, spielt dann keine Rolle.
      *
-     * Liefert null, wenn nichts zu tun ist: kein Marker (nie gepatcht oder bereits entfernt) oder
-     * kein schließendes `endif` (die Vorlage wurde so weit von Hand verändert, dass ein Schnitt
-     * geraten wäre — dann bleibt sie unangetastet). Ein zweiter Lauf ist damit folgenlos.
+     * Liefert null, wenn nichts zu tun ist: ohne Marker (nie eingefügt oder schon entfernt) oder ohne
+     * schließendes `endif` (dann wäre der Schnitt geraten, und die Vorlage bleibt). Ein zweiter Lauf ist
+     * damit folgenlos.
      *
-     * Nur für interne Verwendung und Tests public.
+     * Öffentlich nur für die Tests.
      */
     public function removeBlock(?string $content, bool $insertedWithLeadingNewline): ?string
     {
@@ -111,8 +105,8 @@ final class Migration1784000000RemoveMeterLengthFromOrderConfirmationMail extend
             return null;
         }
 
-        // Ab dem Anfang der Marker-Zeile schneiden, samt ihrer Einrückung — sonst bleibt eine Zeile
-        // aus Leerzeichen zurück.
+        // Ab dem Anfang der Marker-Zeile schneiden, samt ihrer Einrückung; sonst bliebe eine Zeile aus
+        // Leerzeichen zurück.
         $lineStart = strrpos(substr($content, 0, $markerPos), "\n");
         $cutFrom = $lineStart === false ? 0 : $lineStart + 1;
 
@@ -128,9 +122,8 @@ final class Migration1784000000RemoveMeterLengthFromOrderConfirmationMail extend
     }
 
     /**
-     * Liefert die Position hinter dem `{% endif %}`, das das erste `{% if %}` des Blocks schließt —
-     * inklusive des abschließenden Zeilenumbruchs und einer eventuell folgenden Leerzeile, damit die
-     * Vorlage wieder exakt so aussieht wie vor dem Einfügen.
+     * Liefert die Position hinter dem `{% endif %}`, das das erste `{% if %}` des Blocks schließt, samt
+     * dem Rest dieser Zeile und ihrem Zeilenumbruch, damit keine leere Zeile zurückbleibt.
      */
     private function findBlockEnd(string $content, int $markerPos): ?int
     {

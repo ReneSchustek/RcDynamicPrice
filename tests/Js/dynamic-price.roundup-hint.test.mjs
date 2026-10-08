@@ -1,6 +1,6 @@
-// Regressionstest: der Rundungs-Hint muss verschwinden, sobald eine Eingabe
-// nicht mehr gerundet werden muss. Vorher blieb der Text einer früheren Eingabe
-// stehen — die aria-live-Region (role="status") meldete damit eine falsche Länge.
+// Der Rundungshinweis verschwindet, sobald eine Eingabe nicht mehr gerundet werden muss. Bliebe
+// der Text einer früheren Eingabe stehen, meldete die Statusregion (role="status") Vorleseprogrammen
+// eine falsche Länge.
 
 import { describe, test, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
@@ -14,6 +14,10 @@ const sourcePath = join(
     'src', 'Resources', 'app', 'storefront', 'src', 'dynamic-price', 'dynamic-price.plugin.js',
 );
 
+const parseLengthSource = readFileSync(
+    join(__dirname, '..', '..', 'src', 'Resources', 'app', 'storefront', 'src', 'util', 'parse-length.js'),
+    'utf8',
+).replace(/^export /m, '');
 const rawSource = readFileSync(sourcePath, 'utf8');
 const stripped = rawSource
     .replace(/^import [^\n]*\n/gm, '')
@@ -24,6 +28,7 @@ const DynamicPricePlugin = new Function(`
         init() {}
         destroy() {}
     }
+    ${parseLengthSource}
     ${stripped}
     return DynamicPricePlugin;
 `)();

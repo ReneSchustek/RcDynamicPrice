@@ -1,0 +1,60 @@
+{% sw_extends '@TmmsProductCustomerInputs/storefront/component/line-item/type/line-item-customer-input-field-container.html.twig' %}
+
+{# Im Bestellvorgang steht die Länge, nicht die Anleitung dazu.
+
+   TMMS zeigt unter dem Artikel die Beschriftung des Eingabefeldes und dann den Wert, also den ganzen
+   Hinweistext („Wählen Sie bitte bei Zuschnitt die nächst größere Länge aus …") vor der Zahl. Wer nur
+   noch prüft, was er bestellt, braucht die Anleitung nicht mehr. Über die Daten lässt sich das nicht
+   lösen: Dasselbe Zusatzfeld (`tmms_customer_input_1_title`) beschriftet auch das Eingabefeld auf der
+   Produktseite, wo die Anleitung gebraucht wird, und die Einheit hinter dem Wert setzt kein
+   Beschriftungsfeld.
+
+   Überschrieben wird dieser Block im Container, weil die Felddatei von TMMS keinen Twig-Block trägt und
+   per `sw_include` eingebunden ist; sie ließe sich nur als vollständige Kopie ersetzen.
+
+   Zwei Bedingungen grenzen ab. Nur das Längenfeld eines Artikels mit Längenschalter: Seine Nummer schreibt
+   `LengthSwitchLineItemSubscriber` beim Hinzufügen in die Position. Der Block gilt für jede Kundeneingabe;
+   Endkappen oder ein Wandabstand bekämen sonst „970 mm". Und nur solange das Feld im
+   Bestellvorgang nicht bearbeitbar ist; schaltet jemand die Bearbeitung ein, nähme diese Zeile dem
+   Kunden das Eingabefeld weg.
+
+   Der Block gehört TMMS. Benennt ein Update ihn um, rendert dieser Override wortlos nichts, und das Tor
+   für Phantom-Overrides kennt nur Blöcke des Kerns; nach jedem TMMS-Update deshalb von Hand nachsehen. #}
+{% block component_line_item_type_product_customerinput_inner %}
+    {% set rcLengthSwitchActive = lineItem.payload.rc_length_switch|default(0) == tmmsCustomerInputCount %}
+    {% set rcFieldIsReadOnly = customerInputCanChanged is not defined or customerInputCanChanged !== 1 %}
+
+    {% if rcLengthSwitchActive and rcFieldIsReadOnly and tmmsCustomerInputValue is not empty %}
+        {% set rcLengths = tmmsCustomerInputValue|split(';') %}
+        {% set rcCleanLengths = [] %}
+
+        {% for rcLength in rcLengths %}
+            {% if rcLength|trim is not empty %}
+                {% set rcCleanLengths = rcCleanLengths|merge([rcLength|trim]) %}
+            {% endif %}
+        {% endfor %}
+
+        {% if rcCleanLengths is not empty %}
+            <li class="line-item line-item-customer-input-{{ tmmsPageType }} rc-line-item-length">
+                <span class="rc-line-item-length__label">
+                    {% if rcCleanLengths|length > 1 %}
+                        {{ 'rc-dynamic-price.lengthSwitch.cartLabelPlural'|trans|sw_sanitize }}
+                    {% else %}
+                        {{ 'rc-dynamic-price.lengthSwitch.cartLabel'|trans|sw_sanitize }}
+                    {% endif %}
+                </span>
+
+                {# Die Einheit steht an jeder Zahl: „970 mm; 1140 mm". Bei „970; 1140 mm" läse sich die
+                   erste Zahl wie eine Anzahl. #}
+                <span class="rc-line-item-length__value">
+                    {% for rcLength in rcCleanLengths %}
+                        {{- rcLength }} {{ 'rc-dynamic-price.lengthSwitch.unit'|trans|sw_sanitize -}}
+                        {%- if not loop.last %}; {% endif -%}
+                    {% endfor %}
+                </span>
+            </li>
+        {% endif %}
+    {% else %}
+        {{ parent() }}
+    {% endif %}
+{% endblock %}

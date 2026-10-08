@@ -14,6 +14,11 @@ use Ruhrcoder\RcDynamicPrice\Service\MeterSplittingConfig;
 use Shopware\Core\Checkout\Cart\Cart;
 use Shopware\Core\Checkout\Cart\LineItem\LineItem;
 
+/**
+ * Der Assembler schreibt Länge, Grenzen und Schnittfolge in die Warenkorbposition. Ein Zuschnitt
+ * bleibt dabei eine Position; jede Abweichung davon ist eine Länge, die der Kunde einzeln kürzen
+ * oder doppelt bestellen könnte.
+ */
 final class CartItemSplitAssemblerTest extends TestCase
 {
     private CartItemSplitAssembler $assembler;
@@ -49,8 +54,8 @@ final class CartItemSplitAssemblerTest extends TestCase
     }
 
     /**
-     * Kern des Auftrags-Modells: Die Teilstücke sind eine Fertigungsfolge im Payload, keine
-     * eigenen Cart-Einträge. Der Kunde bestellt eine Länge und sieht eine Position.
+     * Die Teilstücke sind eine Fertigungsfolge in den Positionsdaten, keine eigenen Einträge im
+     * Warenkorb. Der Kunde bestellt eine Länge und sieht eine Position.
      */
     public function testEqualSplitKeepsOneLineItemAndStoresPiecesInPayload(): void
     {
@@ -87,9 +92,8 @@ final class CartItemSplitAssemblerTest extends TestCase
     }
 
     /**
-     * Regressions-Gate für den Defekt, der zum Umbau geführt hat: Solange kein Teilstück eine eigene
-     * Position ist, kann der Kunde auch keines einzeln löschen und damit unbemerkt eine kürzere
-     * Länge bestellen, als er eingegeben hat.
+     * Ist kein Teilstück eine eigene Position, kann der Kunde auch keines einzeln löschen und damit
+     * unbemerkt eine kürzere Länge bestellen, als er eingegeben hat.
      */
     public function testSplitPiecesNeverBecomeSeparateLineItems(): void
     {
@@ -112,8 +116,9 @@ final class CartItemSplitAssemblerTest extends TestCase
 
     public function testPayloadFollowsCartItemInsteadOfEventInstanceOnMerging(): void
     {
-        // Cart enthält bereits ein gemergtes LineItem mit derselben ID; der Subscriber übergibt
-        // das eingehende (frische) LineItem an den Assembler. Der Payload muss am Cart-Item landen.
+        // Der Warenkorb enthält schon eine zusammengeführte Position mit derselben Kennung; der
+        // Subscriber übergibt die neu eingehende. Die Angaben gehören an die Position im Warenkorb,
+        // sonst gingen sie mit der eingehenden verloren.
         $existingCartItem = new LineItem('merged-id', LineItem::PRODUCT_LINE_ITEM_TYPE, 'product-id', 2);
         $incoming = new LineItem('merged-id', LineItem::PRODUCT_LINE_ITEM_TYPE, 'product-id', 1);
 
@@ -158,9 +163,9 @@ final class CartItemSplitAssemblerTest extends TestCase
     }
 
     /**
-     * Geschnitten wird die bestellte Länge — auch wenn das Reststück unter der Mindestlänge liegt.
-     * Die Anhebung passiert nur noch in der Abrechnung; der Assembler hält dafür fest, dass sie
-     * gilt (`rc_min_billing`).
+     * Geschnitten wird die bestellte Länge, auch wenn das Reststück unter der Mindestlänge liegt.
+     * Angehoben wird nur in der Abrechnung; der Assembler hält dafür fest, dass sie gilt
+     * (`rc_min_billing`).
      */
     public function testRemainderBelowMinimumIsCutAsIsAndFlaggedForMinimumBilling(): void
     {
@@ -241,9 +246,9 @@ final class CartItemSplitAssemblerTest extends TestCase
     }
 
     /**
-     * Holt eine Position und stellt sicher, dass es sie gibt. Cart::get() liefert null,
-     * wenn die Kennung nicht vorkommt — ohne diese Prüfung würde ein Tippfehler in der
-     * Kennung den Test nicht scheitern lassen, sondern stillschweigend nichts prüfen.
+     * Holt eine Position, die es geben muss. `Cart::get()` liefert null, wenn die Kennung nicht
+     * vorkommt; ohne die Prüfung ließe ein Tippfehler in der Kennung den Test nicht scheitern,
+     * sondern still nichts prüfen.
      */
     private function lineItem(Cart $cart, string $id): LineItem
     {

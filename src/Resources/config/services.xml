@@ -7,12 +7,10 @@
     <services>
 
         <!--
-          Optionale Observability. Default-Recorder ist der NullMetricsRecorder (No-Op):
-          die Interface-Service-ID ist konkret mit NullMetricsRecorder hinterlegt.
-          Der LoggingMetricsRecorder dekoriert sie transparent: er delegiert immer an den inneren
-          (Null-)Recorder und loggt nur zusätzlich, wenn die Plugin-Config `enableMetrics` aktiv ist.
-          Damit bleibt das nach außen sichtbare Standardverhalten (Toggle aus) identisch zum
-          NullMetricsRecorder; der Decorator selbst bleibt als zwischengespeicherte Bool-Prüfung im Pfad.
+          Kennzahlen sind abschaltbar. Hinter der Schnittstelle steht der NullMetricsRecorder, der nichts
+          tut; der LoggingMetricsRecorder legt sich darüber, reicht jeden Aufruf weiter und schreibt nur
+          dann ins Protokoll, wenn `enableMetrics` eingeschaltet ist. Ausgeschaltet kostet er eine
+          zwischengespeicherte Prüfung je Aufruf.
         -->
         <service id="Ruhrcoder\RcDynamicPrice\Service\Metrics\MetricsRecorderInterface"
                  class="Ruhrcoder\RcDynamicPrice\Service\Metrics\NullMetricsRecorder"/>
@@ -68,6 +66,16 @@
             <tag name="kernel.event_subscriber"/>
         </service>
 
+        <service id="Ruhrcoder\RcDynamicPrice\Service\LengthSettingsResolver">
+            <argument type="service" id="Ruhrcoder\RcDynamicPrice\Service\CategoryChainLoaderInterface"/>
+        </service>
+
+        <service id="Ruhrcoder\RcDynamicPrice\Storefront\Subscriber\LengthSettingsSubscriber">
+            <argument type="service" id="Ruhrcoder\RcDynamicPrice\Service\LengthSettingsResolver"/>
+            <argument type="service" id="Shopware\Core\Content\Product\SalesChannel\Detail\AvailableCombinationLoader"/>
+            <tag name="kernel.event_subscriber"/>
+        </service>
+
         <service id="Ruhrcoder\RcDynamicPrice\Storefront\Subscriber\StorefrontResponseSubscriber">
             <tag name="kernel.event_subscriber"/>
         </service>
@@ -78,6 +86,12 @@
             <argument type="service" id="Ruhrcoder\RcDynamicPrice\Service\MeterConfigResolverInterface"/>
             <argument type="service" id="Ruhrcoder\RcDynamicPrice\Service\CartItemSplitAssemblerInterface"/>
             <argument type="service" id="monolog.logger"/>
+            <tag name="kernel.event_subscriber"/>
+        </service>
+
+        <service id="Ruhrcoder\RcDynamicPrice\Subscriber\LengthSwitchLineItemSubscriber">
+            <argument type="service" id="Ruhrcoder\RcDynamicPrice\Service\MeterProductHelperInterface"/>
+            <argument type="service" id="Ruhrcoder\RcDynamicPrice\Service\LengthSettingsResolver"/>
             <tag name="kernel.event_subscriber"/>
         </service>
 
@@ -94,10 +108,9 @@
             <argument type="service" id="translator"/>
             <argument type="service" id="Shopware\Core\System\Locale\LanguageLocaleCodeProvider"/>
             <!--
-              Priorität zwingend zwischen ProductCartProcessor (5000) und PromotionProcessor (4900):
-              wir brauchen den vom Product-Processor gesetzten Stückpreis und müssen den
-              ausmultiplizierten Positions-Preis schreiben, bevor die Promotion-Engine ihren
-              Rabatt prozentual auf den (dann ausmultiplizierten) Preis bezieht.
+              4950 liegt zwischen ProductCartProcessor (5000) und PromotionProcessor (4900): Der
+              Stückpreis des Produkt-Prozessors muss schon da sein, und der Preis der Länge muss
+              stehen, bevor ein prozentualer Rabatt darauf gerechnet wird.
             -->
             <tag name="shopware.cart.processor" priority="4950"/>
         </service>

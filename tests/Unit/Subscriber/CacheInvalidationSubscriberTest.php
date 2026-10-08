@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace Ruhrcoder\RcDynamicPrice\Tests\Unit\Subscriber;
 
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use Ruhrcoder\RcDynamicPrice\DynamicPriceConstants;
 use Ruhrcoder\RcDynamicPrice\Subscriber\CacheInvalidationSubscriber;
 use Shopware\Core\Content\Category\CategoryEvents;
 use Shopware\Core\Framework\Adapter\Cache\CacheInvalidator;
@@ -13,6 +15,11 @@ use Shopware\Core\Framework\DataAbstractionLayer\Event\EntityDeletedEvent;
 use Shopware\Core\Framework\DataAbstractionLayer\Event\EntityWrittenEvent;
 use Shopware\Core\System\SystemConfig\Event\SystemConfigChangedEvent;
 
+/**
+ * Ändert sich eine Kategorie oder eine Grundeinstellung des Meterpreises, leert der Subscriber
+ * genau die betroffenen Cache-Tags. Bleibt ein Tag stehen, zeigt die Produktseite weiter die alten
+ * Grenzen oder den alten Preis.
+ */
 final class CacheInvalidationSubscriberTest extends TestCase
 {
     private CacheInvalidator&MockObject $cacheInvalidator;
@@ -61,8 +68,8 @@ final class CacheInvalidationSubscriberTest extends TestCase
 
     public function testInvalidatesCategoryTagOnCategoryDelete(): void
     {
-        // EntityDeletedEvent ist Unterklasse von EntityWrittenEvent, also unterliegt es
-        // demselben Handler — wir bilden die Baumwurzel im Test nur als Mock nach.
+        // EntityDeletedEvent ist eine Unterklasse von EntityWrittenEvent und läuft deshalb durch
+        // denselben Handler; das Ereignis ist hier nur nachgebildet.
         $event = $this->createMock(EntityDeletedEvent::class);
         $event->method('getIds')->willReturn(['cat-deleted-id']);
 
@@ -93,6 +100,31 @@ final class CacheInvalidationSubscriberTest extends TestCase
             ->with(['rc-dynamic-price-global']);
 
         $this->subscriber->onSystemConfigChanged($event);
+    }
+
+    /**
+     * Die drei Einstellungen, die eine feste Liste vergessen hatte: Sie gehen über die Abrechnung der
+     * gleichmäßigen Teilung und den Hinweistext in die Produktseite ein.
+     */
+    #[DataProvider('pageSettings')]
+    public function testEverySettingThatReachesTheProductPageInvalidatesIt(string $key): void
+    {
+        $this->cacheInvalidator
+            ->expects($this->once())
+            ->method('invalidate')
+            ->with(['rc-dynamic-price-global']);
+
+        $this->subscriber->onSystemConfigChanged(new SystemConfigChangedEvent($key, 'neu', null));
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     */
+    public static function pageSettings(): iterable
+    {
+        yield 'Abrechnung der gleichmäßigen Teilung' => [DynamicPriceConstants::CONFIG_EQUAL_BILLING];
+        yield 'Mindestlänge je Teilstück erzwingen' => [DynamicPriceConstants::CONFIG_EQUAL_ENFORCE_MIN];
+        yield 'Hinweistext' => [DynamicPriceConstants::CONFIG_HINT_TEXT];
     }
 
     public function testInvalidatesGlobalTagOnSplitModeConfigChange(): void

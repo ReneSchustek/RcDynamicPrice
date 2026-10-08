@@ -1,5 +1,6 @@
-// Test für _onForeignSuffixChanged: Self-Loop-Guard und Fremd-Source-Trigger.
-// Plugin-Interaktionsprotokoll, Sektion "Self-Loop-Konvention".
+// Prüft _onForeignSuffixChanged: Ein eigenes Ereignis löst keine Neuberechnung aus, eines aus
+// einem anderen Plugin schon. Ohne diese Sperre schaukelten sich zwei Plugins, die einander
+// benachrichtigen, endlos auf (Plugin-Interaktionsprotokoll, Abschnitt „Self-Loop-Konvention").
 
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -21,6 +22,10 @@ const sourcePath = join(
     'dynamic-price.plugin.js',
 );
 
+const parseLengthSource = readFileSync(
+    join(__dirname, '..', '..', 'src', 'Resources', 'app', 'storefront', 'src', 'util', 'parse-length.js'),
+    'utf8',
+).replace(/^export /m, '');
 const rawSource = readFileSync(sourcePath, 'utf8');
 const stripped = rawSource
     .replace(/^import [^\n]*\n/gm, '')
@@ -31,6 +36,7 @@ const wrapped = `
         init() {}
         destroy() {}
     }
+    ${parseLengthSource}
     ${stripped}
     return DynamicPricePlugin;
 `;
@@ -68,7 +74,7 @@ describe('_onForeignSuffixChanged — Self-Loop-Konvention', () => {
 
     test('akzeptiert auch Events ohne detail (defensiv, falls fremder Caller schlampt)', () => {
         const plugin = makePlugin('500');
-        // Kein detail-Property — defensiver Pfad: kein source-Match → Trigger.
+        // Ohne detail gibt es keine passende Quelle, also wird neu berechnet.
         plugin._onForeignSuffixChanged({});
         assert.deepStrictEqual(plugin._updateMeterStateCalls, [500]);
     });

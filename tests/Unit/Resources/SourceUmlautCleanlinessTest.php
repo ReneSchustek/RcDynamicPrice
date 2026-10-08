@@ -7,24 +7,20 @@ namespace Ruhrcoder\RcDynamicPrice\Tests\Unit\Resources;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Regression-Guard für die Sprach-Regel: in Quelltext, Kommentaren und Docblocks stehen
- * echte Umlaute (ä, ö, ü, Ä, Ö, Ü, ß) — niemals die Ersatzschreibweisen `ae`/`oe`/`ue`/`ss`.
+ * In Quelltext und Kommentaren stehen echte Umlaute und ß, nie die Ersatzschreibungen `ae`, `oe`,
+ * `ue` oder `ss`.
  *
- * Warum dateisystem-basiert und nicht diff-basiert: `git diff` erfasst untracked Dateien
- * nicht. Genau dadurch sind Verstöße in neuen Dateien unbemerkt in ein Release gelangt.
- * Dieser Test scannt den Baum und sieht deshalb auch brandneue Dateien.
- *
- * Ergänzt den AdminLabelCleanlinessTest, der ausschließlich nutzersichtbare Admin-Labels
- * in `config.xml` und den Migrations prüft.
+ * Geprüft wird der Dateibaum, nicht der Unterschied zum letzten Stand: `git diff` sieht noch nicht
+ * erfasste Dateien nicht, und gerade neue Dateien rutschten so unbemerkt in eine Fassung. Die
+ * Bezeichnungen im Verwaltungsbereich prüft `AdminLabelCleanlinessTest`.
  */
 final class SourceUmlautCleanlinessTest extends TestCase
 {
     /**
      * Deutsche Wortstämme, in denen `ae`/`oe`/`ue`/`ss` sicher eine Ersatzschreibweise ist.
      *
-     * Bewusst eine Wortstamm-Liste statt eines naiven `/ue/`: Letzteres würde `queue`,
-     * `value` und `Neue` treffen. Englische Bezeichner und Framework-Begriffe bleiben so
-     * unberührt.
+     * Eine Liste von Wortstämmen statt eines schlichten `/ue/`, das `queue`, `value` und `Neue`
+     * träfe. Englische Bezeichner und Begriffe aus Shopware bleiben so unberührt.
      */
     private const FORBIDDEN_STEMS = [
         'laeng', 'fuer', 'ueber', 'stueck', 'gleichmaess', 'hoeher', 'prioritaet',
@@ -38,18 +34,18 @@ final class SourceUmlautCleanlinessTest extends TestCase
     ];
 
     /**
-     * Dateien, die die Ersatzschreibweisen als **Daten** tragen und deshalb nicht
-     * korrigiert werden dürfen — eine Korrektur würde sie funktional zerstören.
+     * Dateien, die die Ersatzschreibungen als Daten tragen; eine Berichtigung machte sie
+     * unbrauchbar.
      *
      * @var list<string>
      */
     private const ALLOWLIST = [
         // Trägt die verbotenen Wortstämme selbst als Regex-Muster.
         'tests/Unit/Resources/AdminLabelCleanlinessTest.php',
-        // Dieser Test: die Stamm-Liste oben ist ebenfalls Daten.
+        // Dieser Test selbst: Die Liste der Wortstämme oben ist ebenfalls Daten.
         'tests/Unit/Resources/SourceUmlautCleanlinessTest.php',
-        // Heilungs-Migration: Map-Schlüssel sind die falschen Schreibweisen
-        // (z.B. 'Mindestlaenge' => 'Mindestlänge').
+        // Die berichtigende Migration: Ihre Schlüssel sind die falschen Schreibweisen
+        // (etwa 'Mindestlaenge' => 'Mindestlänge').
         'src/Migration/Migration1745700000FixCustomFieldLabelsUmlauts.php',
         'tests/Unit/Migration/Migration1745700000FixCustomFieldLabelsUmlautsTest.php',
     ];

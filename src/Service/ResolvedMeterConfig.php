@@ -8,15 +8,14 @@ use Ruhrcoder\RcDynamicPrice\DynamicPriceConstants;
 use Ruhrcoder\RcDynamicPrice\Enum\SplitMode;
 
 /**
- * Aufgelöster Meterpreis-Konfig-Stand für ein konkretes Produkt.
- * Unveränderlich. Enthält neben den Werten auch die Herkunft pro Feld
- * (ConfigScope), damit Logs nachvollziehbar sind, welche Ebene gewonnen hat.
+ * Die aufgelösten Meterpreis-Einstellungen eines Produkts, unveränderlich. Neben jedem Wert steht
+ * seine Herkunft (ConfigScope), damit das Protokoll zeigt, welche Ebene gewonnen hat.
  */
 final readonly class ResolvedMeterConfig
 {
     /**
-     * @param string       $equalSplitBilling    equal-Modus-Abrechnung (`cut_length`/`exact`), global konfiguriert
-     * @param bool          $equalSplitEnforceMin equal-Modus: Teilstücke auf minLength anheben
+     * @param string       $equalSplitBilling    Abrechnung im equal-Modus (`cut_length`/`exact`), nur kanalweit einstellbar
+     * @param bool         $equalSplitEnforceMin equal-Modus: kurze Teilstücke mit der Mindestlänge abrechnen
      * @param list<string> $cacheTags            Cache-Tag-Identifier für die HTTP-Invalidierung
      */
     public function __construct(
@@ -41,8 +40,9 @@ final readonly class ResolvedMeterConfig
     }
 
     /**
-     * Factory für "Meterpreis nicht aktiv". Numerische Defaults sind für Clients
-     * ohne Bedeutung (Widget wird nicht gerendert), halten aber Invarianten ein.
+     * Der Stand „Meterpreis aus". Die Zahlen bedeuten dann nichts, weil kein Widget erscheint; sie
+     * sind die Vorgaben des Resolvers (1 mm bis 10 m) und halten so die Bedingung Mindest- nicht
+     * über Höchstlänge ein.
      *
      * @param list<string> $cacheTags
      */

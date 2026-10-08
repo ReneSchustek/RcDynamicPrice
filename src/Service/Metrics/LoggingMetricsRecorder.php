@@ -9,30 +9,29 @@ use Ruhrcoder\RcDynamicPrice\DynamicPriceConstants;
 use Shopware\Core\System\SystemConfig\SystemConfigService;
 
 /**
- * Aktivierbares Beispiel: schreibt Kennzahlen in den Plugin-Logkanal `rc_dynamic_price`.
+ * Schreibt Kennzahlen in den Protokollkanal `rc_dynamic_price`, wenn `enableMetrics` eingeschaltet
+ * ist.
  *
- * Transparenter Decorator um den inneren Recorder (Default: NullMetricsRecorder). Er
- * delegiert immer an den inneren Recorder und schreibt NUR dann zusätzlich ein Log,
- * wenn die Plugin-Config `enableMetrics` aktiv ist. Damit bleibt das Standardverhalten
- * (Toggle aus = Default) nach außen identisch zum NullMetricsRecorder: kein Output.
+ * Er dekoriert den inneren Recorder (Vorgabe: NullMetricsRecorder), ruft ihn immer auf und
+ * protokolliert nur bei eingeschaltetem Schalter zusätzlich. Ausgeschaltet verhält er sich nach
+ * außen wie der NullMetricsRecorder.
  *
- * Zum Aufwand: Da der Decorator die Interface-Service-ID ersetzt, liegt er auch bei
- * ausgeschaltetem Toggle im Hot-Path. Der Toggle wird deshalb pro Instanz genau einmal
- * gelesen und danach zwischengespeichert — es bleibt ein Delegations-Aufruf plus
- * Bool-Prüfung. Folge des Cachings: In langlebigen Prozessen (Messenger-Worker) wirkt
- * eine Config-Änderung erst nach Neustart des Workers. Für einen reinen
- * Observability-Schalter ist das der bewusst gewählte Kompromiss.
+ * Weil er die Kennung der Schnittstelle übernimmt, liegt er auch ausgeschaltet im Warenkorb und auf
+ * der Produktseite. Der Schalter wird deshalb je Instanz einmal gelesen und gemerkt; übrig bleiben
+ * ein Aufruf und eine Prüfung. In langlebigen Prozessen wie einem Messenger-Worker wirkt eine
+ * Änderung des Schalters deshalb erst nach dessen Neustart, für einen Schalter der Beobachtung ein
+ * tragbarer Preis.
  *
- * Eine echte StatsD-/UDP-Anbindung ist bewusst nicht enthalten — dieser Logging-Adapter
- * dient als minimales, abhängigkeitsfreies Aktivierungs-Beispiel. Eigene Adapter können
- * das MetricsRecorderInterface analog implementieren und per Decoration einhängen.
+ * Eine Anbindung an StatsD oder UDP fehlt absichtlich; dieser Recorder ist das kleinste Beispiel ohne
+ * Abhängigkeiten. Eigene Anbindungen setzen die Schnittstelle um und hängen sich ebenso als
+ * Dekorierer ein.
  *
- * Fail-Safe: jeder Log-/Config-Zugriff ist gekapselt, sodass Observability-Fehler den
- * Hot-Path (Cart/Seite) niemals beeinflussen.
+ * Jeder Zugriff auf Protokoll und Einstellung ist gekapselt; ein Fehler darin erreicht weder
+ * Warenkorb noch Seite.
  */
 final class LoggingMetricsRecorder implements MetricsRecorderInterface
 {
-    /** Einmalig aufgelöster Toggle-Wert; null = noch nicht gelesen. */
+    /** Der einmal gelesene Schalter; `null` heißt: noch nicht gelesen. */
     private ?bool $enabled = null;
 
     public function __construct(
@@ -57,7 +56,7 @@ final class LoggingMetricsRecorder implements MetricsRecorderInterface
                 'tags' => $tags,
             ]);
         } catch (\Throwable) {
-            // Bewusst verschluckt: ein fehlgeschlagener Metrik-Log darf den Hot-Path nie stören.
+            // Verschluckt: Ein gescheitertes Protokoll einer Kennzahl darf den Warenkorb nicht stören.
         }
     }
 
@@ -77,7 +76,7 @@ final class LoggingMetricsRecorder implements MetricsRecorderInterface
                 'tags' => $tags,
             ]);
         } catch (\Throwable) {
-            // Siehe increment(): Observability-Fehler bleiben folgenlos für Cart/Seite.
+            // Wie in increment(): Der Fehler bleibt folgenlos für Warenkorb und Seite.
         }
     }
 
@@ -90,9 +89,8 @@ final class LoggingMetricsRecorder implements MetricsRecorderInterface
         try {
             $this->enabled = $this->systemConfigService->getBool(DynamicPriceConstants::CONFIG_ENABLE_METRICS);
         } catch (\Throwable) {
-            // Kann die Config nicht gelesen werden, gilt der sichere Default: Metriken aus.
-            // Das Ergebnis wird mitgecacht, damit eine defekte Config den Hot-Path nicht
-            // bei jedem Aufruf erneut in den Exception-Pfad zwingt.
+            // Lässt sich die Einstellung nicht lesen, bleiben die Metriken aus. Auch das wird gemerkt,
+            // sonst liefe jeder weitere Aufruf erneut in die Ausnahme.
             $this->enabled = false;
         }
 

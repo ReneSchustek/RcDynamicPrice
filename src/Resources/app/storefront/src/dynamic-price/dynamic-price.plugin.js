@@ -1,10 +1,20 @@
 import Plugin from 'src/plugin-system/plugin.class';
 import HintModal from '../util/hint-modal';
+import { parseLength } from '../util/parse-length';
 
+/**
+ * Das Längenfeld der Meterpreis-Artikel: prüft die Eingabe, zeigt Rundung, Aufteilung und den Preis vor
+ * dem Klick auf „In den Warenkorb" und schreibt die Länge in das Formular.
+ *
+ * Die Vorschau rechnet nach denselben Regeln wie der Server (`LengthSplitter`, `DynamicPriceProcessor`),
+ * damit der Kunde im Warenkorb keinen anderen Preis sieht als auf der Produktseite. Weil andere
+ * Erweiterungen ebenfalls an der Kennung der Warenkorbposition mitschreiben, folgt die Kennung dem
+ * gemeinsamen Suffix-Protokoll der Ruhrcoder-Erweiterungen.
+ */
 export default class DynamicPricePlugin extends Plugin {
 
-    // Generisches Suffix-Event des Ruhrcoder-Plugin-Interaktionsprotokolls.
-    // Neutraler Namespace — kein Plugin owned den Namen, jedes Suffix-Plugin feuert ihn.
+    // Das gemeinsame Ereignis des Suffix-Protokolls. Der Name gehört keiner einzelnen Erweiterung; jede,
+    // die einen Suffix an der Kennung setzt, meldet ihn darüber.
     static SUFFIX_CHANGED_EVENT = 'rcSuffixChanged';
 
     init() {
@@ -24,19 +34,20 @@ export default class DynamicPricePlugin extends Plugin {
 
         this._hintShown = false;
 
-        // Rundungs-Stufen werden vom Server (MeterProductHelper::ROUNDING_STEPS) als JSON-Map
-        // ins data-rounding-steps geschrieben. Bei Parse-Fehler oder fehlendem Attribut bleibt
-        // die Map leer — _roundUp() liefert dann den Eingabewert unverändert (sicheres Fallback).
+        // Die Rundungsstufen schreibt der Server (`MeterProductHelper::ROUNDING_STEPS`) als JSON in
+        // `data-rounding-steps`. Fehlt das Attribut oder ist es unlesbar, bleibt die Tabelle leer, und
+        // `_roundUp()` gibt die Eingabe unverändert zurück; ohne Stufe wird also nicht geraten.
         this._roundingSteps = this._parseRoundingSteps(this.el.dataset.roundingSteps);
 
         this._lineItemIdInput = this._form
             ? this._form.querySelector('[name="lineItems[' + this._productId + '][id]"]')
             : null;
 
-        // Gebundene Event-Handler für sauberes Cleanup in destroy()
+        // Gebunden, damit `destroy()` dieselben Funktionen wieder abmelden kann.
         this._boundOnFocus               = this._onFocus.bind(this);
         this._boundOnInput               = this._onInput.bind(this);
         this._boundOnKeydown             = this._onKeydown.bind(this);
+        this._boundOnChange              = this._onChange.bind(this);
         this._boundOnForeignSuffixChange = this._onForeignSuffixChanged.bind(this);
 
         this._disableSubmit();
@@ -48,6 +59,7 @@ export default class DynamicPricePlugin extends Plugin {
             this._input.removeEventListener('focus', this._boundOnFocus);
             this._input.removeEventListener('input', this._boundOnInput);
             this._input.removeEventListener('keydown', this._boundOnKeydown);
+            this._input.removeEventListener('change', this._boundOnChange);
         }
 
         if (this._form) {
@@ -64,9 +76,10 @@ export default class DynamicPricePlugin extends Plugin {
         this._input.addEventListener('focus', this._boundOnFocus);
         this._input.addEventListener('input', this._boundOnInput);
         this._input.addEventListener('keydown', this._boundOnKeydown);
+        this._input.addEventListener('change', this._boundOnChange);
 
-        // Generisches Suffix-Protokoll: ID neu berechnen, wenn ein anderes Plugin seinen Suffix ändert.
-        // Self-Loop-Guard im Handler — RcDynamicPrice feuert das Event auch selbst.
+        // Ändert eine andere Erweiterung ihren Suffix, wird die Kennung neu berechnet. Dieses Plugin meldet
+        // das Ereignis auch selbst; der Handler übergeht deshalb die eigenen Meldungen.
         this._form.addEventListener(
             DynamicPricePlugin.SUFFIX_CHANGED_EVENT,
             this._boundOnForeignSuffixChange,
@@ -74,8 +87,8 @@ export default class DynamicPricePlugin extends Plugin {
     }
 
     /**
-     * Reagiert auf rcSuffixChanged-Events von Sibling-Plugins. Eigene Dispatches werden per
-     * detail.source ausgefiltert (Self-Loop-Schutz).
+     * Reagiert auf `rcSuffixChanged` anderer Erweiterungen. Eigene Meldungen erkennt er an
+     * `detail.source` und übergeht sie; sonst riefe jede Meldung die nächste hervor.
      */
     _onForeignSuffixChanged(event) {
         if (event?.detail?.source === 'rcDynamicPrice') {
@@ -103,8 +116,7 @@ export default class DynamicPricePlugin extends Plugin {
     }
 
     _showHintModal(text) {
-        // Modal-Logik per Komposition (HintModal) — Verhalten identisch zur früheren
-        // Inline-Implementierung. Fallback-Fokus geht zurück auf das Input-Feld.
+        // Gibt es kein vorher fokussiertes Element, geht der Fokus nach dem Schließen ins Längenfeld zurück.
         const modal = new HintModal({
             text,
             buttonLabel: this.el.dataset.snippetModalButton || 'OK',
@@ -116,10 +128,31 @@ export default class DynamicPricePlugin extends Plugin {
     }
 
     _onKeydown(event) {
-        const allowed = ['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab', 'Home', 'End'];
-        if (!allowed.includes(event.key) && !/^\d$/.test(event.key)) {
+        // Neben Ziffern das, was eine Einheit braucht: Komma, Punkt, Leerzeichen und die Buchstaben von
+        // „mm", „cm" und „m". Tastenkürzel wie Strg+V bleiben frei.
+        const allowed = ['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab', 'Home', 'End', 'Enter'];
+        if (event.ctrlKey || event.metaKey || allowed.includes(event.key)) {
+            return;
+        }
+
+        if (!/^[\d.,\s]$/.test(event.key) && !/^[cm]$/i.test(event.key)) {
             event.preventDefault();
         }
+    }
+
+    /**
+     * Beim Verlassen des Feldes steht die Länge in Millimetern da, wie sie berechnet wird. Wer „4,2 m"
+     * tippt, sieht danach „4200"; die Einheit am Feld sagt „mm".
+     */
+    _onChange() {
+        const mm = parseInt(this._hidden.value, 10);
+        const parsed = this._parse(this._input.value.trim());
+
+        if (parsed === null || mm !== parsed || String(mm) === this._input.value.trim()) {
+            return;
+        }
+
+        this._input.value = String(mm);
     }
 
     _onInput() {
@@ -127,6 +160,17 @@ export default class DynamicPricePlugin extends Plugin {
 
         if (raw === '') {
             this._clearError();
+            this._clearSplitInfo();
+            this._resetInput();
+            return;
+        }
+
+        const ask = parseLength(raw);
+
+        // „4" ohne Einheit: als Millimeter sinnlos, als Meter geraten. Die Frage steht, bis der Kunde
+        // weitertippt; aus „4" wird beim Tippen von „4200" ohnehin gleich eine eindeutige Zahl.
+        if (ask !== null && ask.ask !== undefined) {
+            this._showError((this.el.dataset.snippetAskUnit || '%value% m?').split('%value%').join(String(ask.ask)));
             this._clearSplitInfo();
             this._resetInput();
             return;
@@ -166,16 +210,16 @@ export default class DynamicPricePlugin extends Plugin {
         const configuredSplitMode = this.el.dataset.splitMode || '';
         const maxPiece = parseInt(this.el.dataset.maxPieceLength, 10) || 0;
 
-        // Wenn ein Plugin mit höherer ID-Priorität am Form ist, läuft Auto-Split
-        // nicht sauber durch (Siblings dispatchen kein eigenes BeforeLineItemAdded-Event,
-        // TMMS-/Custom-Field-Payload würde verloren gehen). Fallback: Hint-Verhalten.
+        // Steuert eine Erweiterung mit höherer Rangfolge die Kennung, gelingt das automatische Aufteilen
+        // nicht: Die anderen Erweiterungen lösen kein eigenes `BeforeLineItemAdded` aus, und die Eingaben
+        // aus TMMS oder Zusatzfeldern gingen verloren. Dann gilt der Hinweis-Modus.
         const hasForeignIdController = this._hasForeignIdController();
 
         const splitMode = (hasForeignIdController && (configuredSplitMode === 'equal' || configuredSplitMode === 'max_rest'))
             ? 'hint'
             : configuredSplitMode;
 
-        // Hint-Modus: Eingabe oberhalb maxPiece wird abgewiesen, Kunde muss selbst aufteilen
+        // Hinweis-Modus: Eine Eingabe über der größten Teilstücklänge wird abgewiesen; der Kunde teilt selbst auf.
         if (splitMode === 'hint' && maxPiece > 0 && mm > maxPiece) {
             const template = this.el.dataset.splitHintTemplate
                 || this.el.dataset.snippetErrorMaxPiece
@@ -189,7 +233,7 @@ export default class DynamicPricePlugin extends Plugin {
 
         this._clearError();
 
-        // Auto-Split-Vorschau als Info, wenn eine Teilstückgrenze greift
+        // Greift die Teilstückgrenze, steht die Aufteilung als Vorschau unter dem Feld.
         const splitActive = (splitMode === 'equal' || splitMode === 'max_rest') && maxPiece > 0 && mm > maxPiece;
         const pieces = splitActive ? this._previewSplit(mm, maxPiece, splitMode) : [mm];
 
@@ -206,9 +250,9 @@ export default class DynamicPricePlugin extends Plugin {
         this._updateMeterState(mm);
         this._enableSubmit();
 
-        // Berechnet wird die Summe der abgerechneten Teilstücke — nicht die gerundete Eingabe.
-        // Beides fällt auseinander, sobald ein Reststück mit der Mindestlänge berechnet wird.
-        // Die Vorschau rechnete bisher auf der Eingabe und zeigte dadurch einen zu niedrigen Preis.
+        // Berechnet wird die Summe der abgerechneten Teilstücke, nicht die gerundete Eingabe. Beides fällt
+        // auseinander, sobald ein Reststück mit der Mindestlänge berechnet wird; auf der Eingabe gerechnet,
+        // zeigte die Vorschau einen zu niedrigen Preis.
         const billedMm = this._billedPieces(pieces, splitMode, min).reduce((sum, piece) => sum + piece, 0);
         this._updatePrice(billedMm);
 
@@ -223,17 +267,19 @@ export default class DynamicPricePlugin extends Plugin {
         } else if (billedMm !== mm) {
             this._showRoundUpHint(mm, billedMm);
         } else {
-            // Ohne dieses Zurücksetzen bliebe der Hint einer früheren, gerundeten
-            // Eingabe stehen und die aria-live-Region meldete eine falsche Länge.
+            // Sonst bliebe der Hinweis einer früheren, gerundeten Eingabe stehen, und die Statusregion für
+            // Vorleseprogramme meldete eine falsche Länge.
             this._clearRoundUpHint();
         }
     }
 
+    /**
+     * Die Eingabe in Millimetern, mit oder ohne Einheit (`util/parse-length.js`), oder `null`.
+     */
     _parse(value) {
-        if (!value || !/^[1-9]\d*$/.test(value)) {
-            return null;
-        }
-        return parseInt(value, 10);
+        const parsed = parseLength(value);
+
+        return parsed !== null && parsed.mm !== undefined ? parsed.mm : null;
     }
 
     /**
@@ -264,13 +310,13 @@ export default class DynamicPricePlugin extends Plugin {
 
         this._dispatchSuffixChanged({ mm: mm, suffix: suffix });
 
-        // ID-Setzung delegieren, wenn ein Plugin mit höherer Priorität vorhanden ist.
+        // Steuert eine Erweiterung mit höherer Rangfolge die Kennung, setzt sie sie auch; hier nur melden.
         if (this._hasForeignIdController()) {
             return;
         }
 
         if (this._lineItemIdInput) {
-            // Generisches Suffix-Protokoll: Alle rc*Suffix-Attribute einbeziehen
+            // Alle Suffixe am Formular gehören in die Kennung, nicht nur der eigene.
             const allSuffixes = this._collectAllSuffixes();
             this._lineItemIdInput.value = allSuffixes
                 ? (this._productId + '-' + allSuffixes)
@@ -279,8 +325,8 @@ export default class DynamicPricePlugin extends Plugin {
     }
 
     /**
-     * Feuert das generische rcSuffixChanged-Event (Pflicht laut Plugin-Interaktionsprotokoll)
-     * UND das plugin-spezifische rcMeterLengthChanged-Event (Hook für interne Listener / Bestand).
+     * Meldet `rcSuffixChanged`, das das Suffix-Protokoll verlangt, und zusätzlich `rcMeterLengthChanged`
+     * für Zuhörer, die sich nur für die Länge interessieren.
      */
     _dispatchSuffixChanged(detail) {
         const payload = { source: 'rcDynamicPrice', ...detail };
@@ -290,10 +336,10 @@ export default class DynamicPricePlugin extends Plugin {
     }
 
     /**
-     * Sammelt alle rc*Suffix-Data-Attribute vom Formular.
-     * Damit werden Suffixe anderer Plugins (RcColorPicker, etc.) automatisch in die ID einbezogen.
-     * Sortiert wird alphabetisch auf dem Suffix-Wert (nicht auf dem Key), damit die erzeugte
-     * LineItem-ID stabil bleibt, unabhängig von der Reihenfolge, in der Plugins ihre Suffixe setzen.
+     * Sammelt alle `rc…Suffix`-Angaben am Formular, auch die anderer Erweiterungen wie RcColorPicker.
+     * Sortiert wird nach dem Wert, damit dieselbe Auswahl dieselbe Kennung ergibt, gleich in welcher
+     * Reihenfolge die Erweiterungen ihre Suffixe setzen; gleiche Kennung heißt im Warenkorb: Menge
+     * erhöhen statt neue Position.
      */
     _collectAllSuffixes() {
         const parts = [];
@@ -314,8 +360,8 @@ export default class DynamicPricePlugin extends Plugin {
             .replace('%input%', inputMm.toLocaleString(locale))
             .replace('%billed%', billedMm.toLocaleString(locale));
 
-        // Rundungs-Hint ist Status, kein Fehler — eigene polite-Region (BFSG WCAG 4.1.3),
-        // damit Screenreader den Lesefluss nicht abrupt unterbrechen.
+        // Der Rundungshinweis ist eine Statusmeldung, kein Fehler. Er steht in einer höflichen Statusregion
+        // (WCAG 4.1.3), damit Vorleseprogramme den Lesefluss nicht unterbrechen.
         if (this._infoEl) {
             this._infoEl.textContent = msg;
             this._infoEl.hidden = false;
@@ -325,9 +371,9 @@ export default class DynamicPricePlugin extends Plugin {
     }
 
     /**
-     * Weist die Mehrlänge aus, die entsteht, wenn ein Reststück unter der Mindestlänge liegt
-     * und darauf angehoben wird. Der Kunde zahlt dann mehr, als er eingegeben hat — das muss er
-     * vor dem Klick auf "In den Warenkorb" erfahren, nicht erst auf der Rechnung.
+     * Weist die Mehrlänge aus, die entsteht, wenn ein Reststück unter der Mindestlänge liegt und darauf
+     * angehoben wird. Der Kunde zahlt dann mehr, als er eingegeben hat, und soll das vor dem Klick auf
+     * „In den Warenkorb" erfahren statt auf der Rechnung.
      */
     _showMinPieceUpliftHint(inputMm, billedMm, remainderMm, minLengthMm) {
         const locale = document.documentElement.lang || 'de-DE';
@@ -382,11 +428,11 @@ export default class DynamicPricePlugin extends Plugin {
     }
 
     /**
-     * Berechnet die Schnittlängen analog zum serverseitigen LengthSplitter.
-     * Muss identisch bleiben mit Service\LengthSplitter — rein numerische Logik.
+     * Berechnet die Schnittlängen wie `Service\LengthSplitter` auf dem Server. Weicht eine der beiden
+     * Rechnungen ab, zeigt die Vorschau eine andere Aufteilung als der Warenkorb.
      *
      * Die Mindestlänge kommt hier nicht vor: Sie ist eine Abrechnungsregel und wirkt erst in
-     * _billedPieces(). Geschnitten wird, was der Kunde bestellt hat — 5.100 mm ergeben 5.000 + 100 mm.
+     * `_billedPieces()`. Geschnitten wird, was der Kunde bestellt hat; 5.100 mm ergeben 5.000 und 100 mm.
      */
     _previewSplit(total, maxPiece, mode) {
         if (maxPiece <= 0 || total <= maxPiece) {
@@ -399,7 +445,7 @@ export default class DynamicPricePlugin extends Plugin {
         if (mode === 'equal') {
             const n = Math.ceil(total / maxPiece);
             if (equalBilling === 'exact') {
-                // Exakte Verteilung (Summe == total): erste remainder Stücke 1 mm länger.
+                // Genaue Verteilung, die Summe ist die Eingabe: Die ersten `remainder` Stücke sind 1 mm länger.
                 const base = Math.floor(total / n);
                 const remainder = total - base * n;
                 const pieces = [];
@@ -409,7 +455,7 @@ export default class DynamicPricePlugin extends Plugin {
                 return pieces;
             }
 
-            // Schnittlänge: jedes Stück auf dieselbe aufgerundete Länge.
+            // Gleiche Schnittlänge: Jedes Stück bekommt dieselbe, aufgerundete Länge.
             return Array(n).fill(Math.ceil(total / n));
         }
 
@@ -427,7 +473,7 @@ export default class DynamicPricePlugin extends Plugin {
     }
 
     /**
-     * Rechnet die Schnittlängen in Abrechnungslängen um — spiegelt DynamicPriceProcessor.
+     * Rechnet die Schnittlängen in Abrechnungslängen um, wie `DynamicPriceProcessor` auf dem Server.
      *
      * Zuerst auf die Mindestlänge anheben, dann jedes Stück einzeln aufrunden. Ein Reststück von
      * 100 mm wird geschnitten, aber mit der Mindestlänge von 1.000 mm berechnet.
@@ -440,7 +486,7 @@ export default class DynamicPricePlugin extends Plugin {
 
     /**
      * Werden Teilstücke unter der Mindestlänge mit der Mindestlänge abgerechnet?
-     * max_rest immer, equal nach der Händler-Option — identisch zu CartItemSplitAssembler.
+     * Bei `max_rest` immer, bei `equal` nach der Einstellung des Händlers; wie `CartItemSplitAssembler`.
      */
     _billsShortPiecesAtMinimum(mode) {
         if (mode === 'max_rest') {
@@ -455,8 +501,8 @@ export default class DynamicPricePlugin extends Plugin {
     }
 
     /**
-     * Ersetzt die Platzhalter im Hint-Template durch die berechneten Werte.
-     * Platzhalter: {length}, {maxPiece}, {pieces}, {pieceLength}, {remainder}
+     * Füllt die Platzhalter `{length}`, `{maxPiece}`, `{pieces}`, `{pieceLength}` und `{remainder}` im
+     * Hinweistext. Als Reststück gilt das letzte Teilstück, sobald es mehr als eines gibt.
      */
     _renderSplitText(template, length, maxPiece, pieces) {
         const locale = document.documentElement.lang || 'de-DE';
@@ -483,8 +529,8 @@ export default class DynamicPricePlugin extends Plugin {
     }
 
     /**
-     * Blockierender Hint (Kunde muss aktiv handeln), aber kein Fehler-Stil.
-     * Wird im Hint-Modus genutzt, damit der Kunde nicht denkt, er habe etwas falsch gemacht.
+     * Ein Hinweis, der den Kauf aufhält, aber nicht wie ein Fehler aussieht: Im Hinweis-Modus soll der
+     * Kunde nicht glauben, er habe etwas falsch gemacht.
      */
     _showBlockingInfo(html) {
         if (!this._splitInfoEl) {
@@ -512,6 +558,7 @@ export default class DynamicPricePlugin extends Plugin {
             return;
         }
 
+        // Der Grundpreis gilt je Meter, die Länge steht in Millimetern.
         const price    = (basePrice / 1000) * mm;
         const currency = this.el.dataset.currency || 'EUR';
         const locale   = document.documentElement.lang || 'de-DE';
@@ -555,7 +602,7 @@ export default class DynamicPricePlugin extends Plugin {
         this._input.setAttribute('aria-invalid', 'false');
     }
 
-    /** Setzt Ergebnis, Submit und Meter-State zurück — gemeinsamer Pfad bei ungültiger Eingabe. */
+    /** Setzt Ergebnis, Kaufknopf und Längenangabe zurück; der gemeinsame Weg jeder ungültigen Eingabe. */
     _resetInput() {
         this._clearResult();
         this._clearRoundUpHint();

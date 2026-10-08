@@ -5,32 +5,31 @@ declare(strict_types=1);
 namespace Ruhrcoder\RcDynamicPrice\Service\Metrics;
 
 /**
- * Optionale Observability-Schnittstelle für Plugin-Kennzahlen.
+ * Optionale Kennzahlen der Erweiterung.
  *
- * Standard-Implementierung ist der NullMetricsRecorder (No-Op). Über die Plugin-Config
- * `enableMetrics` lässt sich der LoggingMetricsRecorder-Decorator aktivieren. Eigene
- * Adapter (z.B. StatsD) können das Interface implementieren.
+ * Die Vorgabe ist der NullMetricsRecorder, der nichts tut. Mit `enableMetrics` schreibt der
+ * LoggingMetricsRecorder zusätzlich ins Protokoll; eigene Anbindungen, etwa an StatsD, können die
+ * Schnittstelle ebenso umsetzen.
  *
- * Fail-Safe-Vertrag: Implementierungen MÜSSEN robust gegen Fehler sein und dürfen
- * NIEMALS eine Exception werfen. Die Aufrufer liegen auf Hot-Paths (Cart-Processing,
- * Seitenrendering) — Observability darf Cart oder Seite nie beeinflussen.
+ * Eine Umsetzung wirft nie eine Exception. Die Aufrufer liegen im Warenkorb und auf der Produktseite,
+ * und eine Kennzahl darf dort nichts kaputt machen.
  *
- * Keine PII: Tags sind für niedrigkardinale, technische Dimensionen gedacht
- * (Modus, Rundungsstufe). Kunden- oder Bestelldaten gehören nicht hinein.
+ * Tags sind für wenige technische Ausprägungen gedacht (Modus, Rundungsstufe). Kunden- und
+ * Bestelldaten gehören nicht hinein.
  */
 interface MetricsRecorderInterface
 {
     /**
-     * Zählt ein Ereignis hoch (z.B. verarbeitete Meterpositionen, angezeigte Widgets).
+     * Zählt ein Ereignis, etwa eine verarbeitete Meterposition oder ein angezeigtes Widget.
      *
-     * @param array<string, scalar> $tags Optionale Dimensionen (z.B. ['mode' => 'full_m'])
+     * @param array<string, scalar> $tags etwa `['mode' => 'full_m']`
      */
     public function increment(string $key, array $tags = []): void;
 
     /**
-     * Erfasst eine Dauer in Millisekunden (z.B. Rundungs-Arithmetik).
+     * Erfasst eine Dauer in Millisekunden, etwa die der Rundung.
      *
-     * @param array<string, scalar> $tags Optionale Dimensionen
+     * @param array<string, scalar> $tags
      */
     public function timing(string $key, float $ms, array $tags = []): void;
 }

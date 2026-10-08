@@ -7,6 +7,11 @@ namespace Ruhrcoder\RcDynamicPrice\Tests\Unit\Enum;
 use PHPUnit\Framework\TestCase;
 use Ruhrcoder\RcDynamicPrice\Enum\ActiveState;
 
+/**
+ * Das Aktiv-Feld des Meterpreises liest Werte aus zwei Zeiten der Datenbank: Wahrheitswerte des
+ * früheren Hakens und die drei Zustände der Auswahl. Ein falsch gelesener Wert schaltet den
+ * Meterpreis an einem Artikel ein oder aus, ohne dass es jemand gewollt hat.
+ */
 final class ActiveStateTest extends TestCase
 {
     public function testBoolTrueIsTreatedAsOnForBackwardCompatibility(): void
@@ -14,6 +19,9 @@ final class ActiveStateTest extends TestCase
         $this->assertSame(ActiveState::On, ActiveState::fromMixed(true));
     }
 
+    /**
+     * Ein nicht gesetzter Haken speichert `false`; das heißt „nichts entschieden", nicht „aus".
+     */
     public function testBoolFalseFallsBackToInherit(): void
     {
         $this->assertSame(ActiveState::Inherit, ActiveState::fromMixed(false));

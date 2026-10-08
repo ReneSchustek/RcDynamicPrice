@@ -8,6 +8,13 @@ use Doctrine\DBAL\Connection;
 use Shopware\Core\Framework\Migration\MigrationStep;
 use Shopware\Core\Framework\Uuid\Uuid;
 
+/**
+ * Legt das Feldset „Dynamischer Meterpreis" am Produkt an und darin den Schalter für den Meterpreis.
+ *
+ * Jeder Schritt prüft vorher, ob es Set, Zuordnung und Feld schon gibt, und legt nur Fehlendes an.
+ * Damit übersteht die Migration einen Shop, in dem jemand das Set von Hand angelegt oder nach einem
+ * Fehlschlag halb hinterlassen hat. Den Schalter macht eine spätere Migration zum Dreifachwert.
+ */
 final class Migration1743123456CreateMeterPriceCustomField extends MigrationStep
 {
     private const SET_NAME = 'rc_dynamic_price';

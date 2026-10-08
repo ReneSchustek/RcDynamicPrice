@@ -1,10 +1,10 @@
 {
     "rc-dynamic-price": {
         "label": "Length in millimetres",
-        "placeholder": "e.g. 1500",
+        "placeholder": "e.g. 1500 or 1.5 m",
         "unit": "mm",
         "calculatedPrice": "Calculated price:",
-        "errorIntegerOnly": "Please enter positive whole numbers only.",
+        "errorIntegerOnly": "Please enter a length, such as 1500 (mm), 150 cm or 1.5 m.",
         "errorMinLength": "Minimum length: %minLength% mm",
         "errorMaxLength": "Maximum length: %maxLength% mm",
         "errorMaxPieceLength": "Please split the length into pieces of no more than {maxPiece} mm.",
@@ -18,7 +18,24 @@
         "splitHintEqual": "Your length {length} mm will be split into {pieces} equal pieces of {pieceLength} mm each.",
         "splitHintMaxRest": "Your length {length} mm will be split into full pieces of {maxPiece} mm plus a remainder of {remainder} mm ({pieces} pieces).",
         "splitHintManual": "The entered length {length} mm exceeds the maximum piece length of {maxPiece} mm. Please split the length yourself (e.g. {pieces} × {pieceLength} mm) and add each piece separately to the cart.",
-        "minPieceUpliftHint": "The remainder of {remainder} mm is below the minimum length of {minLength} mm. It is cut to that actual length, but charged at the minimum length — {billed} mm in total instead of {input} mm."
+        "minPieceUpliftHint": "The remainder of {remainder} mm is below the minimum length of {minLength} mm. It is cut to that actual length, but charged at the minimum length — {billed} mm in total instead of {input} mm.",
+        "lengthSwitch": {
+            "cartLabel": "Requested length:",
+            "cartLabelPlural": "Requested lengths:",
+            "unit": "mm",
+            "modalTitleAdjusted": "Size adjusted",
+            "modalTitleHint": "Note on the length",
+            "adjusted": "Your length does not match \"%from%\". We switched to \"%to%\".",
+            "outOfRange": "This article is available from %minCm% to %maxCm% cm, that is from %minMm% to %maxMm% mm.",
+            "cutting": "For %input% we charge %size%; it is cut from this length.",
+            "nextStep": "%done% goes into “%size%”. Add it to the cart; we will then switch to “%nextSize%” and enter %next%.",
+            "askUnit": "Do you mean %value% m? Please enter the length with a unit, such as “%value% m” or “%value%000 mm”."
+        },
+        "guidedSelection": {
+            "chooseFirst": "Please choose the length first. We will then only show what is available for it.",
+            "chooseNext": "Please also choose: %group%",
+            "placeholder": "Please choose"
+        }
     },
     "error": {
         "rc-dynamic-price-meter-price-unavailable": "No price per metre could be determined for %name%. Please remove the item or contact us — ordering is not possible until this is resolved."

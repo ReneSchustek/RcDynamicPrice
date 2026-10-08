@@ -11,6 +11,11 @@ use Ruhrcoder\RcDynamicPrice\Enum\SplitMode;
 use Ruhrcoder\RcDynamicPrice\Exception\DynamicPriceException;
 use Ruhrcoder\RcDynamicPrice\Service\LengthSplitter;
 
+/**
+ * Der Splitter teilt zu lange Zuschnitte in Teilstücke, die die Fertigung schneidet. Ein Fehler
+ * hier ist ein falscher Zuschnitt; die Fälle teilt er sich mit dem Skript der Produktseite über
+ * `tests/Fixtures/split-cases.json`, damit Vorschau und Warenkorb gleich rechnen.
+ */
 final class LengthSplitterTest extends TestCase
 {
     private LengthSplitter $splitter;
@@ -20,7 +25,7 @@ final class LengthSplitterTest extends TestCase
         $this->splitter = new LengthSplitter();
     }
 
-    // --- Grundverhalten ---
+    // Grundverhalten
 
     public function testReturnsSingleLengthWhenBelowOrAtMaxPiece(): void
     {
@@ -48,7 +53,7 @@ final class LengthSplitterTest extends TestCase
         $this->assertSame([8000], $this->splitter->split(8000, 5000, SplitMode::Hint));
     }
 
-    // --- Modus equal ---
+    // Modus equal
 
     public function testEqualSplitsExactlyDivisibleIntoTwoEqualPieces(): void
     {
@@ -62,14 +67,14 @@ final class LengthSplitterTest extends TestCase
 
     public function testEqualDefaultBillingRoundsEachPieceUp(): void
     {
-        // Default `cut_length`: jedes Teil wird auf dieselbe aufgerundete Länge gebracht
-        // (Schnittlänge) — die Summe darf die Eingabe übersteigen (3x3334 = 10002).
+        // Vorgabe `cut_length`: Jedes Teil bekommt dieselbe aufgerundete Schnittlänge, und die
+        // Summe darf die Eingabe übersteigen (3 × 3334 = 10002).
         $this->assertSame([3334, 3334, 3334], $this->splitter->split(10001, 5000, SplitMode::Equal));
     }
 
     public function testEqualExactBillingSumEqualsInputLength(): void
     {
-        // Mit `exact`: kein systematisches Aufrunden — Summe == Eingabe.
+        // Mit `exact` wird nicht aufgerundet; die Summe ist die Eingabe.
         $billing = DynamicPriceConstants::EQUAL_BILLING_EXACT;
         foreach ([10001, 7333, 12500, 99999, 6001] as $total) {
             $pieces = $this->splitter->split($total, 5000, SplitMode::Equal, $billing);
@@ -86,8 +91,8 @@ final class LengthSplitterTest extends TestCase
 
     /**
      * Der Splitter liefert Schnittlängen. Ein Teilstück unter der Mindestlänge wird geschnitten wie
-     * berechnet — die Mindestlänge ist eine Abrechnungsregel und wirkt erst im Processor. Vorher hob
-     * der Splitter das Stück physisch an: Der Kunde bekam mehr Material, als er bestellt hatte.
+     * berechnet; die Mindestlänge ist eine Abrechnungsregel und wirkt erst im Prozessor. Höbe der
+     * Splitter das Stück an, bekäme der Kunde mehr Material, als er bestellt hat.
      */
     public function testEqualCutsShortPiecesAtTheirCalculatedLength(): void
     {
@@ -110,7 +115,7 @@ final class LengthSplitterTest extends TestCase
         $this->assertSame([5000, 5000], $this->splitter->split(10000, 5000, SplitMode::Equal));
     }
 
-    // --- Modus max_rest ---
+    // Modus max_rest
 
     public function testMaxRestSplitsIntoFullPiecesPlusRemainder(): void
     {
@@ -125,9 +130,9 @@ final class LengthSplitterTest extends TestCase
     /**
      * Das Reststück behält seine tatsächliche Länge, auch unter der Mindestlänge.
      *
-     * Der Fall aus der Praxis: 5.100 mm bei maxPiece 5.000 und min 1.000. Vorher schnitt die
-     * Fertigung 5.000 + 1.000 mm — 900 mm mehr, als der Kunde bestellt hatte. Jetzt schneidet sie
-     * 5.000 + 100 mm; die Mindestlänge wird nur berechnet (siehe DynamicPriceProcessor).
+     * Der Fall aus der Praxis: 5.100 mm bei 5.000 mm Höchstmaß und 1.000 mm Mindestlänge. Die
+     * Fertigung schneidet 5.000 + 100 mm; die Mindestlänge wird nur berechnet (siehe
+     * `DynamicPriceProcessor`). Mit angehobenem Rest bekäme der Kunde 900 mm zu viel.
      */
     public function testMaxRestCutsTheRemainderAtItsActualLength(): void
     {
@@ -137,7 +142,7 @@ final class LengthSplitterTest extends TestCase
 
     public function testMaxRestDoesNotBumpRemainderAboveItsNaturalValue(): void
     {
-        // Rest 3000 >= Min 1000 → unverändert
+        // Der Rest von 3000 mm liegt über der Mindestlänge von 1000 mm und bleibt, wie er ist.
         $this->assertSame([5000, 3000], $this->splitter->split(8000, 5000, SplitMode::MaxRest));
     }
 
@@ -148,11 +153,11 @@ final class LengthSplitterTest extends TestCase
 
     public function testMaxRestUsesAtLeastOneAsMinimumFloor(): void
     {
-        // Absurder Min-Wert 0 darf nicht zu einem 0-Rest führen
+        // Eine Mindestlänge von 0 darf nicht zu einem Reststück von 0 mm führen.
         $this->assertSame([5000, 1000], $this->splitter->split(6000, 5000, SplitMode::MaxRest));
     }
 
-    // --- Fehlerfälle ---
+    // Fehlerfälle
 
     public function testThrowsOnZeroTotal(): void
     {
@@ -194,12 +199,28 @@ final class LengthSplitterTest extends TestCase
 
     public function testAcceptsTotalAtExactMaximum(): void
     {
-        // Genau der Grenzwert muss noch akzeptiert werden
+        // Genau der Grenzwert wird noch angenommen.
         $result = $this->splitter->split(LengthSplitter::MAX_TOTAL_MM, 5000, SplitMode::Equal);
         $this->assertNotEmpty($result);
     }
 
-    // --- Invariante: alle Teilstücke <= maxPiece (Datenprovider-Matrix) ---
+    /**
+     * Wächter der Geschwindigkeit: der schlimmste erlaubte Fall, eine Million Teilstücke. Gemessen
+     * sind rund 13 ms (`benchmarks/LengthSplitterBench.php`); die Grenze von einer Sekunde ist
+     * großzügig, damit der Test nicht bei jeder Schwankung anschlägt, und fängt doch einen Umbau,
+     * der aus der linearen Rechnung eine quadratische macht.
+     */
+    public function testTheWorstAllowedCaseStaysFast(): void
+    {
+        $start = hrtime(true);
+        $result = $this->splitter->split(LengthSplitter::MAX_TOTAL_MM, 1, SplitMode::MaxRest);
+        $milliseconds = (hrtime(true) - $start) / 1_000_000;
+
+        $this->assertCount(LengthSplitter::MAX_TOTAL_MM, $result);
+        $this->assertLessThan(1000, $milliseconds);
+    }
+
+    // Kein Teilstück ist länger als das Höchstmaß, über eine Matrix von Längen geprüft.
 
     #[DataProvider('provideEqualInvariantCases')]
     public function testEqualPiecesNeverExceedMax(int $total, int $max): void
@@ -230,7 +251,7 @@ final class LengthSplitterTest extends TestCase
         ];
     }
 
-    // --- JSON-Fixture-Parität: dieselben Cases werden vom JS-Plugin genutzt ---
+    // Dieselben Fälle prüft das Skript der Produktseite gegen `tests/Fixtures/split-cases.json`.
 
     /**
      * @param list<int> $expected
@@ -266,7 +287,7 @@ final class LengthSplitterTest extends TestCase
         }
     }
 
-    // --- Enum tryFromString ---
+    // SplitMode::tryFromString
 
     public function testSplitModeTryFromStringAcceptsValidValue(): void
     {

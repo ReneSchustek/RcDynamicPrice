@@ -11,8 +11,14 @@ use Shopware\Core\Content\Product\ProductEntity;
 use Shopware\Core\Framework\Context;
 use Shopware\Core\System\SystemConfig\SystemConfigService;
 
+/**
+ * Löst die Meterpreis-Einstellungen über Produkt, Kategoriekette und Grundeinstellung auf. Jeder Wert
+ * wird für sich aufgelöst, damit eine Kategorie etwa nur die Rundung vorgeben und den Rest erben kann.
+ */
 final class MeterConfigResolver implements MeterConfigResolverInterface
 {
+    // Ohne Einstellung gilt nur, dass ein Zuschnitt eine Länge hat; längere Zuschnitte als 10 m
+    // verlangen eine ausdrückliche Einstellung an Produkt, Kategorie oder in der Grundeinstellung.
     private const DEFAULT_MIN_LENGTH = 1;
     private const DEFAULT_MAX_LENGTH = 10000;
 
@@ -33,7 +39,7 @@ final class MeterConfigResolver implements MeterConfigResolverInterface
     public function resolveForProduct(ProductEntity $product, string $salesChannelId, Context $context): ResolvedMeterConfig
     {
         $productFields = $product->getCustomFields() ?? [];
-        $primaryCategoryId = $this->primaryCategoryId($product, $salesChannelId);
+        $primaryCategoryId = PrimaryCategory::idFor($product, $salesChannelId);
 
         $categoryChain = $primaryCategoryId === null
             ? []
@@ -48,7 +54,7 @@ final class MeterConfigResolver implements MeterConfigResolverInterface
 
         $productActive = ActiveState::fromMixed($productFields[DynamicPriceConstants::FIELD_METER_ACTIVE] ?? null);
 
-        // Produkt-`off` kurzschließt vollständig.
+        // `off` am Produkt gilt ohne Blick auf Kategorien und Grundeinstellung.
         if ($productActive === ActiveState::Off) {
             return ResolvedMeterConfig::disabled(ConfigScope::Product, $cacheTags);
         }
@@ -104,8 +110,8 @@ final class MeterConfigResolver implements MeterConfigResolverInterface
         );
 
         if ($minLength > $maxLength) {
-            // Fehlkonfiguration kommt durch, aber wir erhöhen maxLength auf minLength,
-            // damit die Struct-Invariante (minLength <= maxLength) nicht bricht.
+            // Eine Fehleinstellung kommt durch; die Höchstlänge wird auf die Mindestlänge gehoben,
+            // damit Mindestlänge nicht über Höchstlänge liegt und das Widget-Struct nicht wirft.
             $maxLength = $minLength;
             $maxScope = ConfigScope::Default;
         }
@@ -134,10 +140,9 @@ final class MeterConfigResolver implements MeterConfigResolverInterface
     }
 
     /**
-     * Liest die equal-Modus-Abrechnungsoptionen aus der Plugin-Konfiguration.
-     * Bewusst nur kanalweit (pro Sales Channel, kein Produkt-/Kategorie-Override):
-     * es ist eine Abrechnungs-Policy, keine Produkteigenschaft. Unbekannte
-     * Billing-Werte fallen sicher auf `cut_length`.
+     * Liest die Abrechnung im equal-Modus aus der Grundeinstellung, nur je Verkaufskanal und nicht am
+     * Produkt oder an der Kategorie: Sie ist eine Regel der Abrechnung, keine Eigenschaft der Ware.
+     * Unbekannte Werte gelten als `cut_length`.
      *
      * @return array{0: string, 1: bool}
      */
@@ -151,8 +156,8 @@ final class MeterConfigResolver implements MeterConfigResolverInterface
             $billing = DynamicPriceConstants::EQUAL_BILLING_CUT_LENGTH;
         }
 
-        // Default true: ohne gesetzten Wert liefert getBool false — daher den Rohwert
-        // prüfen, damit der Standard "anheben" nur durch explizites Abschalten entfällt.
+        // Die Vorgabe ist „anheben". getBool lieferte ohne gesetzten Wert false; deshalb der Rohwert,
+        // damit das Anheben nur durch ausdrückliches Abschalten entfällt.
         $rawEnforce = $this->systemConfigService->get(DynamicPriceConstants::CONFIG_EQUAL_ENFORCE_MIN, $salesChannelId);
         $enforceMin = $rawEnforce === null ? true : (bool) $rawEnforce;
 
@@ -170,7 +175,7 @@ final class MeterConfigResolver implements MeterConfigResolverInterface
             return [true, ConfigScope::Product];
         }
 
-        // Produkt = inherit: Tree-Walk, erster expliziter Treffer gewinnt.
+        // Das Produkt erbt: Die nächste Kategorie mit `on` oder `off` entscheidet.
         foreach ($categoryChain as $entry) {
             $state = ActiveState::fromMixed($entry['customFields'][DynamicPriceConstants::CAT_FIELD_METER_ACTIVE] ?? null);
             if ($state === ActiveState::On) {
@@ -226,6 +231,8 @@ final class MeterConfigResolver implements MeterConfigResolverInterface
             return [$globalValue, ConfigScope::Global];
         }
 
+        // Für die Höchstlänge je Teilstück heißt eine 0 in der Grundeinstellung „nicht teilen" und
+        // gilt; für Mindest- und Höchstlänge wäre sie unsinnig und fällt auf die Vorgabe.
         if ($allowZeroFromGlobal && $globalValue === 0) {
             return [0, ConfigScope::Global];
         }
@@ -322,7 +329,7 @@ final class MeterConfigResolver implements MeterConfigResolverInterface
     }
 
     /**
-     * Positive Ganzzahl oder null. Werte <= 0 gelten wie bisher als "nicht gesetzt".
+     * Positive Ganzzahl oder `null`. Werte bis 0 gelten als nicht gesetzt.
      */
     private function positiveInt(mixed $value): ?int
     {
@@ -337,65 +344,6 @@ final class MeterConfigResolver implements MeterConfigResolverInterface
         $int = (int) $value;
 
         return $int > 0 ? $int : null;
-    }
-
-    /**
-     * Bestimmt die maßgebliche Kategorie für die Konfigurations-Vererbung
-     * **deterministisch**. Reihenfolge:
-     *
-     * 1. Die vom Händler gepflegte Hauptkategorie (`mainCategories`) des aktuellen
-     *    Sales Channels — das ist die explizite Absicht und pro Kanal eindeutig.
-     * 2. Sonst die kleinste Kategorie-ID (sortiert) statt der ersten beliebigen.
-     *    Die DAL garantiert keine stabile Reihenfolge; ohne Sortierung konnten
-     *    Mehr-Kategorie-Produkte je nach Ladereihenfolge unterschiedliche Configs
-     *    (und damit schwankende Preise) erben.
-     */
-    private function primaryCategoryId(ProductEntity $product, string $salesChannelId): ?string
-    {
-        $mainCategoryId = $this->mainCategoryIdForChannel($product, $salesChannelId);
-        if ($mainCategoryId !== null) {
-            return $mainCategoryId;
-        }
-
-        $ids = $product->getCategoryIds();
-        if ($ids !== null && $ids !== []) {
-            $sorted = array_values($ids);
-            sort($sorted);
-
-            return $sorted[0];
-        }
-
-        $categories = $product->getCategories();
-        if ($categories !== null && $categories->count() > 0) {
-            $categoryIds = $categories->getIds();
-            $sorted = array_values($categoryIds);
-            sort($sorted);
-
-            return $sorted[0];
-        }
-
-        return null;
-    }
-
-    /**
-     * Liefert die Haupt-Kategorie-ID für den aktuellen Sales Channel, sofern die
-     * `mainCategories`-Assoziation geladen und für den Kanal gesetzt ist. Sonst
-     * null (Aufrufer fällt deterministisch zurück).
-     */
-    private function mainCategoryIdForChannel(ProductEntity $product, string $salesChannelId): ?string
-    {
-        $mainCategories = $product->getMainCategories();
-        if ($mainCategories === null) {
-            return null;
-        }
-
-        foreach ($mainCategories as $mainCategory) {
-            if ($mainCategory->getSalesChannelId() === $salesChannelId) {
-                return $mainCategory->getCategoryId();
-            }
-        }
-
-        return null;
     }
 
     /**

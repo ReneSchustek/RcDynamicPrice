@@ -19,13 +19,19 @@ use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
 
+/**
+ * Macht aus einem „In den Warenkorb" eines Meterartikels einen Zuschnitt-Auftrag: Einstellungen
+ * auflösen, Länge lesen und prüfen, Teilung in den Payload schreiben.
+ *
+ * Eine Meterposition ohne verwertbare Länge geht nicht still zum Stückpreis durch. Sie wird markiert,
+ * und der DynamicPriceProcessor sperrt dann die Bestellung.
+ */
 final class LineItemSubscriber implements EventSubscriberInterface
 {
     /**
-     * Payload-Marker, die andere Ruhrcoder-Plugins bei aktiven TMMS-/Custom-Field-Eingaben in den Request
-     * schreiben. Ist einer davon gesetzt, besitzt ein höher priorisiertes Plugin die LineItem-ID — der
-     * Auto-Split wird dann auf Hint-Verhalten reduziert, damit keine Sibling-Positionen ohne deren
-     * Payload entstehen. Betrifft Requests mit mehreren Positionen auf einmal.
+     * Kennzeichen, die RcCartSplitter (bei TMMS-Eingaben) und RcCustomFields in den Request
+     * schreiben. Ist eines gesetzt, bestimmt dieses Plugin die Kennung der Position, und statt
+     * automatisch zu teilen, gibt es nur den Hinweis.
      */
     private const FOREIGN_ID_CONTROLLER_KEYS = [
         'rcTmmsActive',
@@ -33,17 +39,15 @@ final class LineItemSubscriber implements EventSubscriberInterface
     ];
 
     /**
-     * Request-Feld, unter dem Buy-Widget und Store-API-Clients die gewünschte Länge senden.
+     * Das Feld, unter dem Kaufformular und Store-API-Clients die gewünschte Länge senden.
      */
     private const REQUEST_KEY_LENGTH = 'mmLength';
 
     /**
-     * Per-Positions-Längenschlüssel im Request-Payload
-     * (`lineItems[<lineItemId>][payload][meterLengthMm]`). Bewusst wertgleich mit
-     * dem Cart-Payload-Key {@see DynamicPriceConstants::PAYLOAD_LENGTH_MM}: So
-     * fließt der Wert ohne Umbenennung durch den Standardpfad, und es gibt genau
-     * ein Literal für „meterLengthMm" (Single Source of Truth). Damit kann ein
-     * einzelner Request mehrere Positionen mit unterschiedlichen Längen anlegen.
+     * Längenschlüssel je Position im Request (`lineItems[<lineItemId>][payload][meterLengthMm]`),
+     * damit ein Request mehrere Positionen mit verschiedenen Längen anlegen kann. Er ist derselbe
+     * wie der Payload-Schlüssel {@see DynamicPriceConstants::PAYLOAD_LENGTH_MM}: Der Wert läuft so
+     * ohne Umbenennung durch, und „meterLengthMm" steht nur an einer Stelle.
      */
     private const REQUEST_KEY_LENGTH_PAYLOAD = DynamicPriceConstants::PAYLOAD_LENGTH_MM;
 
@@ -75,8 +79,8 @@ final class LineItemSubscriber implements EventSubscriberInterface
         // Nur Produktpositionen. Der Warenkorb trägt auch Gutschein-Platzhalter,
         // Versandkosten und Zuschläge; ein Meterpreis ergibt dort keinen Sinn, und ein
         // Gutschein trägt in `referencedId` den Code statt einer Kennung. Ohne diese
-        // Prüfung liefe für jeden Gutschein-Zugang eine Produktsuche ins Leere — samt
-        // einer Protokollzeile „Meterpreis-Konfiguration aufgelöst", die nichts aussagt.
+        // Prüfung liefe für jeden Gutschein eine Produktsuche ins Leere, samt einer
+        // Protokollzeile „Meterpreis-Konfiguration aufgelöst", die nichts aussagt.
         if ($lineItem->getType() !== LineItem::PRODUCT_LINE_ITEM_TYPE) {
             return;
         }
@@ -89,9 +93,9 @@ final class LineItemSubscriber implements EventSubscriberInterface
             return;
         }
 
-        // Produkt und Konfiguration werden vor der Längenprüfung geladen: Erst danach ist bekannt,
-        // ob es überhaupt ein Meter-Artikel ist. Fehlt bei einem Meter-Artikel die Länge, darf er
-        // nicht still zum Stückpreis durchgehen — das entscheidet sich hier, nicht am Request.
+        // Produkt und Einstellungen vor der Längenprüfung: Erst sie sagen, ob es ein Meterartikel
+        // ist. Fehlt einem Meterartikel die Länge, darf er nicht still zum Stückpreis durchgehen;
+        // das entscheidet sich hier und nicht am Request.
         $context = $event->getSalesChannelContext()->getContext();
         $product = $this->meterProductHelper->loadProduct($productId, $context);
 
@@ -102,8 +106,8 @@ final class LineItemSubscriber implements EventSubscriberInterface
         $salesChannelId = $event->getSalesChannelContext()->getSalesChannel()->getId();
         $resolved = $this->configResolver->resolveForProduct($product, $salesChannelId, $context);
 
-        // Scope-Herkunft pro Feld im Kontext — bei Support-Fällen "warum ist Preis X?"
-        // sieht Ops sofort, ob Produkt, Kategorie, Plugin-Global oder Default gewonnen hat.
+        // Die Herkunft jedes Werts steht mit im Protokoll; bei „warum kostet das so viel?" ist dann
+        // sofort zu sehen, ob Produkt, Kategorie, Grundeinstellung oder Vorgabe gewonnen hat.
         $this->logger->info('RcDynamicPrice: Meterpreis-Konfiguration aufgelöst', [
             'productId' => $productId,
             'active' => $resolved->active,
@@ -149,8 +153,9 @@ final class LineItemSubscriber implements EventSubscriberInterface
         try {
             $this->splitAssembler->assemble($event->getCart(), $lineItem, $mmLength, $config);
         } catch (\Throwable $exception) {
-            // Fail-safe: eine Fehlkonfiguration (z.B. maxLength jenseits der Splitter-Obergrenze) darf
-            // den Add-to-Cart nicht mit einem 500 abreissen. Auf „kein Split" degradieren und loggen.
+            // Eine Fehleinstellung, etwa eine Höchstlänge über der Grenze des Splitters, darf das
+            // Hinzufügen nicht mit HTTP 500 abbrechen. Die Position bleibt ohne Teilung, der Fehler
+            // steht im Protokoll.
             $this->logger->error('RcDynamicPrice: Split-Assembler fehlgeschlagen, Position ohne Split hinzugefügt', [
                 'productId' => $productId,
                 'mmLength' => $mmLength,
@@ -161,16 +166,13 @@ final class LineItemSubscriber implements EventSubscriberInterface
     }
 
     /**
-     * Erzwingt Menge 1 auf dem eingehenden LineItem einer aktiven Meter-Position.
+     * Setzt die Menge der eingehenden Meterposition auf 1.
      *
-     * Das Buy-Widget sendet immer `quantity=1`; über die Store-API oder einen manipulierten Request
-     * konnte bisher eine höhere Menge durchrutschen. Der Split erzeugte die Geschwister-Positionen
-     * dann fest mit Menge 1, während das Original die höhere Menge behielt — der Warenkorb-Preis
-     * passte damit nicht mehr zur bestellten Ware.
+     * Das Kaufformular sendet immer `quantity=1`. Eine höhere Menge kann nur über die Store-API oder
+     * einen veränderten Request kommen; sie wird zurückgesetzt und protokolliert.
      *
-     * Bewusst nur das eingehende LineItem, nicht der Warenkorb-Stand: Legt der Kunde dieselbe Länge
-     * ein zweites Mal in den Warenkorb, darf Shopware regulär auf Menge 2 mergen. Original und
-     * Geschwister mergen dabei gleichermaßen, der Preis bleibt korrekt.
+     * Nur die eingehende Position, nicht der Stand im Warenkorb: Legt der Kunde dieselbe Länge ein
+     * zweites Mal hinein, führt Shopware beide regulär zur Menge 2 zusammen.
      */
     private function enforceSingleQuantity(LineItem $lineItem, string $productId): void
     {
@@ -184,9 +186,9 @@ final class LineItemSubscriber implements EventSubscriberInterface
             'requestedQuantity' => $lineItem->getQuantity(),
         ]);
 
-        // setQuantity() wirft bei nicht-stackable Positionen. Der reguläre Produkt-Pfad liefert
-        // stackable=true, ein direkt aufgebautes LineItem (Store-API, Fremd-Plugin) muss das nicht.
-        // Die Stackable-Semantik wird dabei nicht verändert, nur kurzzeitig umgangen.
+        // setQuantity() wirft bei nicht stapelbaren Positionen. Der übliche Produktweg liefert
+        // stapelbare, ein direkt gebautes LineItem (Store-API, fremdes Plugin) nicht unbedingt.
+        // Die Eigenschaft wird nur für den Aufruf umgangen und danach zurückgesetzt.
         $wasStackable = $lineItem->isStackable();
         $lineItem->setStackable(true);
         $lineItem->setQuantity(1);
@@ -194,21 +196,20 @@ final class LineItemSubscriber implements EventSubscriberInterface
     }
 
     /**
-     * Markiert eine aktive Meter-Position, deren Preis nicht berechnet werden kann.
+     * Markiert eine Meterposition, deren Preis sich nicht berechnen lässt.
      *
-     * Ohne Markierung überspringt der DynamicPriceProcessor die Position — er steigt nur bei
-     * gesetztem Aktiv-Flag ein — und der Kunde kauft einen Zuschnitt-Artikel zum Stückpreis.
-     * Mit ihr greift die vorhandene Ablehnung: Der Processor findet keine oder keine zulässige
-     * Länge, meldet einen MeterPriceError und blockiert damit die Bestellung.
+     * Ohne Markierung überginge der DynamicPriceProcessor die Position, weil er nur bei gesetztem
+     * Kennzeichen rechnet, und der Kunde kaufte einen Zuschnitt zum Stückpreis. Mit ihr findet der
+     * Processor keine oder keine zulässige Länge, meldet einen MeterPriceError und sperrt so die
+     * Bestellung.
      *
-     * Die unzulässige Länge wird bewusst mitgeschrieben. Der Processor prüft sie gegen die
-     * ebenfalls hinterlegten Grenzen und kann dem Kunden dadurch sagen, ob sie zu kurz oder zu
-     * lang war, statt nur "ungültig".
+     * Eine unzulässige Länge wird mitgeschrieben. Der Processor prüft sie gegen die ebenfalls
+     * hinterlegten Grenzen und kann so sagen, ob sie zu kurz oder zu lang war, statt nur „ungültig".
      */
     private function markUnpriceable(Cart $cart, LineItem $incoming, ?int $mmLength, ResolvedMeterConfig $resolved): void
     {
-        // Beim Merging liefert Shopware eine abweichende Instanz über Cart::get() — wie im
-        // Assembler muss der Cart-Stand beschrieben werden, nicht das eingehende Objekt.
+        // Beim Zusammenführen liefert Cart::get() eine andere Instanz; wie im Assembler wird die im
+        // Warenkorb beschrieben, nicht das eingehende Objekt.
         $cartItem = $cart->get($incoming->getId()) ?? $incoming;
 
         $cartItem->setPayloadValue(DynamicPriceConstants::PAYLOAD_METER_ACTIVE, true);
@@ -221,37 +222,32 @@ final class LineItemSubscriber implements EventSubscriberInterface
     }
 
     /**
-     * Liest die angeforderte Länge aus drei Quellen — die erste gültige gewinnt:
+     * Liest die angeforderte Länge aus drei Quellen; die erste gültige gewinnt:
      *
-     *   1. Per-Positions-Payload im Request:
-     *      `lineItems[<lineItemId>][payload][meterLengthMm]`. Erlaubt einem einzelnen
-     *      Request, mehrere Positionen mit unterschiedlichen Längen anzulegen
-     *      (RcB2bSuite QuickOrder/QuoteRequest).
-     *   2. Bereits gesetzter LineItem-Payload:
-     *      `$lineItem->getPayloadValue(meterLengthMm)`. Deckt die Warenkorb-
-     *      Wiederherstellung ab (z. B. FroshPlatformShareBasket), bei der der Request
-     *      keine Länge trägt, der restaurierte Payload sie aber bereits enthält.
-     *   3. Flacher Key `mmLength`: das bestehende Buy-Widget / Store-API-Clients —
-     *      unverändert, damit sich das Kaufformular exakt wie bisher verhält.
+     *   1. Länge je Position im Request: `lineItems[<lineItemId>][payload][meterLengthMm]`. Damit
+     *      legt ein Request mehrere Positionen mit verschiedenen Längen an (RcB2bSuite
+     *      QuickOrder/QuoteRequest).
+     *   2. Der schon gesetzte Payload der Position, `meterLengthMm`. Er trägt die Länge beim
+     *      Wiederherstellen eines Warenkorbs (etwa FroshPlatformShareBasket), wenn der Request keine
+     *      Länge mitbringt.
+     *   3. Der flache Schlüssel `mmLength` aus dem Kaufformular und von Store-API-Clients.
      *
-     * Validierung (in allen Quellen identisch): Das Storefront-Formular sendet die
-     * Länge als String, ein JSON-Client als Zahl — beides gilt. Alles andere
-     * (Kommazahl, "5000abc", true, Array) bleibt ungültig; ein blinder (int)-Cast
-     * würde solche Eingaben stillschweigend in eine Länge verwandeln.
+     * Geprüft wird in allen Quellen gleich: Das Formular sendet die Länge als Text, ein JSON-Client
+     * als Zahl, beides gilt. Alles andere (Kommazahl, "5000abc", true, Array) bleibt ungültig; ein
+     * blinder (int)-Cast verwandelte solche Eingaben still in eine Länge.
      *
-     * Gelesen wird über all(), nicht über get(): InputBag::get() wirft bei einem Array
-     * eine BadRequestException und quittiert einen manipulierten Request mit 400 statt
-     * mit einer sauberen Ablehnung im Warenkorb.
+     * Gelesen wird über all() statt get(): InputBag::get() wirft bei einem Array eine
+     * BadRequestException und beantwortete einen veränderten Request mit 400 statt mit einer
+     * sauberen Ablehnung im Warenkorb.
      */
     private function readRequestedLength(Request $request, LineItem $lineItem): ?int
     {
-        // 1. Per-Positions-Payload
         $perPosition = $this->normalizeLength($this->readPerPositionLength($request, $lineItem->getId()));
         if ($perPosition !== null) {
             $flat = $this->normalizeLength($request->request->all()[self::REQUEST_KEY_LENGTH] ?? null);
             if ($flat !== null && $flat !== $perPosition) {
-                // Beide Quellen gesetzt und widersprüchlich: Per-Positions-Key gewinnt,
-                // aber sichtbar loggen — deutet auf einen fehlkonstruierten Request hin.
+                // Beide Quellen gesetzt und widersprüchlich: Die Länge je Position gewinnt, und der
+                // Widerspruch kommt ins Protokoll, weil er auf einen falsch gebauten Request deutet.
                 $this->logger->warning('RcDynamicPrice: mehrdeutige Längenangabe, Per-Positions-Key gewinnt', [
                     'lineItemId' => $lineItem->getId(),
                     'perPosition' => $perPosition,
@@ -262,20 +258,17 @@ final class LineItemSubscriber implements EventSubscriberInterface
             return $perPosition;
         }
 
-        // 2. Bereits gesetzter LineItem-Payload (Warenkorb-Wiederherstellung)
         $fromPayload = $this->normalizeLength($lineItem->getPayloadValue(self::REQUEST_KEY_LENGTH_PAYLOAD));
         if ($fromPayload !== null) {
             return $fromPayload;
         }
 
-        // 3. Flacher Key (bestehendes Kaufformular)
         return $this->normalizeLength($request->request->all()[self::REQUEST_KEY_LENGTH] ?? null);
     }
 
     /**
-     * Holt den rohen Per-Positions-Längenwert aus `lineItems[<id>][payload][meterLengthMm]`.
-     * Liefert `null`, wenn der Request-Baum an keiner Stelle passt — die Validierung
-     * übernimmt {@see normalizeLength()}.
+     * Der rohe Wert aus `lineItems[<id>][payload][meterLengthMm]`, oder `null`, wenn der Request dort
+     * nichts trägt. Geprüft wird er in {@see normalizeLength()}.
      */
     private function readPerPositionLength(Request $request, string $lineItemId): mixed
     {
@@ -295,8 +288,7 @@ final class LineItemSubscriber implements EventSubscriberInterface
     }
 
     /**
-     * Validiert einen rohen Längenwert (String aus dem Formular oder int aus JSON)
-     * zu einer positiven Ganzzahl in Millimetern — oder `null`, wenn ungültig.
+     * Eine positive Ganzzahl in Millimetern aus Text (Formular) oder Zahl (JSON), sonst `null`.
      */
     private function normalizeLength(mixed $raw): ?int
     {
@@ -331,10 +323,9 @@ final class LineItemSubscriber implements EventSubscriberInterface
     }
 
     /**
-     * Liefert den anwendbaren Split-Modus. Hat ein Plugin mit höherer ID-Priorität (Marker
-     * `rcTmmsActive` aus TmmsProductCustomerInputs bzw. `rcCustomFieldsActive` aus RcCustomFields)
-     * den Request mitgestaltet, wird Auto-Split auf Hint reduziert, damit keine Sibling-LineItems
-     * ohne deren Payload entstehen.
+     * Der Modus, der für diesen Request gilt. Hat RcCartSplitter (`rcTmmsActive`) oder
+     * RcCustomFields (`rcCustomFieldsActive`) den Request mitgestaltet, bestimmt dieses Plugin die
+     * Kennung der Position, und statt zu teilen, gibt es nur den Hinweis.
      */
     private function effectiveSplitMode(?SplitMode $configured, Request $request): ?SplitMode
     {
@@ -350,10 +341,9 @@ final class LineItemSubscriber implements EventSubscriberInterface
     }
 
     /**
-     * Prüft, ob ein ID-Controller-Plugin (RcCartSplitter, RcCustomFields) im Add-to-Cart-Request
-     * aktiv ist. Beide Plugins injizieren ihre Marker genested ins Buy-Form-Payload
-     * (`lineItems[{productId}][payload][rcTmmsActive]=1`), nicht top-level — die Top-Level-Prüfung
-     * bleibt als Legacy-Pfad erhalten, falls ein Plugin den Marker dort setzt.
+     * Ob RcCartSplitter oder RcCustomFields den Request mitgestaltet hat. Beide schreiben ihr
+     * Kennzeichen in den Payload der Position (`lineItems[{productId}][payload][rcTmmsActive]=1`);
+     * die Prüfung auf oberster Ebene deckt ein Plugin ab, das es dort setzt.
      */
     private function hasForeignIdControllerMarker(Request $request): bool
     {

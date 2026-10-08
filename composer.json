@@ -3,7 +3,7 @@
     "description": "Shopware plugin for length-based price calculation",
     "type": "shopware-platform-plugin",
     "license": "MIT",
-    "version": "1.20.2",
+    "version": "1.23.4",
     "authors": [
         {
             "name": "Ruhrcoder",
@@ -18,7 +18,9 @@
     "require-dev": {
         "phpunit/phpunit": "^10.0 || ^11.0",
         "phpstan/phpstan": "^2.2",
-        "friendsofphp/php-cs-fixer": "^3.0"
+        "friendsofphp/php-cs-fixer": "^3.0",
+        "shopwarelabs/phpstan-shopware": "^0.2",
+        "phpbench/phpbench": "^1.7"
     },
     "autoload": {
         "psr-4": {
@@ -49,6 +51,11 @@
         },
         "platform": {
             "php": "8.2.0"
+        },
+        "audit": {
+            "ignore": {
+                "PKSA-p9gd-j6gr-6f9t": "Betroffen ist allein der MCP-Client (Mcp\\Client\\Transport\\HttpTransport): Sein SSE-Puffer wächst unbegrenzt, wenn der Gegenserver die Leerzeile zurückhält. Shopware nutzt ausschließlich die Server-Seite (StreamableHttpTransport); im Kern 6.7.13.0 und in allen Rc-Erweiterungen: null Aufrufe der Client-Klassen. Behoben ist mcp/sdk 0.7.1, doch shopware/core pinnt bis 6.7.13.0 auf ^0.6.0 und kann sie nicht ziehen. Wieder vorlegen: 2026-11-01."
+            }
         }
     },
     "extra": {

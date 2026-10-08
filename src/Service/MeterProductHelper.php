@@ -14,15 +14,17 @@ use Shopware\Core\Framework\DataAbstractionLayer\Search\Criteria;
 use Shopware\Core\Framework\Uuid\Uuid;
 
 /**
- * Schlanke Utility-Klasse für Produkt-Ladung und Rundungs-Arithmetik.
- * Scope-abhängige Konfigurationsauflösung liegt im MeterConfigResolver.
+ * Produktladung und Rundung für den Meterpreis. Welche Einstellung gilt, entscheidet nicht diese
+ * Klasse, sondern der MeterConfigResolver.
  */
 final class MeterProductHelper implements MeterProductHelperInterface
 {
     /**
-     * Single-Source-Tabelle aller Rundungsmodi. Wird vom Server in `roundUp()` genutzt
-     * und vom Storefront-JS via `RcDynamicPriceConfigStruct->roundingSteps` über ein
-     * Twig-Data-Attribut gelesen (siehe `dynamic-price.plugin.js::_roundUp()`).
+     * Die Schrittweite jedes Rundungsmodus in Millimetern, die einzige Tabelle dafür. Der Server
+     * rundet in `roundUp()` damit; das Storefront-Skript bekommt sie über
+     * `RcDynamicPriceConfigStruct->roundingSteps` als Datenattribut
+     * (`dynamic-price.plugin.js::_roundUp()`), sonst zeigte die Seite einen anderen Preis als der
+     * Warenkorb.
      *
      * @var array<string, int>
      */
@@ -43,23 +45,20 @@ final class MeterProductHelper implements MeterProductHelperInterface
 
     public function loadProduct(string $productId, Context $context): ?ProductEntity
     {
-        // Nicht darauf verlassen, dass der Aufrufer eine Produktkennung liefert.
-        //
-        // `Criteria` prüft beim Anlegen nur den Typ, nicht die Form — die Ausnahme fällt
-        // erst tief in der Datenbankschicht (`InvalidUuidException`). Ein Gutschein-Platzhalter
-        // trägt in `referencedId` den **Code** statt einer Kennung; ohne diese Prüfung riss
-        // jeder Gutschein-Zugang den ganzen Warenkorb-Vorgang mit. Bei RcCartSplitter ist
-        // genau das auf Live passiert — dort war monatelang kein Code einlösbar.
+        // Der Aufrufer liefert nicht immer eine Produktkennung. Ein Gutschein-Platzhalter trägt in
+        // `referencedId` den Code. `Criteria` prüft beim Anlegen nur den Typ, die Ausnahme
+        // (`InvalidUuidException`) fiele erst tief in der Datenbankschicht und risse den ganzen
+        // Warenkorbvorgang mit; kein Gutschein wäre mehr einlösbar.
         if (!Uuid::isValid($productId)) {
             return null;
         }
 
         $criteria = new Criteria([$productId]);
         $criteria->setLimit(1);
-        // Kategorie-Ketten-Resolver braucht categoryIds — categories-Assoziation füllt das zuverlässig.
+        // Der Resolver braucht die Kategorien des Produkts, um die Kette zu finden.
         $criteria->addAssociation('categories');
-        // mainCategories erlaubt dem Resolver, die händler-gepflegte Hauptkategorie pro
-        // Sales Channel deterministisch zu bevorzugen (statt einer beliebigen Kategorie).
+        // Mit den Hauptkategorien erbt das Produkt je Verkaufskanal von der gepflegten Kategorie
+        // statt von irgendeiner (siehe PrimaryCategory).
         $criteria->addAssociation('mainCategories');
 
         $product = $this->productRepository->search($criteria, $context)->getEntities()->first();
@@ -69,8 +68,8 @@ final class MeterProductHelper implements MeterProductHelperInterface
 
     public function roundUp(int $mm, string $mode): int
     {
-        // Timing-Hook (optionale Observability) — die Rechenlogik bleibt unverändert.
-        // Der Recorder ist per Vertrag fail-safe (Default = NullMetricsRecorder).
+        // Die Dauer geht an den Recorder; ohne eingeschaltete Metriken verwirft er sie. Er wirft per
+        // Vertrag nie, die Rechnung bleibt davon unberührt.
         $start = microtime(true);
 
         $step = self::ROUNDING_STEPS[$mode] ?? 0;

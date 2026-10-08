@@ -8,11 +8,11 @@ use Doctrine\DBAL\Connection;
 use Shopware\Core\Framework\Migration\MigrationStep;
 
 /**
- * Korrigiert die Admin-Konfiguration des Hinweistext-Felds:
- *  - alt: sw-text-editor / html → Admin speichert HTML, Frontend rendert aber als Literal
- *  - neu: sw-textarea-field / text → Plain-Text, konsistent mit Twig-Escape und textContent im JS
+ * Stellt das Feld für den Hinweistext beim Aufteilen vom Texteditor auf ein einfaches Textfeld um.
  *
- * Die vorausgegangene Migration 1745200000 bleibt unverändert (forward-only-Regel).
+ * Der Texteditor speichert HTML, die Storefront gibt den Text aber maskiert aus (Twig-Escape, im Skript
+ * `textContent`); Formatierungen erschienen dort als Klartext mit spitzen Klammern. Die Migration, die
+ * das Feld anlegt, bleibt unverändert, weil Shopware gelaufene Migrationen nicht wiederholt.
  */
 final class Migration1745300000FixSplitHintComponent extends MigrationStep
 {

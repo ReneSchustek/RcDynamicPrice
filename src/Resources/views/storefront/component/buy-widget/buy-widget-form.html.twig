@@ -1,7 +1,8 @@
 {% sw_extends '@Storefront/storefront/component/buy-widget/buy-widget-form.html.twig' %}
 
 {% block buy_widget_buy_quantity_container %}
-    {# Extension wird serverseitig nur für Meterartikel gesetzt — kein weiterer Custom-Field-Check nötig #}
+    {# Die Angaben setzt `ProductPageSubscriber` nur bei eingeschaltetem Meterpreis; weitere Prüfungen der
+       Zusatzfelder braucht es hier nicht. #}
     {% if page.extensions.rcDynamicPriceConfig is defined %}
         {% set rcConfig = page.extensions.rcDynamicPriceConfig %}
         {% set hintText = rcConfig.hintText %}
@@ -34,6 +35,7 @@
              data-equal-enforce-min="{{ rcConfig.equalSplitEnforceMin ? '1' : '0' }}"
              data-split-hint-template="{{ effectiveSplitHint|e('html_attr') }}"
              data-snippet-error-integer="{{ 'rc-dynamic-price.errorIntegerOnly'|trans|e('html_attr') }}"
+             data-snippet-ask-unit="{{ 'rc-dynamic-price.lengthSwitch.askUnit'|trans|e('html_attr') }}"
              data-snippet-error-min="{{ 'rc-dynamic-price.errorMinLength'|trans|e('html_attr') }}"
              data-snippet-error-max="{{ 'rc-dynamic-price.errorMaxLength'|trans|e('html_attr') }}"
              data-snippet-error-max-piece="{{ 'rc-dynamic-price.errorMaxPieceLength'|trans|e('html_attr') }}"
@@ -47,16 +49,13 @@
                     {{ 'rc-dynamic-price.label'|trans }}
                 </label>
                 <div class="input-group">
-                    {#
-                        aria-describedby verknüpft Input mit Fehler-, Split-Info- und Ergebnis-Bereich,
-                        damit Screenreader die Status-Meldungen dem Feld zuordnen.
-                        aria-invalid startet bei "false" und wird im Plugin-JS auf "true" gesetzt,
-                        wenn eine Eingabe abgelehnt wird.
-                    #}
+                    {# `aria-describedby` verbindet das Feld mit Fehler, Aufteilung und Ergebnis, damit
+                       Vorleseprogramme die Meldungen dem Feld zuordnen. `aria-invalid` setzt das Skript auf
+                       „true", wenn es eine Eingabe abweist. #}
                     <input type="text"
                            id="rc-length-input-{{ product.id }}"
                            class="form-control rc-dynamic-price__input"
-                           inputmode="numeric"
+                           inputmode="decimal"
                            autocomplete="off"
                            aria-describedby="rc-length-unit-{{ product.id }} rc-length-error-{{ product.id }} rc-length-info-{{ product.id }} rc-length-split-{{ product.id }} rc-length-result-{{ product.id }}"
                            aria-invalid="false"
@@ -64,19 +63,19 @@
                     <span id="rc-length-unit-{{ product.id }}"
                           class="input-group-text">{{ 'rc-dynamic-price.unit'|trans }}</span>
                 </div>
-                {# role=alert + aria-live=assertive: Validierungsfehler werden sofort angesagt #}
+                {# Fehler werden sofort angesagt (`role=alert`, `aria-live=assertive`). #}
                 <div id="rc-length-error-{{ product.id }}"
                      class="rc-dynamic-price__error text-danger small mt-1"
                      role="alert"
                      aria-live="assertive"
                      hidden></div>
-                {# role=status + aria-live=polite: informative Rundungs-Bestätigung, unterbricht den Lesefluss nicht #}
+                {# Der Rundungshinweis ist eine Statusmeldung und unterbricht den Lesefluss nicht. #}
                 <div id="rc-length-info-{{ product.id }}"
                      class="rc-dynamic-price__info text-info small mt-1"
                      role="status"
                      aria-live="polite"
                      hidden></div>
-                {# aria-live=polite: Split-Vorschau ist informativ, unterbricht nicht #}
+                {# Die Vorschau der Aufteilung ist eine Auskunft und unterbricht ebenfalls nicht. #}
                 <div id="rc-length-split-{{ product.id }}"
                      class="rc-dynamic-price__split-info alert alert-info py-2 mt-2 small"
                      aria-live="polite"
@@ -90,18 +89,69 @@
                 {{ 'rc-dynamic-price.calculatedPrice'|trans }}&nbsp;<strong class="rc-dynamic-price__result-price"></strong>
             </div>
 
-            {# Überträgt die validierte Länge an den Server — leer wenn keine gültige Eingabe #}
+            {# Die geprüfte Länge für den Server; leer, solange keine gültige Eingabe vorliegt. #}
             <input type="hidden"
                    class="rc-dynamic-price__hidden"
                    name="mmLength"
                    value="">
         </div>
 
-        {# Quantity-Selektor ausblenden – Menge wird durch die Länge bestimmt #}
+        {# Statt des Mengenwählers: Ein Zuschnitt ist eine Position, die Länge bestimmt den Preis. #}
         <input type="hidden"
                name="lineItems[{{ product.id }}][quantity]"
                value="1">
     {% else %}
         {{ parent() }}
+
+        {# Die eingegebene Länge wählt die Größenstufe.
+
+           Nur ohne Meterpreis: Wo der Meterpreis greift, gibt es schon ein Längenfeld dieser
+           Erweiterung, die Menge folgt dort der Länge, und der Mengenwähler fehlt. Beides zugleich hieße
+           zwei Längenfelder und zwei Regeln für dieselbe Menge; der Artikel hier hat sein Feld aus
+           `TmmsProductCustomerInputs` und wählt seine Größe über Varianten.
+
+           Ein eigenes, leeres Element statt eines Kennzeichens an der Kaufbox, damit es ohne Einstellung
+           gar nicht erst entsteht. Ob es entsteht, entscheidet `LengthSettingsSubscriber` über Produkt und
+           Kategoriekette. Sein Wert ist die Kennung des Elternartikels, der Schlüssel des Zwischenlagers
+           über den Variantenwechsel; die Kennung der Variante ist nach dem Sprung eine andere. #}
+        {% set rcLength = page.extensions.rcLengthSettings|default(null) %}
+        {% if rcLength and rcLength.lengthSwitch %}
+            <div class="rc-length-variant-switch"
+                 data-rc-length-variant-switch="{{ product.parentId ?: product.id }}"
+                 data-rc-length-variant-switch-options='{{ {
+                     titleAdjusted: 'rc-dynamic-price.lengthSwitch.modalTitleAdjusted'|trans,
+                     titleHint: 'rc-dynamic-price.lengthSwitch.modalTitleHint'|trans,
+                     textAdjusted: 'rc-dynamic-price.lengthSwitch.adjusted'|trans,
+                     textOutOfRange: 'rc-dynamic-price.lengthSwitch.outOfRange'|trans,
+                     textCutting: 'rc-dynamic-price.lengthSwitch.cutting'|trans,
+                     textNextStep: 'rc-dynamic-price.lengthSwitch.nextStep'|trans,
+                     textAskUnit: 'rc-dynamic-price.lengthSwitch.askUnit'|trans,
+                     inputSelector: '.tmms-customer-input-value[name="tmms-customer-input-value-' ~ rcLength.lengthFieldNumber ~ '"]',
+                     groupId: rcLength.lengthGroupId|default(''),
+                     lengthOnly: rcLength.lengthOnly
+                 }|json_encode|e('html_attr') }}'
+                 hidden></div>
+        {% endif %}
+    {% endif %}
+
+    {# Geführte Auswahl: erst die Länge, dann nur die dazu kaufbaren Optionen.
+
+       Die Angaben setzt `GuidedSelectionSubscriber` nur, wenn Haken, Längengruppe und kaufbare
+       Kombinationen da sind. Das Skript blendet aus, was noch nicht dran ist; ohne Skript bleibt die
+       Auswahl, wie der Kern sie baut. Den Hinweis auf den nächsten Schritt setzt das Skript hinter die
+       Auswahl; hier stünde er im Kasten, der bis zur eindeutigen Variante verborgen ist. #}
+    {% if page.extensions.rcGuidedSelection is defined %}
+        {% set rcGuided = page.extensions.rcGuidedSelection %}
+        <div class="rc-guided-selection"
+             data-rc-guided-selection="{{ product.parentId ?: product.id }}"
+             data-rc-guided-selection-options='{{ {
+                 lengthGroupId: rcGuided.lengthGroupId,
+                 groups: rcGuided.groups,
+                 combinations: rcGuided.combinations,
+                 textChooseFirst: 'rc-dynamic-price.guidedSelection.chooseFirst'|trans,
+                 textChooseNext: 'rc-dynamic-price.guidedSelection.chooseNext'|trans,
+                 textPlaceholder: 'rc-dynamic-price.guidedSelection.placeholder'|trans
+             }|json_encode|e('html_attr') }}'
+             hidden></div>
     {% endif %}
 {% endblock %}

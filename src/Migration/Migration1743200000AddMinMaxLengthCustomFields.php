@@ -8,6 +8,12 @@ use Doctrine\DBAL\Connection;
 use Shopware\Core\Framework\Migration\MigrationStep;
 use Shopware\Core\Framework\Uuid\Uuid;
 
+/**
+ * Ergänzt am Produkt-Set Mindest- und Höchstlänge in Millimetern.
+ *
+ * Ein leeres Feld heißt: Es gilt die Vorgabe aus der Plugin-Konfiguration. Fehlt das Set, tut die
+ * Migration nichts, statt verwaiste Felder anzulegen.
+ */
 final class Migration1743200000AddMinMaxLengthCustomFields extends MigrationStep
 {
     private const SET_NAME = 'rc_dynamic_price';

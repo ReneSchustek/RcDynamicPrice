@@ -28,9 +28,9 @@ use Shopware\Core\System\SalesChannel\SalesChannelContext;
 use Symfony\Component\Translation\IdentityTranslator;
 
 /**
- * Integrationstest: DynamicPriceProcessor gegen einen echten QuantityPriceCalculator aus
- * Shopware-Core. Stellt sicher, dass unsere Preis-Definition von der Kern-Engine korrekt
- * verarbeitet wird — Mock-basierte Unit-Tests fängen hier Signatur-Drifts nicht ab.
+ * Der Prozessor gegen den echten `QuantityPriceCalculator` des Kerns: Die Preisdefinition der
+ * Erweiterung muss dort so ankommen, wie die Unit-Tests es annehmen. Eine Attrappe des Rechners
+ * bemerkt nicht, wenn der Kern seine Signatur oder Rundung ändert.
  */
 final class DynamicPriceProcessorIntegrationTest extends TestCase
 {
@@ -70,6 +70,7 @@ final class DynamicPriceProcessorIntegrationTest extends TestCase
 
     public function testCalculatesExpectedPriceForMeterLineItem(): void
     {
+        // Der Grundpreis gilt je Meter: 1,5 m zu 100 € ergeben 150 €.
         $lineItem = $this->createMeterLineItem(1500, 100.0);
 
         $this->processor->process(

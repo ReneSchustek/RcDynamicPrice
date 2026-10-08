@@ -14,23 +14,16 @@ use Shopware\Core\Content\Product\Cart\ProductCartProcessor;
 use Shopware\Core\Framework\Test\TestCaseBase\KernelLifecycleManager;
 
 /**
- * Sichert die geld-kritische Cart-Processor-Reihenfolge ab — **gemessen am kompilierten
- * Container**, nicht aus der services.xml abgelesen.
+ * Prüft die Reihenfolge der Warenkorb-Prozessoren am kompilierten Container, nicht an der
+ * `services.xml`.
  *
- * Hintergrund: v1.8.1 hat einen Live-Skonto-Fehler behoben, indem der `DynamicPriceProcessor`
- * zwischen `ProductCartProcessor` und `PromotionProcessor` einsortiert wurde. Läuft er daneben,
- * bezieht sich ein prozentualer Rabatt auf den falschen Preis — roher Meter-Stückpreis statt
- * ausmultipliziertem Positions-Preis.
+ * Der `DynamicPriceProcessor` muss zwischen `ProductCartProcessor` und `PromotionProcessor` laufen.
+ * Läuft er daneben, bezieht sich ein prozentualer Rabatt auf den rohen Meter-Stückpreis statt auf
+ * den ausmultiplizierten Positionspreis, und der Kunde bekommt zu wenig Skonto.
  *
- * Die Vorgängerfassung parste die `services.xml` und verglich die Priority gegen drei
- * hartkodierte Konstanten. Sie benannte ihre Grenze selbst: „Ohne gebooteten Shopware-Kernel
- * lässt sich der kompilierte Container nicht auslesen; neue Core-/Plugin-Processoren mit anderen
- * Prioritäten erkennt dieser Test nicht." Damit prüfte sie, ob *unsere Zahl* unverändert ist —
- * nicht, ob unser Processor tatsächlich an der richtigen Stelle läuft. Ein Core-Update, das den
- * PromotionProcessor verschiebt, oder ein Plugin, das sich dazwischenlegt, blieb unsichtbar.
- *
- * Seit die Integration-Tests einen Kernel bekommen, fällt diese Grenze weg: Hier wird die
- * tatsächliche Reihenfolge der registrierten Processoren gelesen.
+ * Ein Vergleich der eigenen Priorität gegen feste Zahlen sähe nur, ob die eigene Zahl gleich
+ * geblieben ist. Ein Kern-Update, das den `PromotionProcessor` verschiebt, oder ein Plugin, das sich
+ * dazwischenlegt, bliebe unsichtbar; deshalb liest der Test die Reihenfolge, die tatsächlich läuft.
  */
 final class CartProcessorOrderingTest extends TestCase
 {
@@ -39,7 +32,7 @@ final class CartProcessorOrderingTest extends TestCase
      *
      * @var list<class-string>
      */
-    private array $reihenfolge;
+    private array $order;
 
     protected function setUp(): void
     {
@@ -52,71 +45,70 @@ final class CartProcessorOrderingTest extends TestCase
         self::assertInstanceOf(ContainerInterface::class, $testContainer);
         $container = $testContainer;
 
-        // `shopware.cart.processor` ist ein Tag, kein Dienst — es gibt nichts, was man direkt
-        // holen könnte. Der Core reicht die getaggten Processoren als `tagged_iterator` in den
-        // Konstruktor von `Processor` (cart.xml). Genau diese Liste ist die Wahrheit über die
-        // Ausführungsreihenfolge, deshalb wird sie per Reflection dort abgegriffen.
+        // `shopware.cart.processor` ist ein Tag, kein Dienst, und lässt sich nicht direkt holen. Der
+        // Kern reicht die getaggten Prozessoren als `tagged_iterator` in den Konstruktor von
+        // `Processor` (cart.xml). Diese Liste bestimmt die Ausführungsreihenfolge, deshalb wird sie
+        // per Reflection dort gelesen.
         $processorService = $container->get(Processor::class);
         $eigenschaft = (new \ReflectionClass(Processor::class))->getProperty('processors');
 
         /** @var iterable<CartProcessorInterface> $processors */
         $processors = $eigenschaft->getValue($processorService);
 
-        $this->reihenfolge = [];
+        $this->order = [];
         foreach ($processors as $processor) {
             self::assertInstanceOf(CartProcessorInterface::class, $processor);
-            $this->reihenfolge[] = $processor::class;
+            $this->order[] = $processor::class;
         }
 
-        self::assertNotEmpty($this->reihenfolge, 'Ohne registrierte Processoren beweist der Test nichts.');
+        self::assertNotEmpty($this->order, 'Ohne registrierte Processoren beweist der Test nichts.');
     }
 
-    public function testDynamicPriceProcessorZwischenProduktpreisUndPromotions(): void
+    public function testDynamicPriceProcessorRunsBetweenProductPriceAndPromotions(): void
     {
-        $eigen = $this->position(DynamicPriceProcessor::class);
+        $own = $this->position(DynamicPriceProcessor::class);
         $produkt = $this->position(ProductCartProcessor::class);
         $promotion = $this->position(PromotionProcessor::class);
 
         self::assertGreaterThan(
             $produkt,
-            $eigen,
+            $own,
             'DynamicPriceProcessor muss NACH dem Produktpreis laufen — sonst multipliziert er einen Preis aus, den es noch nicht gibt.',
         );
         self::assertLessThan(
             $promotion,
-            $eigen,
+            $own,
             'DynamicPriceProcessor muss VOR den Promotions laufen, damit prozentuale Rabatte auf dem ausmultiplizierten Positions-Preis greifen.',
         );
     }
 
     /**
-     * Der Fall, den die alte Fassung ausdrücklich nicht finden konnte: ein fremder Processor,
-     * der sich zwischen unseren und den Promotion-Processor schiebt und dort mit Preisen
-     * arbeitet, die wir gerade erst gesetzt haben.
+     * Ein fremder Prozessor zwischen dem eigenen und dem Promotion-Prozessor arbeitete mit Preisen,
+     * die gerade erst ausmultipliziert wurden, und könnte sie vor dem Rabatt noch einmal ändern.
      */
     public function testNoForeignProcessorSitsBetweenUsAndThePromotions(): void
     {
-        $eigen = $this->position(DynamicPriceProcessor::class);
+        $own = $this->position(DynamicPriceProcessor::class);
         $promotion = $this->position(PromotionProcessor::class);
 
-        $dazwischen = \array_slice($this->reihenfolge, $eigen + 1, $promotion - $eigen - 1);
+        $between = \array_slice($this->order, $own + 1, $promotion - $own - 1);
 
         self::assertSame(
             [],
-            $dazwischen,
+            $between,
             'Zwischen DynamicPriceProcessor und PromotionProcessor darf nichts liegen. '
-            . 'Gefunden: ' . implode(', ', $dazwischen),
+            . 'Gefunden: ' . implode(', ', $between),
         );
     }
 
-    /** @param class-string $klasse */
-    private function position(string $klasse): int
+    /** @param class-string $className */
+    private function position(string $className): int
     {
-        $index = array_search($klasse, $this->reihenfolge, true);
+        $index = array_search($className, $this->order, true);
 
         self::assertIsInt(
             $index,
-            \sprintf('%s ist nicht als shopware.cart.processor registriert.', $klasse),
+            \sprintf('%s ist nicht als shopware.cart.processor registriert.', $className),
         );
 
         return $index;

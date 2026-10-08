@@ -8,6 +8,10 @@ use PHPUnit\Framework\TestCase;
 use Ruhrcoder\RcDynamicPrice\Exception\DynamicPriceException;
 use Ruhrcoder\RcDynamicPrice\Storefront\Struct\RcDynamicPriceConfigStruct;
 
+/**
+ * Die Angaben, die die Produktseite für Längenfeld und Preisvorschau bekommt. Ihre Prüfungen im
+ * Konstruktor verhindern Werte, mit denen das Skript der Seite falsch rechnen würde.
+ */
 final class RcDynamicPriceConfigStructTest extends TestCase
 {
     public function testGettersReturnConstructorValues(): void
@@ -54,7 +58,7 @@ final class RcDynamicPriceConfigStructTest extends TestCase
         $this->assertSame('', $struct->getHintText());
     }
 
-    // --- Split-Felder ---
+    // Angaben zur Aufteilung
 
     public function testSplitGettersReturnDefaults(): void
     {
@@ -101,7 +105,7 @@ final class RcDynamicPriceConfigStructTest extends TestCase
         }
     }
 
-    // --- roundingSteps: Storefront-Tabelle ---
+    // roundingSteps, die Rundungstabelle für die Produktseite
 
     public function testRoundingStepsDefaultsToEmptyArray(): void
     {

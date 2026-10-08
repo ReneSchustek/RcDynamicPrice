@@ -7,13 +7,12 @@ namespace Ruhrcoder\RcDynamicPrice\Tests\Unit\Resources;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Stellt sicher, dass jedes übersetzbare Feld im Plugin-Schema sowohl de-DE als auch
- * en-GB pflegt — sonst fällt das Admin-Backend still auf den anderen Locale zurück.
+ * Jedes übersetzbare Feld der Erweiterung trägt `de-DE` und `en-GB`; fehlt eines, zeigt der
+ * Verwaltungsbereich still die andere Sprache.
  *
- * Shopware interpretiert Elemente in `config.xml` ohne `lang`-Attribut als en-GB.
- * Fehlt ein expliziter de-DE-Eintrag, sieht ein deutscher Admin englischen Text.
- * Die Custom-Field-Migrations speichern die Übersetzungen als JSON-Map
- * (`['de-DE' => ..., 'en-GB' => ...]`); beide Keys müssen vorhanden sein.
+ * Shopware liest Elemente der `config.xml` ohne `lang`-Attribut als `en-GB`, ein deutscher
+ * Betreiber sähe dann englischen Text. Die Migrationen der Zusatzfelder speichern die Übersetzungen
+ * als Zuordnung (`['de-DE' => …, 'en-GB' => …]`); beide Schlüssel müssen da sein.
  */
 final class LocalizationCompletenessTest extends TestCase
 {
@@ -91,7 +90,7 @@ final class LocalizationCompletenessTest extends TestCase
                 }
             }
 
-            // Nur Prüfung pro Gruppe (erste Fundstelle reicht, Duplikate überspringen)
+            // Je Gruppe genügt die erste Fundstelle; Wiederholungen werden übersprungen.
             $isFirstSibling = $this->isFirstOfTag($node, $tag);
             if (!$isFirstSibling) {
                 continue;
@@ -240,8 +239,8 @@ final class LocalizationCompletenessTest extends TestCase
         $depth = 1;
         $pendingKey = null;
 
-        // Die Tiefe wird unten beim Erreichen von 0 mit `break` verlassen — eine
-        // zusätzliche Abbruchbedingung hier wäre toter Code.
+        // Die Schleife endet unten mit `break`, sobald die Tiefe 0 erreicht; eine Abbruchbedingung
+        // hier wäre toter Code.
         while ($i < $count) {
             $token = $tokens[$i];
 

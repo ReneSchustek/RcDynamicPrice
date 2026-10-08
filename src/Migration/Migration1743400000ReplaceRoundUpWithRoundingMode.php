@@ -9,10 +9,12 @@ use Shopware\Core\Framework\Migration\MigrationStep;
 use Shopware\Core\Framework\Uuid\Uuid;
 
 /**
- * Ersetzt das Bool-Feld rc_meter_price_round_up_meter durch das Select-Feld
- * rc_meter_price_rounding mit konfigurierbaren Rundungsstufen.
+ * Ersetzt den Haken `rc_meter_price_round_up_meter` durch die Auswahl `rc_meter_price_rounding` mit
+ * mehreren Rundungsstufen.
  *
- * Bestehende Produkte mit round_up_meter = true werden auf full_m migriert.
+ * Produkte, an denen der Haken bisher gesetzt ist, bekommen die Stufe `full_m`; sie runden damit
+ * weiterhin auf volle Meter. Ein nicht gesetzter Haken braucht keinen Wert, denn ohne Wert gilt „keine
+ * Rundung".
  */
 final class Migration1743400000ReplaceRoundUpWithRoundingMode extends MigrationStep
 {
@@ -36,6 +38,8 @@ final class Migration1743400000ReplaceRoundUpWithRoundingMode extends MigrationS
             return;
         }
 
+        // Die Werte vor dem Feld: Ohne Felddefinition ließe sich der alte Wert in der Verwaltung nicht
+        // mehr nachprüfen, in den Produkten steht er aber bis zum Übertragen noch.
         $this->migrateExistingValues($connection);
         $this->removeOldField($connection);
         $this->createNewField($connection, (string) $setId);
@@ -46,12 +50,13 @@ final class Migration1743400000ReplaceRoundUpWithRoundingMode extends MigrationS
     }
 
     /**
-     * Bestehende Produkte mit round_up_meter = true auf full_m setzen.
-     * Nutzt JSON_SET direkt auf der Datenbank, um alle betroffenen Produkte in einem Schritt zu aktualisieren.
+     * Überträgt gesetzte Haken auf `full_m` und entfernt danach den alten Schlüssel aus allen Produkten,
+     * beides als ein Aufruf je Schritt statt einer Schleife über die Produkte.
      */
     private function migrateExistingValues(Connection $connection): void
     {
-        // Custom Fields liegen in product_translation, nicht in product
+        // Zusatzfelder liegen je Sprache in `product_translation`, nicht in `product`. Erst übertragen,
+        // dann entfernen: In umgekehrter Reihenfolge wäre der Wert weg, bevor er gelesen ist.
         $connection->executeStatement(
             'UPDATE `product_translation`
              SET `custom_fields` = JSON_SET(

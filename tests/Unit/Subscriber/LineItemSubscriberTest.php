@@ -29,6 +29,11 @@ use Symfony\Component\HttpFoundation\InputBag;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
 
+/**
+ * Der Subscriber liest beim Weg in den Warenkorb die gewünschte Länge und bereitet die Position
+ * für den Prozessor vor. Was er übersieht, verkauft der Shop zum Stückpreis; was er fälschlich
+ * markiert, sperrt eine Bestellung, die nichts mit dem Meterpreis zu tun hat.
+ */
 final class LineItemSubscriberTest extends TestCase
 {
     private RequestStack&MockObject $requestStack;
@@ -69,12 +74,10 @@ final class LineItemSubscriberTest extends TestCase
         $this->subscriber->onBeforeLineItemAdded($event);
     }
 
-    // --- Ein Meter-Artikel ohne verwertbare Länge wird nicht mehr still zum Stückpreis verkauft ---
-    //
-    // Früher kehrte der Subscriber vor dem Laden des Produkts zurück, sobald die Länge fehlte oder
-    // nicht als String ankam. Ohne Payload übersprang der Processor die Position, und der Kunde
-    // bekam den Zuschnitt-Artikel zum Stückpreis. Jetzt trägt die Position das Aktiv-Flag; der
-    // Processor lehnt sie ab und blockiert die Bestellung.
+    // Ein Meterartikel ohne verwertbare Länge wird nicht still zum Stückpreis verkauft. Die Position
+    // trägt das Meterkennzeichen, und der Prozessor lehnt sie ab und sperrt die Bestellung. Kehrte
+    // der Subscriber ohne Länge vorher zurück, überspränge der Prozessor die Position, und der Kunde
+    // bekäme den Zuschnitt zum Stückpreis.
 
     #[DataProvider('unusableLengthProvider')]
     public function testMeterItemWithUnusableLengthIsMarkedUnpriceable(mixed $rawLength): void
@@ -124,8 +127,8 @@ final class LineItemSubscriberTest extends TestCase
     }
 
     /**
-     * Der Kernfehler aus dem Store-API-Smoke: Ein JSON-Client sendet `{"mmLength": 5100}` als Zahl.
-     * Die alte is_string-Prüfung verwarf das still, die Position lief zum Stückpreis durch.
+     * Ein JSON-Client über die Store-API sendet `{"mmLength": 5100}` als Zahl. Nähme der Subscriber
+     * nur Zeichenketten an, verwürfe er die Länge still, und die Position liefe zum Stückpreis.
      */
     public function testAcceptsIntegerLengthFromJsonClient(): void
     {
@@ -149,9 +152,8 @@ final class LineItemSubscriberTest extends TestCase
     }
 
     /**
-     * Regression: Ein Artikel ohne Meterpreis bleibt unberührt — auch ohne Längenangabe. Der
-     * Subscriber lädt jetzt für jede Position das Produkt; er darf normale Artikel dabei weder
-     * markieren noch blockieren.
+     * Ein Artikel ohne Meterpreis bleibt unberührt, auch ohne Längenangabe. Der Subscriber lädt für
+     * jede Position das Produkt; normale Artikel darf er dabei weder markieren noch sperren.
      */
     public function testNonMeterProductWithoutLengthStaysUntouched(): void
     {
@@ -210,10 +212,9 @@ final class LineItemSubscriberTest extends TestCase
         $this->subscriber->onBeforeLineItemAdded($event);
     }
 
-    // --- Längen außerhalb der Grenzen: ebenfalls kein stiller Rückfall auf den Stückpreis ---
-    //
-    // Die unzulässige Länge wird mitgeschrieben, damit der Processor sie gegen die hinterlegten
-    // Grenzen prüfen und dem Kunden sagen kann, ob sie zu kurz oder zu lang war.
+    // Auch eine Länge außerhalb der Grenzen fällt nicht still auf den Stückpreis zurück. Sie wird
+    // mitgeschrieben, damit der Prozessor sie gegen die hinterlegten Grenzen prüfen und dem Kunden
+    // sagen kann, ob sie zu kurz oder zu lang war.
 
     #[DataProvider('outOfBoundsLengthProvider')]
     public function testOutOfBoundsLengthIsMarkedUnpriceableAndKeepsTheLength(string $rawLength, int $expected): void
@@ -285,12 +286,9 @@ final class LineItemSubscriberTest extends TestCase
         $this->subscriber->onBeforeLineItemAdded($event);
     }
 
-    // --- Menge einer Meter-Position wird serverseitig auf 1 erzwungen ---
-    //
-    // Das Buy-Widget sendet immer quantity=1. Über die Store-API oder einen manipulierten Request
-    // konnte eine höhere Menge durchrutschen: das Original behielt sie, die Split-Geschwister
-    // wurden im Assembler fest mit Menge 1 erzeugt — der Warenkorb-Preis passte dann nicht mehr
-    // zur bestellten Ware.
+    // Die Menge einer Meterposition ist auf dem Server immer 1. Die Kaufbox sendet ohnehin 1; über
+    // die Store-API oder eine veränderte Anfrage käme sonst eine höhere Menge durch, und der Preis
+    // im Warenkorb passte nicht mehr zur Schnittfolge, die für ein Stück berechnet ist.
 
     public function testForcesQuantityToOneOnManipulatedRequest(): void
     {
@@ -329,8 +327,7 @@ final class LineItemSubscriberTest extends TestCase
     }
 
     /**
-     * Ist die Meterpreis-Konfiguration nicht aktiv, ist das Produkt kein Meterartikel — die Menge
-     * geht den Subscriber dann nichts an und muss unangetastet bleiben.
+     * Ist der Meterpreis aus, ist das Produkt kein Meterartikel, und die Menge bleibt, wie sie ist.
      */
     public function testLeavesQuantityUntouchedWhenConfigInactive(): void
     {
@@ -377,8 +374,9 @@ final class LineItemSubscriberTest extends TestCase
 
     public function testReducesSplitModeToHintWhenTmmsMarkerIsNestedInLineItemsPayload(): void
     {
-        // RcCartSplitter injiziert das Marker-Hidden-Input als lineItems[{productId}][payload][rcTmmsActive]=1.
-        // Der Subscriber muss diese Payload-Ebene prüfen, sonst wird fremde ID-Hoheit übergangen.
+        // RcCartSplitter setzt sein Kennzeichen als lineItems[{productId}][payload][rcTmmsActive]=1.
+        // Prüfte der Subscriber diese Ebene nicht, teilte er Positionen auf, deren Kennungen ein
+        // anderes Plugin vergibt.
         $this->setCurrentRequest([
             'mmLength' => '8000',
             'lineItems' => [
@@ -413,7 +411,7 @@ final class LineItemSubscriberTest extends TestCase
 
     public function testReducesSplitModeToHintWhenCustomFieldsMarkerIsNestedInLineItemsPayload(): void
     {
-        // RcCustomFields injiziert analog lineItems[{productId}][payload][rcCustomFieldsActive]=1.
+        // RcCustomFields setzt sein Kennzeichen ebenso als lineItems[{productId}][payload][rcCustomFieldsActive]=1.
         $this->setCurrentRequest([
             'mmLength' => '8000',
             'lineItems' => [
@@ -448,7 +446,7 @@ final class LineItemSubscriberTest extends TestCase
 
     public function testKeepsConfiguredSplitModeWhenLineItemsPayloadHasNoForeignMarker(): void
     {
-        // Nur payload-Keys ohne Marker-Relevanz — Split-Modus bleibt wie konfiguriert.
+        // Nur Angaben ohne fremdes Kennzeichen; die Aufteilung bleibt wie eingestellt.
         $this->setCurrentRequest([
             'mmLength' => '8000',
             'lineItems' => [
@@ -481,15 +479,14 @@ final class LineItemSubscriberTest extends TestCase
         $this->subscriber->onBeforeLineItemAdded($this->createEvent($lineItem, 'sc-id'));
     }
 
-    // --- Per-Positions-Länge für Mehrpositions-Adds ---
-    //
-    // readRequestedLength liest die Länge aus drei Quellen (erste gültige gewinnt):
-    // 1. Per-Positions-Payload im Request, 2. bereits gesetzter LineItem-Payload
-    // (Warenkorb-Wiederherstellung, ShareBasket), 3. flacher mmLength-Key.
+    // Länge je Position, wenn eine Anfrage mehrere Positionen bringt. readRequestedLength liest
+    // aus drei Quellen, die erste gültige gewinnt: die Angabe je Position in der Anfrage, die schon
+    // gesetzte Angabe an der Position (wiederhergestellter oder geteilter Warenkorb) und der flache
+    // Schlüssel mmLength.
 
     /**
-     * Quelle 1: `lineItems[<lineItemId>][payload][meterLengthMm]`. Ermöglicht mehrere
-     * Positionen mit unterschiedlichen Längen in einem Request (B2bSuite QuickOrder).
+     * Quelle 1: `lineItems[<lineItemId>][payload][meterLengthMm]`. So bringt eine Anfrage mehrere
+     * Positionen mit verschiedenen Längen (Schnellbestellung der B2bSuite).
      */
     public function testReadsPerPositionPayloadLength(): void
     {
@@ -510,8 +507,8 @@ final class LineItemSubscriberTest extends TestCase
     }
 
     /**
-     * Vorrang: Ist sowohl der Per-Positions-Key als auch der flache Key gesetzt und
-     * widersprüchlich, gewinnt der Per-Positions-Key.
+     * Widersprechen sich die Angabe je Position und der flache Schlüssel, gewinnt die Angabe je
+     * Position.
      */
     public function testPerPositionPayloadWinsOverFlatKey(): void
     {
@@ -533,8 +530,8 @@ final class LineItemSubscriberTest extends TestCase
     }
 
     /**
-     * Bei widersprüchlichem flachem und Per-Positions-Key wird eine Warnung geloggt
-     * (fehlkonstruierter Request), der Per-Positions-Key gewinnt trotzdem.
+     * Ein solcher Widerspruch deutet auf eine falsch gebaute Anfrage und wird als Warnung
+     * protokolliert; die Angabe je Position gewinnt trotzdem.
      */
     public function testLogsWarningOnAmbiguousLength(): void
     {
@@ -566,9 +563,9 @@ final class LineItemSubscriberTest extends TestCase
     }
 
     /**
-     * Quelle 2: Trägt der Request keine Länge, wird sie aus dem bereits gesetzten
-     * LineItem-Payload gelesen. Deckt die Warenkorb-Wiederherstellung ab
-     * (FroshPlatformShareBasket restauriert den Payload, aber ohne mmLength im Request).
+     * Quelle 2: Trägt die Anfrage keine Länge, gilt die schon gesetzte Angabe an der Position. So
+     * stellt FroshPlatformShareBasket einen Warenkorb wieder her: mit den Positionsdaten, aber ohne
+     * mmLength in der Anfrage.
      */
     public function testReadsLengthFromRestoredLineItemPayload(): void
     {
@@ -586,8 +583,7 @@ final class LineItemSubscriberTest extends TestCase
     }
 
     /**
-     * Mehrpositions-Request: zwei Positionen mit unterschiedlichen Per-Positions-Längen
-     * in einem Request werden je korrekt aufgelöst.
+     * Zwei Positionen mit verschiedenen Längen in einer Anfrage bekommen jede ihre eigene.
      */
     public function testMultiPositionRequestResolvesEachLength(): void
     {
@@ -675,10 +671,10 @@ final class LineItemSubscriberTest extends TestCase
 
     /**
      * Was: Ein Gutschein-Platzhalter im Warenkorb.
-     * Warum: Der Warenkorb trägt mehr als Produkte. Ein Gutschein trägt an der Stelle, an der
-     *        sonst die Produktkennung steht, den **Code** — die Produktsuche brach damit mit
-     *        einer Ausnahme ab und riss den ganzen Warenkorb-Zugang mit. Am 2026-08-03 auf der
-     *        Live-Seite: kein Code mehr einlösbar, und im Protokoll stand nichts.
+     * Warum: Der Warenkorb trägt mehr als Produkte. Ein Gutschein trägt an der Stelle der
+     *        Produktkennung seinen Code; sucht der Subscriber damit ein Produkt, bricht die Suche
+     *        mit einer Ausnahme ab, reißt den Warenkorb-Zugang mit, und kein Code ist mehr
+     *        einlösbar, ohne dass das Protokoll etwas zeigt.
      * Erwartet: Der Subscriber steigt sofort aus, ohne das Produkt zu suchen.
      */
     public function testSkipsPromotionLineItemsWithoutTouchingTheProductLookup(): void
@@ -712,10 +708,9 @@ final class LineItemSubscriberTest extends TestCase
 
     /**
      * Was: Der Split-Assembler wirft.
-     * Warum: **Der wichtigste ungetestete Pfad.** Er hängt im Add-to-Cart und ist als
-     *        Ausfallschutz gebaut: Eine Fehlkonfiguration darf keinen Serverfehler auslösen,
-     *        sondern muss auf „kein Split" zurückfallen. War der Schutz kaputt, sah man das
-     *        erst, wenn ein Kunde nichts mehr in den Warenkorb legen konnte.
+     * Warum: Der Ausfallschutz hängt im Weg in den Warenkorb. Eine Fehlkonfiguration darf keinen
+     *        Serverfehler auslösen, sondern fällt auf „keine Aufteilung" zurück. Ein kaputter
+     *        Schutz zeigte sich erst, wenn ein Kunde nichts mehr in den Warenkorb legen kann.
      * Erwartet: kein Wurf nach außen, dafür ein Eintrag im Fehlerprotokoll.
      */
     public function testAssemblerFailureDegradesToNoSplitAndIsLogged(): void
@@ -734,7 +729,7 @@ final class LineItemSubscriberTest extends TestCase
             ->method('error')
             ->with(
                 $this->stringContains('Split-Assembler fehlgeschlagen'),
-                $this->callback(static fn (array $kontext): bool => isset($kontext['exception'], $kontext['message']))
+                $this->callback(static fn (array $logContext): bool => isset($logContext['exception'], $logContext['message']))
             );
 
         $subscriber = new LineItemSubscriber(
