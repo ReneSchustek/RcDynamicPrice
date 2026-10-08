@@ -190,6 +190,13 @@ final class DynamicPriceConstants
      */
     public const PAYLOAD_LENGTH_SWITCH = 'rc_length_switch';
 
+    /**
+     * Bei „Größen nur über die Länge": der Name ohne Größe (der des Elternartikels) und die Namen der
+     * Längengruppen. Der Warenkorb zeigt damit nur die eingegebene Länge; die Bestellung behält Name und
+     * Größe, denn die Größe ist die Stange, aus der geschnitten wird.
+     */
+    public const PAYLOAD_LENGTH_ONLY = 'rc_length_only';
+
     /** Rundungsmodus aus den aufgelösten Einstellungen */
     public const PAYLOAD_ROUNDING = 'rc_rounding_mode';
 

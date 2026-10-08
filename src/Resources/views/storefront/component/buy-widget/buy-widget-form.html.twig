@@ -123,12 +123,12 @@
                      titleHint: 'rc-dynamic-price.lengthSwitch.modalTitleHint'|trans,
                      textAdjusted: 'rc-dynamic-price.lengthSwitch.adjusted'|trans,
                      textOutOfRange: 'rc-dynamic-price.lengthSwitch.outOfRange'|trans,
-                     textCutting: 'rc-dynamic-price.lengthSwitch.cutting'|trans,
                      textNextStep: 'rc-dynamic-price.lengthSwitch.nextStep'|trans,
                      textAskUnit: 'rc-dynamic-price.lengthSwitch.askUnit'|trans,
                      inputSelector: '.tmms-customer-input-value[name="tmms-customer-input-value-' ~ rcLength.lengthFieldNumber ~ '"]',
                      groupId: rcLength.lengthGroupId|default(''),
-                     lengthOnly: rcLength.lengthOnly
+                     lengthOnly: rcLength.lengthOnly,
+                     showStepHint: config('RcDynamicPrice.config.lengthSwitchStepHint') ? true : false
                  }|json_encode|e('html_attr') }}'
                  hidden></div>
         {% endif %}

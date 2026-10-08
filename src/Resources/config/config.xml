@@ -141,6 +141,20 @@
     </card>
 
     <card>
+        <title lang="de-DE">Längenschalter</title>
+        <title lang="en-GB">Length switch</title>
+
+        <input-field type="bool">
+            <name>lengthSwitchStepHint</name>
+            <label lang="de-DE">Hinweis zum nächsten Schritt zeigen</label>
+            <label lang="en-GB">Show the next-step hint</label>
+            <defaultValue>false</defaultValue>
+            <helpText lang="de-DE">Gibt ein Kunde mehrere Längen ein, die in verschiedene Größen fallen, legt er sie Schritt für Schritt in den Warenkorb: Nach jedem Klick stellt die Seite auf die nächste Größe um und trägt die nächste Länge ein. Eingeschaltet erklärt ein Hinweis unter dem Feld diesen Ablauf.</helpText>
+            <helpText lang="en-GB">When a customer enters several lengths that fall into different sizes, they are added to the cart step by step: after each click the page switches to the next size and fills in the next length. When enabled, a hint below the field explains this.</helpText>
+        </input-field>
+    </card>
+
+    <card>
         <title lang="de-DE">Observability (Metriken)</title>
         <title lang="en-GB">Observability (metrics)</title>
 

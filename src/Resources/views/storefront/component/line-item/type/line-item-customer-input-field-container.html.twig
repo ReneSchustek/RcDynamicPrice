@@ -18,13 +18,22 @@
    Bestellvorgang nicht bearbeitbar ist; schaltet jemand die Bearbeitung ein, nähme diese Zeile dem
    Kunden das Eingabefeld weg.
 
+   Die Zeile folgt TMMS in zwei Dingen. Sie erscheint nur in den Ansichten, in denen TMMS Eingaben zeigt.
+   Und sie nimmt dasselbe Element: Im aufklappbaren Bereich „Eingaben prüfen" setzt TMMS ein `<div>`, sonst
+   ein `<li>`. Ein `<li>` in diesem `<div>` lässt den Browser Elemente zu früh schließen; in der Warenkorb-
+   Leiste landeten Zwischensumme und Kassenknöpfe dadurch außerhalb des scrollenden Bereichs, auf der
+   Warenkorbseite fielen Positionen aus der Tabelle.
+
    Der Block gehört TMMS. Benennt ein Update ihn um, rendert dieser Override wortlos nichts, und das Tor
    für Phantom-Overrides kennt nur Blöcke des Kerns; nach jedem TMMS-Update deshalb von Hand nachsehen. #}
 {% block component_line_item_type_product_customerinput_inner %}
     {% set rcLengthSwitchActive = lineItem.payload.rc_length_switch|default(0) == tmmsCustomerInputCount %}
     {% set rcFieldIsReadOnly = customerInputCanChanged is not defined or customerInputCanChanged !== 1 %}
+    {% set rcShownHere = (config('TmmsProductCustomerInputs.config.customerInputShowOnOffcanvasCartPage') and displayMode === 'offcanvas')
+        or (config('TmmsProductCustomerInputs.config.customerInputShowOnCartPage') and controllerAction|lower == 'cartpage')
+        or (config('TmmsProductCustomerInputs.config.customerInputShowOnConfirmPage') and controllerAction|lower == 'confirmpage') %}
 
-    {% if rcLengthSwitchActive and rcFieldIsReadOnly and tmmsCustomerInputValue is not empty %}
+    {% if rcShownHere and rcLengthSwitchActive and rcFieldIsReadOnly and tmmsCustomerInputValue is not empty %}
         {% set rcLengths = tmmsCustomerInputValue|split(';') %}
         {% set rcCleanLengths = [] %}
 
@@ -35,7 +44,13 @@
         {% endfor %}
 
         {% if rcCleanLengths is not empty %}
-            <li class="line-item line-item-customer-input-{{ tmmsPageType }} rc-line-item-length">
+            {% set rcInAccordion = config('TmmsProductCustomerInputs.config.customerInputIsInAnAccordionInCheckout')
+                and tmmsCustomerInputValueCountAccordion|default(0) > 0 %}
+            {% set rcTag = rcInAccordion ? 'div' : 'li' %}
+            <{{ rcTag }} class="line-item line-item-customer-input-{{ tmmsPageType }} rc-line-item-length
+                {%- if tmmsCustomerInputCount == 1 %} first-element{% if not config('TmmsProductCustomerInputs.config.customerInputShowDividingLineCheckout') %} hide-dividing-line{% endif %}{% endif %}
+                {%- if tmmsCustomerInputCount == tmmsCustomerInputLastElement|default(0) %} last-element{% endif %}
+                {{- config('TmmsProductCustomerInputs.config.customerInputIsInAnAccordionInCheckout') ? ' has-accordion' : ' has-no-accordion' }}">
                 <span class="rc-line-item-length__label">
                     {% if rcCleanLengths|length > 1 %}
                         {{ 'rc-dynamic-price.lengthSwitch.cartLabelPlural'|trans|sw_sanitize }}
@@ -52,7 +67,7 @@
                         {%- if not loop.last %}; {% endif -%}
                     {% endfor %}
                 </span>
-            </li>
+            </{{ rcTag }}>
         {% endif %}
     {% else %}
         {{ parent() }}

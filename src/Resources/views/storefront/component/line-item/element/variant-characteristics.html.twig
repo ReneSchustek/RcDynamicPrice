@@ -1,0 +1,19 @@
+{% sw_extends '@Storefront/storefront/component/line-item/element/variant-characteristics.html.twig' %}
+
+{# Bei „Größen nur über die Länge" fällt die Zeile der Längengruppe weg („Maße: 3,0 m"); im Warenkorb steht
+   nur die eingegebene Länge. Die Position kennt ihre Eigenschaften nur mit Namen, deshalb vergleicht die
+   Vorlage mit den Gruppennamen, die `LengthSwitchLineItemSubscriber` beim Hinzufügen ablegt. Andere
+   Eigenschaften bleiben stehen; bleibt keine, entfällt der ganze Abschnitt. Bestellungen behalten alles. #}
+{% block component_line_item_variant_characteristics %}
+    {% set rcGroups = lineItem.payload.rc_length_only.groups|default([]) %}
+
+    {% if rcGroups is not empty and displayMode|default('') != 'order' %}
+        {% set rcOptions = lineItem.payload.options|default([])|filter(option => option.group not in rcGroups) %}
+        {% if rcOptions is not empty %}
+            {% set lineItem = { payload: { options: rcOptions } } %}
+            {{ parent() }}
+        {% endif %}
+    {% else %}
+        {{ parent() }}
+    {% endif %}
+{% endblock %}

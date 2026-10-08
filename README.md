@@ -52,6 +52,7 @@ Im Admin unter **Einstellungen → Plugins → Dynamischer Meterpreis**:
 | Feld | Beschreibung | Standard |
 |------|-------------|---------|
 | Hinweistext | Text im Popup beim ersten Fokus auf das Eingabefeld | „Bitte Länge in Millimetern eingeben – z. B. 1500 für 1,5 m" |
+| Hinweis zum nächsten Schritt zeigen | Bei mehreren Längen in verschiedenen Größen ein Hinweis unter dem Feld, was nach dem Hinzufügen kommt | aus |
 | Mindestlänge (mm) | Kleinste erlaubte Eingabe (Fallback) | 1 |
 | Maximallänge (mm) | Größte erlaubte Eingabe (Fallback) | 10000 |
 | Standard-Split-Modus | Fallback, wenn am Produkt kein eigener Modus gesetzt ist (`equal`, `max_rest`, `hint` oder `none`) | none |
@@ -96,7 +97,7 @@ Im Admin unter dem jeweiligen Produkt → **Individuelle Felder** → **Dynamisc
 | Hinweistext für Splitting | Text | Kundenspezifische Vorlage mit Platzhaltern `{length}`, `{maxPiece}`, `{pieces}`, `{pieceLength}`, `{remainder}`. |
 | Eingegebene Länge wählt die Größe | Schalter | Stellt auf die passende Größenstufe um, wenn die eingetragene Länge nicht zur gewählten passt. Liest Bereiche (`96 - 116 cm`) und feste Maße (`1,5 m`). Längen verschiedener Größen gehen Schritt für Schritt in den Warenkorb. Wirkt nur an Artikeln mit TMMS-Längenfeld. Auch an der Kategorie setzbar. |
 | Geführte Auswahl: erst die Länge | Schalter | Fragt zuerst die Länge ab und zeigt danach nur die dazu kaufbaren Optionen; Preis und Kaufknopf erscheinen, wenn die Variante feststeht. Wirkt nur mit Längengruppen. Auch an der Kategorie setzbar. |
-| Größen nur über die Länge | Schalter | Blendet die Knöpfe der Längengruppe aus; der Kunde gibt nur die Länge ein, darunter steht die berechnete Größe. Für Stangenmaterial. Wirkt nur mit Längenschalter und Längengruppen. Auch an der Kategorie setzbar. |
+| Größen nur über die Länge | Schalter | Blendet die Knöpfe der Längengruppe aus; der Kunde gibt nur die Länge ein. Im Warenkorb stehen Name ohne Größe und die eingegebene Länge, die Bestellung behält die Größe. Für Stangenmaterial. Wirkt nur mit Längenschalter und Längengruppen. Auch an der Kategorie setzbar. |
 | Längengruppen | Eigenschaftsgruppen (mehrere) | Die Gruppen, deren Werte Längen sind („Maße", „Länge"); es gilt die erste, die der Artikel hat. Auch an der Kategorie setzbar; der Wert am Produkt hat Vorrang. |
 
 ### Splitting-Verhalten

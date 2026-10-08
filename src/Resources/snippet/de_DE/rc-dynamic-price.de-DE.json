@@ -27,7 +27,6 @@
             "modalTitleHint": "Hinweis zur Länge",
             "adjusted": "Ihre Länge passt nicht zu „%from%“. Wir haben auf „%to%“ umgestellt.",
             "outOfRange": "Dieser Artikel ist von %minCm% bis %maxCm% cm lieferbar — also von %minMm% bis %maxMm% mm.",
-            "cutting": "Für %input% berechnen wir %size%; geschnitten wird aus dieser Länge.",
             "nextStep": "%done% kommt in „%size%“. Legen Sie es in den Warenkorb; danach stellen wir auf „%nextSize%“ um und tragen %next% ein.",
             "askUnit": "Meinen Sie %value% m? Bitte geben Sie die Länge mit Einheit ein, etwa „%value% m“ oder „%value%000 mm“."
         },

@@ -1,3 +1,20 @@
+# 1.23.5
+
+- **Behoben: Die Längenzeile brach den Warenkorb.** Im aufklappbaren Bereich „Eingaben prüfen“ steht die
+  Längenzeile jetzt wie bei TMMS als `<div>` statt als `<li>`. Das `<li>` ließ den Browser Elemente zu früh
+  schließen: Auf der Warenkorbseite fielen Positionen aus der Tabelle (waagerechte Bildlaufleiste), in der
+  Warenkorb-Leiste standen Zwischensumme und Kassenknöpfe fest unten und nur die Artikel scrollten. Die
+  Zeile erscheint außerdem nur noch in den Ansichten, in denen TMMS Eingaben zeigt.
+- **Kein Zuschnitt-Hinweis mehr.** „Für 3000 mm berechnen wir 3,0 m; geschnitten wird aus dieser Länge.“
+  entfällt.
+- **Hinweis zum nächsten Schritt abschaltbar** (Konfiguration, ab Werk aus). Die Schritte selbst bleiben:
+  Nach dem Hinzufügen stellt die Seite auf die nächste Größe um und trägt die nächste Länge ein.
+- **Bei „Größen nur über die Länge“ zeigt der Warenkorb nur die eingegebene Länge:** Name ohne Größe, keine
+  Zeile der Längengruppe. Bestellungen behalten Name und Größe.
+
+> **Deployment:** `plugin:update RcDynamicPrice`, `assets:install`, `theme:compile`, `cache:clear`. Erst danach
+> in den Warenkorb gelegte Positionen zeigen den Namen ohne Größe.
+
 # 1.23.4
 
 - **Behoben: Die Ja/Nein-Felder klebten in der Verwaltung aneinander.** „Geführte Auswahl: erst die Länge",

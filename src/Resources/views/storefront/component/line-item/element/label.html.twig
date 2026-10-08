@@ -1,0 +1,17 @@
+{% sw_extends '@Storefront/storefront/component/line-item/element/label.html.twig' %}
+
+{# Bei „Größen nur über die Länge" steht im Warenkorb nur die eingegebene Länge. Der Name der Variante trägt
+   die Größe („…, 3,00 m"), die der Kunde nie gewählt hat; gezeigt wird der Name des Elternartikels, den
+   `LengthSwitchLineItemSubscriber` beim Hinzufügen ablegt.
+
+   Bestellungen (Abschluss, Konto) behalten den vollen Namen: Die Größe ist die Stange, aus der geschnitten
+   wird. Angesetzt wird hier und nicht im Block `component_line_item_type_product_label`, den andere
+   Erweiterungen schon erweitern; so bleibt deren Zusatz unter dem Namen unberührt. #}
+{% block component_line_item_label %}
+    {% set rcLabel = lineItem.payload.rc_length_only.label|default(null) %}
+    {% if rcLabel is not empty and displayMode|default('') != 'order' %}
+        {% set lineItem = { label: rcLabel } %}
+    {% endif %}
+
+    {{ parent() }}
+{% endblock %}

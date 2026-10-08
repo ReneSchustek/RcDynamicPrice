@@ -65,8 +65,8 @@ export default class LengthVariantSwitchPlugin extends Plugin {
         titleHint: 'Hinweis zur Länge',
         textAdjusted: '',
         textOutOfRange: '',
-        textCutting: '',
         textNextStep: '',
+        showStepHint: false,
         textAskUnit: '',
     };
 
@@ -566,7 +566,7 @@ export default class LengthVariantSwitchPlugin extends Plugin {
             // Die Länge passt zur gezeigten Größe. Wartet die geführte Auswahl noch auf die Länge,
             // ist sie damit beantwortet.
             result.range.confirm?.();
-            this._showCutting(lengths, result.range.label);
+            this._hideHint();
 
             return;
         }
@@ -604,20 +604,19 @@ export default class LengthVariantSwitchPlugin extends Plugin {
         const steps = this._readSteps();
 
         // Bei mehreren Größen erklärt der Schritt-Hinweis den Sprung; ein Fenster obendrauf wäre doppelt.
-        // Der letzte Schritt sagt nur noch, was berechnet wird, auch wo die Größen sichtbar sind.
         if (steps.length > 0 || stashed.step) {
-            this._showNextStep(lengths, stashed.to, steps[0], true);
+            this._showNextStep(lengths, stashed.to, steps[0]);
 
             return;
         }
 
-        this._showCutting(lengths, stashed.to);
+        this._hideHint();
 
         // War noch keine Größe gewählt, etwa am Anfang der geführten Auswahl, hat die Länge sie erst
         // bestimmt; „passt nicht zu …" wäre dann falsch.
         if (this.options.lengthOnly || !stashed.from) {
-            // Ohne sichtbare Größen ist der Sprung kein Ereignis für den Kunden; der Hinweis unter dem Feld
-            // sagt, welche Länge berechnet wird.
+            // Ohne sichtbare Größen ist der Sprung kein Ereignis für den Kunden; ein Fenster hätte nichts zu
+            // erklären.
             return;
         }
 
@@ -735,20 +734,11 @@ export default class LengthVariantSwitchPlugin extends Plugin {
         }
     }
 
-    _showCutting(lengths, label, always = false) {
-        if ((!this.options.lengthOnly && !always) || lengths.length === 0) {
-            return;
-        }
-
-        this._showHint(LengthVariantSwitchPlugin.fillPlaceholders(this.options.textCutting, {
-            '%input%': LengthVariantSwitchPlugin.formatLengths(lengths),
-            '%size%': label,
-        }));
-    }
-
-    _showNextStep(lengths, label, next, always = false) {
-        if (!next) {
-            this._showCutting(lengths, label, always);
+    _showNextStep(lengths, label, next) {
+        // Ist kein Schritt mehr offen, gibt es nichts mehr zu sagen; ein stehender Hinweis vom vorigen
+        // Schritt verschwindet. Ist der Hinweis abgeschaltet, laufen die Schritte ohne ihn.
+        if (!next || !this.options.showStepHint) {
+            this._hideHint();
 
             return;
         }
@@ -777,6 +767,12 @@ export default class LengthVariantSwitchPlugin extends Plugin {
         anchor.after(hint);
 
         return hint;
+    }
+
+    _hideHint() {
+        if (this._hint) {
+            this._hint.hidden = true;
+        }
     }
 
     _showHint(text) {

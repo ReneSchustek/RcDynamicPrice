@@ -27,7 +27,6 @@
             "modalTitleHint": "Note on the length",
             "adjusted": "Your length does not match \"%from%\". We switched to \"%to%\".",
             "outOfRange": "This article is available from %minCm% to %maxCm% cm, that is from %minMm% to %maxMm% mm.",
-            "cutting": "For %input% we charge %size%; it is cut from this length.",
             "nextStep": "%done% goes into “%size%”. Add it to the cart; we will then switch to “%nextSize%” and enter %next%.",
             "askUnit": "Do you mean %value% m? Please enter the length with a unit, such as “%value% m” or “%value%000 mm”."
         },

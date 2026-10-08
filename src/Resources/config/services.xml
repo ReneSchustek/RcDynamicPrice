@@ -92,6 +92,7 @@
         <service id="Ruhrcoder\RcDynamicPrice\Subscriber\LengthSwitchLineItemSubscriber">
             <argument type="service" id="Ruhrcoder\RcDynamicPrice\Service\MeterProductHelperInterface"/>
             <argument type="service" id="Ruhrcoder\RcDynamicPrice\Service\LengthSettingsResolver"/>
+            <argument type="service" id="property_group.repository"/>
             <tag name="kernel.event_subscriber"/>
         </service>
 
