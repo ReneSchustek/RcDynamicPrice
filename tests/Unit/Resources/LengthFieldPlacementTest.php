@@ -43,6 +43,26 @@ final class LengthFieldPlacementTest extends TestCase
         self::assertStringContainsString('data-dynamic-price="form"', $this->source('buy-widget-form.html.twig'));
     }
 
+    /**
+     * Was: Die Markierung für die Längeneingabe unter der Längengruppe.
+     * Warum: Mit Meterpreis steht dessen Feld schon oben, bei „Größen nur über die Länge“ gibt es keine
+     *        Knöpfe; dort darf die Kaufbox nicht umgeordnet werden.
+     * Erwartet: Markierung nur bei Längenschalter ohne beides, mit der Nummer des Längenfelds; die Regeln im
+     *           Stilbogen hängen an genau dieser Markierung.
+     */
+    public function testTheLengthInputIsOrderedOnlyWhereItBelongs(): void
+    {
+        $widget = $this->source('buy-widget.html.twig');
+
+        self::assertStringContainsString('rcLength.lengthSwitch and rcLength.lengthGroupId and not rcLength.lengthOnly and page.extensions.rcDynamicPriceConfig is not defined', $widget);
+        self::assertStringContainsString('rc-length-order--field-{{ rcLength.lengthFieldNumber }}', $widget);
+
+        $scss = file_get_contents(__DIR__ . '/../../../src/Resources/app/storefront/src/scss/base.scss');
+        self::assertIsString($scss);
+        self::assertStringContainsString('div:has(> .rc-length-order)', $scss);
+        self::assertStringContainsString('div:has(> .rc-length-order--field-#{$field}) > form[id^="productCustomerInputForm-"][id$="-#{$field}"]', $scss);
+    }
+
     private function source(string $file): string
     {
         $source = file_get_contents(self::DIR . $file);

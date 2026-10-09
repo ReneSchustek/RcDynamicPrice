@@ -55,3 +55,52 @@
 .rc-guided-selection__hint {
     margin-top: 1rem;
 }
+
+// Die Längeneingabe steht direkt unter der Längengruppe (BRIEF58).
+//
+// Variantenauswahl und Eingabefelder von TMMS sind getrennte Formulare und stehen im Quelltext
+// nacheinander: alle Gruppen, dann die Eingaben. Die Markierung `.rc-length-order` setzt die Vorlage nur bei
+// Längenschalter mit weiteren Gruppen. Dann verlieren die Hüllen der Variantenauswahl ihre eigene Box, ihre
+// Gruppen werden zu Gliedern der Kaufbox, und `order` stellt sie um: Längengruppe, Längeneingabe samt Hinweis,
+// übrige Gruppen, alles Weitere. Die Längengruppe ist immer die erste (LengthSettingsSubscriber). Am Quelltext
+// ändert sich nichts; Variantenwechsel und Speichern der Eingaben laufen wie im Kern.
+div:has(> .rc-length-order) {
+    display: flex;
+    flex-direction: column;
+
+    > * {
+        order: 5;
+    }
+
+    > .product-detail-price-container,
+    > .product-detail-tax-container {
+        order: 0;
+    }
+
+    > .product-detail-configurator-container,
+    > .product-detail-configurator-container > .product-detail-configurator,
+    > .product-detail-configurator-container > .product-detail-configurator > form {
+        display: contents;
+    }
+
+    > .product-detail-configurator-container > .product-detail-configurator > form > .product-detail-configurator-group {
+        order: 4;
+
+        &:first-of-type {
+            order: 1;
+        }
+    }
+
+    > .rc-length-switch-hint,
+    > .rc-guided-selection__hint {
+        order: 3;
+    }
+}
+
+// Die Längeneingabe selbst; TMMS nummeriert seine Formulare `…-<Nummer>` und kennt höchstens fünf Felder.
+@for $field from 1 through 5 {
+    div:has(> .rc-length-order--field-#{$field}) > form[id^="productCustomerInputForm-"][id$="-#{$field}"] {
+        order: 2;
+    }
+}
+

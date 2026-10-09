@@ -1,3 +1,13 @@
+# 1.26.0
+
+- **Die Längeneingabe steht direkt unter „Maße“.** Bei Artikeln mit Längenschalter und weiteren Variantengruppen,
+  etwa dem Handlauf mit Kugelringen, stand das Feld „Gewünschte Länge in mm“ unter „Ausführung“. Es steht jetzt
+  direkt unter der Längengruppe, danach folgen der Hinweis zum nächsten Schritt und die übrigen Gruppen.
+  Umgeordnet wird nur die Darstellung; Variantenauswahl und Eingabefelder bleiben getrennte Formulare und
+  arbeiten wie bisher. Mit der Tastatur geht es nach „Maße“ weiter zu „Ausführung“ und dann zur Länge.
+
+> **Deployment:** `plugin:update RcDynamicPrice`, `theme:compile`, `cache:clear`.
+
 # 1.25.1
 
 - **Die Längengruppe steht jetzt auch auf Produktseiten mit Erlebniswelt-Layout zuerst.** 1.25.0 stellte die

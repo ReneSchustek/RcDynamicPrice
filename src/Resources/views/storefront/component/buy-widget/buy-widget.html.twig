@@ -15,5 +15,15 @@
         </div>
     {% endif %}
 
+    {# Längenschalter mit weiteren Variantengruppen: Die Längeneingabe gehört direkt unter die
+       Längengruppe, nicht hinter „Ausführung“. Im Quelltext geht das nicht, die Variantenauswahl ist ein
+       eigenes Formular, und ein Formular darf in keinem anderen stehen. Die Markierung ordnet die Kaufbox
+       deshalb nur in der Darstellung (base.scss, `.rc-length-order`); sie trägt die Nummer des Längenfelds.
+       Mit Meterpreis steht schon dessen Feld oben, bei „Größen nur über die Länge“ gibt es keine Knöpfe. #}
+    {% set rcLength = page.extensions.rcLengthSettings|default(null) %}
+    {% if rcLength and rcLength.lengthSwitch and rcLength.lengthGroupId and not rcLength.lengthOnly and page.extensions.rcDynamicPriceConfig is not defined %}
+        <span class="rc-length-order rc-length-order--field-{{ rcLength.lengthFieldNumber }}" hidden></span>
+    {% endif %}
+
     {{ parent() }}
 {% endblock %}
