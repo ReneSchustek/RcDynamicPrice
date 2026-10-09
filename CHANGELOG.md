@@ -1,3 +1,16 @@
+# 1.25.0
+
+- **Die Länge steht oben.** Bei Artikeln mit Meterpreis stand das Längenfeld unter den Eingabefeldern von
+  TmmsProductCustomerInputs, etwa unter dem Gehrungsschnitt am Bodenprofil. Es steht jetzt direkt hinter den
+  Varianten, vor allen anderen Angaben; die Länge wird weiter mit dem Kauf abgeschickt. Ohne TMMS bleibt das
+  Feld im Kaufformular.
+- **Die Längengruppe steht in der Variantenauswahl zuerst.** Wo eine Längengruppe eingestellt ist („Maße“,
+  „Länge“), zeigt die Produktseite sie vor den übrigen Gruppen, unabhängig von deren Position im
+  Verwaltungsbereich.
+
+> **Deployment:** `plugin:update RcDynamicPrice`, `theme:compile`, `cache:clear`. Neues Storefront-Skript
+> (fertig gebaut im Paket).
+
 # 1.24.0
 
 - **Alle Längen mit einem Klick.** Fallen eingegebene Längen in verschiedene Größen („1200; 4200“), legt ein

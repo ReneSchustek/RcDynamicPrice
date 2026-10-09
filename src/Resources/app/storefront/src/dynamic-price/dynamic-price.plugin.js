@@ -25,7 +25,7 @@ export default class DynamicPricePlugin extends Plugin {
         this._splitInfoEl = this.el.querySelector('.rc-dynamic-price__split-info');
         this._resultEl    = this.el.querySelector('.rc-dynamic-price__result');
         this._resultPrice = this.el.querySelector('.rc-dynamic-price__result-price');
-        this._form        = this.el.closest('form');
+        this._form        = this._resolveForm();
         this._submitBtn   = this._form ? this._form.querySelector('[type="submit"]') : null;
         this._productId   = this.el.dataset.productId;
 
@@ -593,6 +593,15 @@ export default class DynamicPricePlugin extends Plugin {
         this._errorEl.classList.add('text-danger');
         this._input.classList.add('is-invalid');
         this._input.setAttribute('aria-invalid', 'true');
+    }
+
+    /**
+     * Über den Eingabefeldern von TMMS steht das Feld außerhalb des Kaufformulars; `data-form` nennt
+     * dann dessen Kennung. Im Kaufformular selbst gilt das umgebende Formular.
+     */
+    _resolveForm() {
+        return this.el.closest('form')
+            || (this.el.dataset.form ? document.getElementById(this.el.dataset.form) : null);
     }
 
     _clearError() {

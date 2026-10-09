@@ -3,7 +3,9 @@ import LengthVariantSwitchPlugin from './length-variant-switch/length-variant-sw
 import GuidedSelectionPlugin from './guided-selection/guided-selection.plugin';
 
 const PluginManager = window.PluginManager;
-PluginManager.register('DynamicPrice', DynamicPricePlugin, '[data-dynamic-price]');
+// Nur der Rahmen des Längenfelds. Das versteckte Mengenfeld trägt `data-dynamic-price` als Kennzeichen
+// für die Farbauswahl und bekommt kein eigenes Skript.
+PluginManager.register('DynamicPrice', DynamicPricePlugin, '.rc-dynamic-price[data-dynamic-price]');
 
 // Die eingegebene Länge wählt die Größenstufe. Das Element rendert die Kaufbox nur, wenn der Artikel
 // das Zusatzfeld `rc_length_variant_switch` trägt; ohne Haken läuft auch kein Skript.

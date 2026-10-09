@@ -49,6 +49,35 @@ final class LengthSettingsSubscriberTest extends TestCase
     }
 
     /**
+     * Was: Der Kern zeigt „Ausführung“ vor „Maße“.
+     * Warum: Die Länge steht oben; der Kunde soll sie kennen, bevor er die Ausführung wählt.
+     * Erwartet: Auf der Seite steht die Längengruppe zuerst, die übrigen in ihrer Reihenfolge.
+     */
+    public function testTheLengthGroupIsShownFirstOnThePage(): void
+    {
+        $page = $this->page([
+            DynamicPriceConstants::FIELD_LENGTH_VARIANT_SWITCH => true,
+            DynamicPriceConstants::FIELD_LENGTH_GROUPS => [self::LENGTH],
+        ]);
+        $this->subscriber(new AvailableCombinationResult(), null)->onProductPageLoaded($this->event($page));
+
+        self::assertSame([self::LENGTH, self::POSTS], array_values($page->getConfiguratorSettings()->getIds()));
+    }
+
+    /**
+     * Was: Keine Längeneinstellung am Artikel oder an der Kategorie.
+     * Warum: Ohne Längengruppe gibt es nichts nach vorn zu holen; die Seite bleibt, wie der Kern sie baut.
+     * Erwartet: Reihenfolge unverändert.
+     */
+    public function testWithoutLengthSettingsTheGroupOrderStays(): void
+    {
+        $page = $this->page([]);
+        $this->subscriber(new AvailableCombinationResult(), null)->onProductPageLoaded($this->event($page));
+
+        self::assertSame([self::POSTS, self::LENGTH], array_values($page->getConfiguratorSettings()->getIds()));
+    }
+
+    /**
      * Von zwei eingestellten Gruppen gilt die, die der Artikel hat; die Kategorie nennt beide, weil ihre
      * Artikel die Längen verschieden benennen.
      */

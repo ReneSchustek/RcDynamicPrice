@@ -64,6 +64,12 @@ final class LengthSettingsSubscriber implements EventSubscriberInterface
 
         $lengthGroupId = self::lengthGroupOnPage($page->getConfiguratorSettings(), $settings);
 
+        // Die Länge steht oben: Der Kunde soll sie kennen, bevor er über Ausführung, Farbe oder Gehrung
+        // entscheidet. Der Kern ordnet die Gruppen nach ihrer eigenen Position.
+        if ($lengthGroupId !== null) {
+            $page->setConfiguratorSettings(self::lengthGroupFirst($page->getConfiguratorSettings(), $lengthGroupId));
+        }
+
         // Ohne Längengruppe auf der Seite gäbe es keine Knöpfe, die sich ausblenden ließen.
         $lengthOnly = $settings->lengthOnly && $settings->lengthSwitch && $lengthGroupId !== null;
 
@@ -86,6 +92,26 @@ final class LengthSettingsSubscriber implements EventSubscriberInterface
         }
 
         return null;
+    }
+
+    /**
+     * Dieselben Gruppen, die Längengruppe vorn; die übrigen behalten ihre Reihenfolge.
+     */
+    public static function lengthGroupFirst(PropertyGroupCollection $groups, string $lengthGroupId): PropertyGroupCollection
+    {
+        $lengthGroup = $groups->get($lengthGroupId);
+        if ($lengthGroup === null) {
+            return $groups;
+        }
+
+        $ordered = new PropertyGroupCollection([$lengthGroup]);
+        foreach ($groups as $group) {
+            if ($group->getId() !== $lengthGroupId) {
+                $ordered->add($group);
+            }
+        }
+
+        return $ordered;
     }
 
     /**
