@@ -1,3 +1,11 @@
+# 1.25.1
+
+- **Die Längengruppe steht jetzt auch auf Produktseiten mit Erlebniswelt-Layout zuerst.** 1.25.0 stellte die
+  Gruppen nur an der Seite um; die Kaufbox der Erlebniswelt liest sie aber aus ihren eigenen Daten. Am Handlauf
+  mit Kugelringen stand deshalb weiter „Ausführung“ vor „Maße“. Umgestellt werden jetzt beide.
+
+> **Deployment:** `plugin:update RcDynamicPrice`, `cache:clear`.
+
 # 1.25.0
 
 - **Die Länge steht oben.** Bei Artikeln mit Meterpreis stand das Längenfeld unter den Eingabefeldern von

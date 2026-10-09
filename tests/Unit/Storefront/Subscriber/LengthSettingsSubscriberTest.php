@@ -11,6 +11,14 @@ use Ruhrcoder\RcDynamicPrice\Service\LengthSettingsResolver;
 use Ruhrcoder\RcDynamicPrice\Storefront\Struct\GuidedSelectionStruct;
 use Ruhrcoder\RcDynamicPrice\Storefront\Struct\LengthSettingsStruct;
 use Ruhrcoder\RcDynamicPrice\Storefront\Subscriber\LengthSettingsSubscriber;
+use Shopware\Core\Content\Cms\Aggregate\CmsBlock\CmsBlockCollection;
+use Shopware\Core\Content\Cms\Aggregate\CmsBlock\CmsBlockEntity;
+use Shopware\Core\Content\Cms\Aggregate\CmsSection\CmsSectionCollection;
+use Shopware\Core\Content\Cms\Aggregate\CmsSection\CmsSectionEntity;
+use Shopware\Core\Content\Cms\Aggregate\CmsSlot\CmsSlotCollection;
+use Shopware\Core\Content\Cms\Aggregate\CmsSlot\CmsSlotEntity;
+use Shopware\Core\Content\Cms\CmsPageEntity;
+use Shopware\Core\Content\Cms\SalesChannel\Struct\BuyBoxStruct;
 use Shopware\Core\Content\Product\SalesChannel\Detail\AbstractAvailableCombinationLoader;
 use Shopware\Core\Content\Product\SalesChannel\Detail\AvailableCombinationResult;
 use Shopware\Core\Content\Product\SalesChannel\SalesChannelProductEntity;
@@ -62,6 +70,29 @@ final class LengthSettingsSubscriberTest extends TestCase
         $this->subscriber(new AvailableCombinationResult(), null)->onProductPageLoaded($this->event($page));
 
         self::assertSame([self::LENGTH, self::POSTS], array_values($page->getConfiguratorSettings()->getIds()));
+    }
+
+    /**
+     * Was: Produktseite mit Layout aus der Erlebniswelt; die Kaufbox trägt eigene Gruppen.
+     * Warum: Dort liest die Vorlage die Gruppen aus der Kaufbox. Nur die Seite umzustellen ließ am Handlauf
+     *        mit Kugelringen „Ausführung“ vor „Maße“ stehen.
+     * Erwartet: Auch in der Kaufbox steht die Längengruppe zuerst.
+     */
+    public function testTheLengthGroupIsShownFirstInTheCmsBuyBox(): void
+    {
+        $page = $this->page([
+            DynamicPriceConstants::FIELD_LENGTH_VARIANT_SWITCH => true,
+            DynamicPriceConstants::FIELD_LENGTH_GROUPS => [self::LENGTH],
+        ]);
+        $buyBox = new BuyBoxStruct();
+        $buyBox->setConfiguratorSettings($this->pageGroups());
+        $page->getProduct()->setCmsPage($this->cmsPageWith($buyBox));
+
+        $this->subscriber(new AvailableCombinationResult(), null)->onProductPageLoaded($this->event($page));
+
+        $groups = $buyBox->getConfiguratorSettings();
+        self::assertNotNull($groups);
+        self::assertSame([self::LENGTH, self::POSTS], array_values($groups->getIds()));
     }
 
     /**
@@ -217,6 +248,28 @@ final class LengthSettingsSubscriberTest extends TestCase
         $page->setConfiguratorSettings($this->pageGroups());
 
         return $page;
+    }
+
+    private function cmsPageWith(BuyBoxStruct $buyBox): CmsPageEntity
+    {
+        $slot = new CmsSlotEntity();
+        $slot->setId('kaufbox');
+        $slot->setSlot('content');
+        $slot->setData($buyBox);
+
+        $block = new CmsBlockEntity();
+        $block->setId('block');
+        $block->setSlots(new CmsSlotCollection([$slot]));
+
+        $section = new CmsSectionEntity();
+        $section->setId('abschnitt');
+        $section->setBlocks(new CmsBlockCollection([$block]));
+
+        $cmsPage = new CmsPageEntity();
+        $cmsPage->setId('layout');
+        $cmsPage->setSections(new CmsSectionCollection([$section]));
+
+        return $cmsPage;
     }
 
     private function event(ProductPage $page): ProductPageLoadedEvent

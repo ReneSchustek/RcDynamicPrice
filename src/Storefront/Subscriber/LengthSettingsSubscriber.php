@@ -8,6 +8,7 @@ use Ruhrcoder\RcDynamicPrice\Service\LengthSettings;
 use Ruhrcoder\RcDynamicPrice\Service\LengthSettingsResolver;
 use Ruhrcoder\RcDynamicPrice\Storefront\Struct\GuidedSelectionStruct;
 use Ruhrcoder\RcDynamicPrice\Storefront\Struct\LengthSettingsStruct;
+use Shopware\Core\Content\Cms\SalesChannel\Struct\BuyBoxStruct;
 use Shopware\Core\Content\Product\SalesChannel\Detail\AbstractAvailableCombinationLoader;
 use Shopware\Core\Content\Property\PropertyGroupCollection;
 use Shopware\Core\System\SalesChannel\SalesChannelContext;
@@ -67,7 +68,7 @@ final class LengthSettingsSubscriber implements EventSubscriberInterface
         // Die Länge steht oben: Der Kunde soll sie kennen, bevor er über Ausführung, Farbe oder Gehrung
         // entscheidet. Der Kern ordnet die Gruppen nach ihrer eigenen Position.
         if ($lengthGroupId !== null) {
-            $page->setConfiguratorSettings(self::lengthGroupFirst($page->getConfiguratorSettings(), $lengthGroupId));
+            self::putLengthGroupFirst($page, $lengthGroupId);
         }
 
         // Ohne Längengruppe auf der Seite gäbe es keine Knöpfe, die sich ausblenden ließen.
@@ -92,6 +93,26 @@ final class LengthSettingsSubscriber implements EventSubscriberInterface
         }
 
         return null;
+    }
+
+    /**
+     * An zwei Stellen: an der Seite und in der Kaufbox der Erlebniswelt. Mit einem Layout aus der
+     * Erlebniswelt liest die Vorlage die Gruppen aus den Daten der Kaufbox, nicht aus der Seite; nur die
+     * Seite umzustellen änderte dort nichts. Ein Variantenwechsel lädt die Seite neu und kommt wieder hier
+     * vorbei.
+     */
+    private static function putLengthGroupFirst(ProductPage $page, string $lengthGroupId): void
+    {
+        $page->setConfiguratorSettings(self::lengthGroupFirst($page->getConfiguratorSettings(), $lengthGroupId));
+
+        // Über den Artikel, nicht über die Seite: Ohne eigenes Layout setzt der Kern die Erlebniswelt der
+        // Seite nie, und der Zugriff auf die nicht belegte Eigenschaft würfe. Es ist dasselbe Objekt.
+        foreach ($page->getProduct()->getCmsPage()?->getAllElements() ?? [] as $slot) {
+            $data = $slot->getData();
+            if ($data instanceof BuyBoxStruct && $data->getConfiguratorSettings() !== null) {
+                $data->setConfiguratorSettings(self::lengthGroupFirst($data->getConfiguratorSettings(), $lengthGroupId));
+            }
+        }
     }
 
     /**

@@ -3,7 +3,7 @@
     "description": "Shopware plugin for length-based price calculation",
     "type": "shopware-platform-plugin",
     "license": "MIT",
-    "version": "1.25.0",
+    "version": "1.25.1",
     "authors": [
         {
             "name": "Ruhrcoder",
