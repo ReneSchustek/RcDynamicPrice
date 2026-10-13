@@ -1,3 +1,10 @@
+# 1.26.1
+
+- **Das Hinweisfenster nimmt den Radius des Themes.** Bisher fest 8 Pixel; in Design 2027 sind es 2. Im
+  bisherigen Theme bleibt es bei 8.
+
+> **Deployment:** `plugin:update RcDynamicPrice`, `theme:compile`, `cache:clear`.
+
 # 1.26.0
 
 - **Die Längeneingabe steht direkt unter „Maße“.** Bei Artikeln mit Längenschalter und weiteren Variantengruppen,

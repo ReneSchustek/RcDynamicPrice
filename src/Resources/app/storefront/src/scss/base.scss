@@ -17,7 +17,8 @@
     background: var(--bs-body-bg, #fff);
     color: var(--bs-body-color, #212529);
     border: 1px solid var(--bs-border-color, rgba(0, 0, 0, .175));
-    border-radius: .5rem;
+    // Radius vom Theme: 8 Pixel im bisherigen Theme wie vorher, 2 in Design 2027.
+    border-radius: var(--bs-border-radius, .5rem);
     padding: 1.5rem;
     // 28rem trägt zwei, drei Sätze Hinweis ohne lange Zeilen; 90 % lässt am Telefon einen Rand.
     max-width: 28rem;
