@@ -23,7 +23,7 @@ jobs:
           tools: composer:v2
 
       # Die JS-Suiten laufen über den node:test-Runner und brauchen daher eine
-      # feste Node-Version — sonst hängt das Gate an der Runner-Vorinstallation.
+      # feste Node-Version — sonst hängt der Lauf an der Vorinstallation des Runners.
       - name: Node 22 einrichten
         uses: actions/setup-node@v5
         with:

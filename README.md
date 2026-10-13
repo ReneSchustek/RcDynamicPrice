@@ -2,7 +2,7 @@
 
 Shopware 6 Plugin zur längenbasierten Preisberechnung.
 
-Produkte (z. B. Kabel, Stoffe, Profile) werden nach Meterlänge verkauft. Der Grundpreis im System entspricht dem Preis für 1 m (= 1.000 mm). Der Kunde gibt seine Wunschlänge selbst ein, sieht sofort den berechneten Preis und legt diesen Preis verbindlich in den Warenkorb.
+Produkte wie Kabel, Stoffe oder Profile werden nach Meterlänge verkauft. Der Grundpreis im System ist der Preis für 1 m (= 1.000 mm). Der Kunde gibt seine Wunschlänge selbst ein, sieht sofort den berechneten Preis und legt genau diesen Preis verbindlich in den Warenkorb.
 
 ## Funktionen
 
@@ -28,11 +28,7 @@ Produkte (z. B. Kabel, Stoffe, Profile) werden nach Meterlänge verkauft. Der Gr
 
 ## Installation
 
-Das Plugin gehört als Ordner `custom/plugins/RcDynamicPrice` in die Shopware-Installation. Übertragen wird er von Hand — per FTP in dieses Verzeichnis kopieren; ein Composer-Paket gibt es nicht. Danach registriert Shopware ihn über die folgenden Befehle:
-
-Als Archiv geht es auch ohne FTP: In der Administration unter **Erweiterungen → Meine Erweiterungen → Erweiterung hochladen** nimmt Shopware eine ZIP-Datei entgegen und legt sie selbst an die richtige Stelle; auf der Konsole tut `plugin:zip-import` dasselbe. Danach folgen dieselben Schritte wie unten. Wer das Archiv unter macOS packt, entfernt vorher den Ordner `__MACOSX` — sonst weist Shopware die Datei ab.
-
-Das vorkompilierte Storefront-JS liegt dem Plugin bei (`Resources/app/storefront/dist`) — auf dem Server ist **kein Node-Build** nötig.
+Das Plugin gehört als Ordner `custom/plugins/RcDynamicPrice` in die Shopware-Installation. Übertragen wird er von Hand, per FTP in dieses Verzeichnis; ein Composer-Paket gibt es nicht. Das vorkompilierte Storefront-JS liegt bei (`Resources/app/storefront/dist`), auf dem Server ist also **kein Node-Build** nötig. Danach registriert Shopware den Ordner über diese Befehle:
 
 ```bash
 php bin/console plugin:refresh
@@ -41,7 +37,9 @@ php bin/console theme:compile
 php bin/console cache:clear
 ```
 
-**Aktualisierungen laufen denselben Weg.** Den neuen Ordner per FTP über den alten legen, danach `plugin:refresh` und `plugin:update RcDynamicPrice`. Eine Aktualisierung von selbst gibt es nicht — ohne Composer-Paket und ohne Shopware-Store bleibt sie Sache des Betreibers. Vor einem Sprung über eine Hauptversion gehört ein Datenbank-Abzug dazu.
+Als Archiv geht es auch ohne FTP. In der Administration unter **Erweiterungen → Meine Erweiterungen → Erweiterung hochladen** nimmt Shopware eine ZIP-Datei entgegen und legt sie selbst an die richtige Stelle, auf der Konsole tut `plugin:zip-import` dasselbe. Danach folgen dieselben Schritte wie oben. Wer das Archiv unter macOS packt, entfernt vorher den Ordner `__MACOSX`, sonst weist Shopware die Datei ab.
+
+**Aktualisierungen laufen denselben Weg.** Den neuen Ordner per FTP über den alten legen, danach `plugin:refresh` und `plugin:update RcDynamicPrice`. Von selbst aktualisiert sich nichts: Ohne Composer-Paket und ohne Shopware-Store bleibt das Sache des Betreibers. Vor einem Sprung über eine Hauptversion gehört ein Datenbank-Abzug dazu.
 
 ## Konfiguration
 
@@ -62,7 +60,7 @@ Im Admin unter **Einstellungen → Plugins → Dynamischer Meterpreis**:
 
 ## Konfigurations-Scope
 
-Der Meterpreis kann auf drei Ebenen konfiguriert werden; die Prioritäten werden strikt eingehalten:
+Der Meterpreis lässt sich auf drei Ebenen konfigurieren, und die Prioritäten gelten strikt:
 
 | Priorität | Ebene | Wirkung |
 |-----------|-------|---------|
@@ -80,7 +78,7 @@ Der Meterpreis kann auf drei Ebenen konfiguriert werden; die Prioritäten werden
 
 ### Kategorie-Custom-Fields
 
-Im Admin am Kategorie-Eintrag → **Individuelle Felder** → **Dynamischer Meterpreis (Kategorie)**. Dieselben Felder wie am Produkt, jeweils leer = „vererben / nicht setzen". Untergeordnete Kategorien erben von der Elternkette. Längenschalter, geführte Auswahl, „Größen nur über die Länge" und die Längengruppen gibt es auch an der Kategorie. Ein dort eingeschalteter Schalter lässt sich am Produkt nicht ausschalten; die Längengruppen werden über die ganze Kette gesammelt, die nächste Stelle zuerst, und es gilt die erste, die der Artikel hat.
+Im Admin am Kategorie-Eintrag → **Individuelle Felder** → **Dynamischer Meterpreis (Kategorie)**. Es sind dieselben Felder wie am Produkt, leer bedeutet jeweils „vererben / nicht setzen". Untergeordnete Kategorien erben von der Elternkette. Längenschalter, geführte Auswahl, „Größen nur über die Länge" und die Längengruppen gibt es auch an der Kategorie. Ein dort eingeschalteter Schalter lässt sich am Produkt nicht ausschalten. Die Längengruppen sammelt das Plugin über die ganze Kette, die nächste Stelle zuerst, und es gilt die erste, die der Artikel hat.
 
 ### Produktspezifische Custom Fields
 
@@ -108,12 +106,12 @@ Im Admin unter dem jeweiligen Produkt → **Individuelle Felder** → **Dynamisc
 | Volle Stücke + Rest (`max_rest`) | 5 000 + 3 000 mm | wird so geschnitten und mit der Mindestlänge **berechnet** (z. B. 5 100 mm → Schnitt 5 000 + 100 mm, berechnet 6 000 mm) |
 | Nur Hinweis (`hint`) | Kein Auto-Split, Hinweistext wird gerendert, Submit blockiert | — |
 
-Die Rundungsstufe wirkt **pro Teilstück** und ebenfalls nur in der Abrechnung. Beispiel: 3 × 4 750 mm
+Auch die Rundungsstufe wirkt **pro Teilstück** und nur in der Abrechnung. Ein Beispiel: 3 × 4 750 mm
 im Modus `Voller Meter` werden als 3 × 5 000 mm berechnet.
 
 ### Ein Zuschnitt-Auftrag ist eine Warenkorb-Position
 
-Die Teilstücke sind eine **Fertigungsfolge**, kein Einkauf. Ein Kunde, der 5 100 mm eingibt, bekommt
+Die Teilstücke sind eine **Fertigungsfolge**, kein Einkauf. Wer 5 100 mm eingibt, bekommt
 genau **eine** Position:
 
 ```
@@ -122,30 +120,30 @@ Set 6 Bodenprofil 2.0 aufgesetzt (Zuschnitt 5.100 mm:      Anzahl 1     1.809,24
 ```
 
 Zwei identische Eingaben mergen weiterhin zu einer Position mit Menge n. Der Preis ist die Summe der
-abgerechneten Teilstücke — nicht die aufgerundete Eingabelänge.
+abgerechneten Teilstücke, nicht die aufgerundete Eingabelänge.
 
 Bis einschließlich 1.15.0 war jedes Teilstück ein eigenes LineItem. Der Kunde konnte damit ein
 Reststück einzeln aus dem Warenkorb löschen und bestellte kommentarlos eine kürzere Länge, als er
-eingegeben hatte. Das ist strukturell nicht mehr möglich.
+eingegeben hatte. Strukturell geht das heute nicht mehr.
 
 **Versandkosten (wichtig):** Die `DeliveryInformation` einer Position trägt die **längste
 Einzellänge**, nicht die Gesamtlänge. Längenbasierte Versandregeln (`cartLineItemDimensionLength`)
-sehen damit das längste zu versendende Stück. Vorher sah jede Regel jedes Teilstück einzeln — ein
+sehen damit das längste zu versendende Stück. Früher sah jede Regel jedes Teilstück einzeln, und ein
 kurzes Reststück konnte eine günstigere Versandart freischalten, die es ohne Split nie gegeben hätte.
 Wer solche Regeln nutzt, prüft nach dem Update die Versandart für gesplittete Warenkörbe.
 
 ### Die Länge steht im Positionsnamen
 
-Länge und Aufteilung sind Teil des **Positionsnamens** — er nennt die Schnittlängen und ist damit die
+Länge und Aufteilung sind Teil des **Positionsnamens**. Er nennt die Schnittlängen und ist damit die
 Fertigungsanweisung:
 
 ```
 Set 6 Bodenprofil 2.0 aufgesetzt (Zuschnitt 5.100 mm: 1× 5.000 mm + 1× 100 mm, berechnet 6.000 mm)
 ```
 
-Damit erscheinen sie überall, wo Shopware eine Position ausgibt — Warenkorb, Bestellbestätigung,
-Rechnung, Lieferschein, Kundenkonto und **Admin-Bestellansicht** — ohne dafür ein Template zu
-überschreiben. Entscheidend ist der letzte Punkt: Der Name ist auch das Einzige, was eine
+So erscheinen sie überall, wo Shopware eine Position ausgibt (Warenkorb, Bestellbestätigung,
+Rechnung, Lieferschein, Kundenkonto und **Admin-Bestellansicht**), ohne dass dafür ein Template
+überschrieben werden muss. Entscheidend ist ein weiterer Punkt: Der Name ist auch das Einzige, was eine
 **Warenwirtschaft** übernimmt. Der ERP-Connector für orgaMAX (`DeltraShopConnector6`) etwa
 überträgt je Position nur Artikelnummer, Menge, Preis und den Namen (als `abweichenderArtikeltext`);
 den LineItem-Payload liest er nicht. Stünde die Länge nur dort, wüsste die Fertigung aus dem ERP
@@ -153,8 +151,8 @@ nicht, welche Stücke zu schneiden sind.
 
 Zusammengesetzt wird der Name im `DynamicPriceProcessor` aus den Snippets `labelWithDetails`,
 `labelLength`, `labelSplit`, `labelPiece` und `labelBilled`. Der unveränderte Produktname liegt im
-Payload (`rc_base_label`); der Name wird bei jeder Neuberechnung des Warenkorbs **daraus neu
-gebildet**, nie angehängt — sonst stünde der Zusatz nach dem dritten Durchlauf dreimal da.
+Payload (`rc_base_label`). Bei jeder Neuberechnung des Warenkorbs wird der Name **daraus neu
+gebildet** und nie angehängt, sonst stünde der Zusatz nach dem dritten Durchlauf dreimal da.
 
 Ob ein Split vorliegt, entscheidet die Zahl der **Teilstücke** (`rc_billed_pieces`), nicht die der
 Anzeigegruppen: Drei gleich lange Stücke ergeben nur eine Gruppe, sind aber sehr wohl ein Split.
@@ -162,24 +160,24 @@ Anzeigegruppen: Drei gleich lange Stücke ergeben nur eine Gruppe, sind aber seh
 Die Migration `Migration1784000000RemoveMeterLengthFromOrderConfirmationMail` entfernt den früher in
 die Mail-Vorlagen geschriebenen Längen-Block wieder, weil die Angabe sonst doppelt erschiene. Gefunden
 wird der Block über seinen Marker und geschnitten bis zum zugehörigen `{% endif %}`, auch wenn er im
-Shop von Hand umgestaltet wurde. Fehlt der Marker oder das Blockende, bleibt die Vorlage unangetastet;
-dort steht die Länge dann zweimal, und der Block gehört von Hand entfernt.
+Shop von Hand umgestaltet wurde. Fehlt der Marker oder das Blockende, bleibt die Vorlage unangetastet.
+Dort steht die Länge dann zweimal, und der Block gehört von Hand entfernt.
 
 ### Schnittlänge und Abrechnungslänge sind zweierlei
 
 Die **Mindestlänge ist eine Abrechnungsregel**, keine Fertigungsregel: „Ein Zuschnitt kostet
-mindestens X mm." Sie verlängert das Werkstück nicht.
+mindestens X mm." Das Werkstück wird dadurch nicht länger.
 
 Bestellt ein Kunde 5.100 mm bei maximaler Stücklänge 5.000 mm und Mindestlänge 1.000 mm:
 
 | | |
 |---|---|
-| **Schnitt** (Fertigung, Lieferschein, Positionsname) | 5.000 + **100** mm — genau die bestellte Länge |
+| **Schnitt** (Fertigung, Lieferschein, Positionsname) | 5.000 + **100** mm, genau die bestellte Länge |
 | **Abrechnung** (Preis) | 5.000 + **1.000** mm = 6.000 mm |
 
-Der `LengthSplitter` liefert ausschließlich Schnittlängen; die Anhebung auf die Mindestlänge und die
-Rundung passieren im `DynamicPriceProcessor`, wo der Preis entsteht. Im Modus „Gleichmäßig aufteilen"
-entscheidet `equalSplitEnforceMin`, ob kurze Teilstücke mit der Mindestlänge berechnet werden — im
+Der `LengthSplitter` liefert ausschließlich Schnittlängen. Die Anhebung auf die Mindestlänge und die
+Rundung passieren im `DynamicPriceProcessor`, dort, wo der Preis entsteht. Im Modus „Gleichmäßig aufteilen"
+entscheidet `equalSplitEnforceMin`, ob kurze Teilstücke mit der Mindestlänge berechnet werden; im
 `max_rest`-Modus gilt sie immer.
 
 ### LineItem-Payload
@@ -187,11 +185,11 @@ entscheidet `equalSplitEnforceMin`, ob kurze Teilstücke mit der Mindestlänge b
 | Key | Bedeutung |
 |-----|-----------|
 | `meterLengthMm` | vom Kunden eingegebene Gesamtlänge des Auftrags |
-| `rc_split_pieces` | **Schnittlängen** — was die Fertigung schneidet |
+| `rc_split_pieces` | **Schnittlängen**: was die Fertigung schneidet |
 | `rc_min_billing` | werden kurze Teilstücke mit der Mindestlänge abgerechnet? |
 | `rc_billed_pieces` | abgerechnete Teilstücke (auf die Mindestlänge angehoben, dann einzeln aufgerundet) |
 | `rc_billed_length_mm` | **Gesamt**-Abrechnungslänge = Summe der abgerechneten Teilstücke |
-| `rc_max_piece_length_mm` | längste abgerechnete Einzellänge — speist die `DeliveryInformation` |
+| `rc_max_piece_length_mm` | längste abgerechnete Einzellänge, speist die `DeliveryInformation` |
 | `rc_split_summary` | gruppierte **Schnittlängen** für den Positionsnamen (`[{length, count}, …]`) |
 
 `rc_billed_length_mm` bezeichnete vor diesem Umbau die Länge **eines Teilstücks**. Wer den Wert
@@ -207,19 +205,19 @@ Die Plugin-Konfiguration im Admin und die Custom-Fields am Produkt folgen beide 
 2. System-Default-Locale
 3. `en-GB` (Shopware-Fallback)
 
-Wer die Ausgabesprache umschalten möchte, ändert die eigene Admin-User-Sprache (Rechts oben → Nutzerprofil → Sprache). Das Plugin pflegt aktuell `de-DE` und `en-GB`. Weitere Sprachen müssen im Schema und in allen Migrations gleichzeitig ergänzt werden, sonst fällt das Backend still auf einen der gepflegten Locales zurück.
+Wer die Ausgabesprache umschalten möchte, ändert die eigene Admin-User-Sprache (Rechts oben → Nutzerprofil → Sprache). Gepflegt sind derzeit `de-DE` und `en-GB`. Eine weitere Sprache muss im Schema und in allen Migrations zugleich ergänzt werden, sonst fällt das Backend still auf eine der gepflegten Locales zurück.
 
 ## Promotions und Skonto
 
-Der `DynamicPriceProcessor` ist mit der Cart-Processor-Priorität `4950` zwischen Shopware-`ProductCartProcessor` (5000) und `PromotionProcessor` (4900) eingehängt. Prozentuale Rabatte (Skonto, Sonderaktionen) und Absolut-Rabatte mit LineItem-Scope wirken dadurch auf den **ausmultiplizierten Positions-Preis** (Meterpreis × Länge), nicht auf den ungewichteten Meter-Stückpreis.
+Der `DynamicPriceProcessor` hängt mit der Cart-Processor-Priorität `4950` zwischen Shopwares `ProductCartProcessor` (5000) und `PromotionProcessor` (4900). Prozentuale Rabatte (Skonto, Sonderaktionen) und Absolut-Rabatte mit LineItem-Scope wirken dadurch auf den **ausmultiplizierten Positions-Preis** (Meterpreis × Länge), nicht auf den ungewichteten Meter-Stückpreis.
 
 Beispiel: Meterpreis 10 €, Länge 3 m, 3-%-Skonto → Positions-Preis 30 €, Rabatt 0,90 €, Endpreis 29,10 €.
 
-Wer eine Promotion über den Rule-Builder direkt auf das Meterpreis-Custom-Field (`customFields.rc_meter_price_*`) referenziert, sollte die Regel auf einen LineItem- oder Cart-Scope umstellen, damit der Discount auf den fertig berechneten Positions-Preis greift.
+Wer eine Promotion über den Rule-Builder direkt auf das Meterpreis-Custom-Field (`customFields.rc_meter_price_*`) bezieht, stellt die Regel besser auf einen LineItem- oder Cart-Scope um. Dann greift der Discount auf den fertig berechneten Positions-Preis.
 
 ## Metriken (optional)
 
-Das Plugin bietet eine optionale, standardmäßig deaktivierte Observability-Schnittstelle (`MetricsRecorderInterface`). Ohne Aktivierung entsteht **kein Mehraufwand** — der Default ist der `NullMetricsRecorder` (No-Op).
+Für Messungen gibt es eine optionale Schnittstelle (`MetricsRecorderInterface`), die ab Werk ausgeschaltet ist. Solange sie aus bleibt, entsteht **kein Mehraufwand**, denn der Default ist der `NullMetricsRecorder` (No-Op).
 
 Erfasste Kennzahlen (an den Hot-Paths):
 
@@ -229,9 +227,9 @@ Erfasste Kennzahlen (an den Hot-Paths):
 | `rounding.duration_ms` | Timing | Dauer der Rundungs-Arithmetik (Tag: `mode`) |
 | `product_page.meter_widget.shown` | Counter | je auf der Produktseite eingeblendetem Meter-Widget |
 
-**Aktivierung:** Plugin-Konfiguration → Karte „Observability (Metriken)" → *Metriken protokollieren* einschalten. Dann schreibt der mitgelieferte `LoggingMetricsRecorder` die Kennzahlen in den Plugin-Logkanal `rc_dynamic_price`. Der Recorder ist fail-safe: ein Fehler beim Loggen beeinflusst weder Warenkorb noch Seite.
+**Aktivierung:** Plugin-Konfiguration → Karte „Observability (Metriken)" → *Metriken protokollieren* einschalten. Dann schreibt der mitgelieferte `LoggingMetricsRecorder` die Kennzahlen in den Plugin-Logkanal `rc_dynamic_price`. Fehler beim Loggen fängt der Recorder ab, Warenkorb und Seite bleiben davon unberührt.
 
-**Eigener Adapter (z. B. StatsD):** Eine eigene Klasse implementiert `MetricsRecorderInterface` und wird per Service-Decoration anstelle des `LoggingMetricsRecorder` eingehängt — der Hot-Path-Code bleibt unverändert.
+**Eigener Adapter (z. B. StatsD):** Eine eigene Klasse implementiert `MetricsRecorderInterface` und wird per Service-Decoration anstelle des `LoggingMetricsRecorder` eingehängt. Am Code der Hot-Paths ändert sich dabei nichts.
 
 ## Deployment
 
@@ -239,13 +237,13 @@ Erfasste Kennzahlen (an den Hot-Paths):
 |----------|--------|
 | Nur PHP / Twig | `php bin/console cache:clear` |
 | SCSS geändert | `php bin/console theme:compile` |
-| JS / main.js geändert | `bin/build-storefront.sh` **auf einem Host mit Node**, danach das neu gebaute `Resources/app/storefront/dist` einchecken (der Gate-Schritt „dist-Frische" prüft das). Auf dem Zielshop genügt `theme:compile`. |
+| JS / main.js geändert | `bin/build-storefront.sh` **auf einem Host mit Node**, danach das neu gebaute `Resources/app/storefront/dist` einchecken. Auf dem Zielshop genügt `theme:compile`. |
 
-Siehe CHANGELOG.md für den Deployment-Hinweis pro Version.
+Den Deployment-Hinweis je Version nennt die CHANGELOG.md.
 
 ## Update / Live-Gang
 
-Beim Update auf eine neue Plugin-Version gelten diese Schritte pro Shop-Instanz. **Die Reihenfolge ist nicht optional** — `plugin:update` ohne anschließenden `cache:clear` lässt neue DI-Services (z. B. den Monolog-Channel seit 1.6.0) nicht auflösen und produziert `ServiceNotFoundException` beim ersten Request.
+Beim Update auf eine neue Plugin-Version gelten diese Schritte pro Shop-Instanz. **Die Reihenfolge ist nicht optional.** Ein `plugin:update` ohne anschließenden `cache:clear` lässt neue DI-Services (z. B. den Monolog-Channel seit 1.6.0) nicht auflösen und produziert beim ersten Request eine `ServiceNotFoundException`.
 
 ### Pflicht-Sequenz
 
@@ -275,9 +273,9 @@ Vor dem Produktions-Rollout auf einer Staging-Instanz durchspielen:
 - [ ] Admin-Backend lädt, Plugin-Config öffnet ohne Exception
 - [ ] Produkt-Edit → Individuelle Felder → Meterpreis: erwartete Optionen vorhanden (ab 1.5.x: Vererben / Aktiv / Inaktiv)
 - [ ] Storefront-PDP eines aktiven Meterproduktes lädt, Längeneingabe funktioniert, Live-Preis aktualisiert
-- [ ] Cart: Längen-LineItem mit korrektem Preis; bei aktiviertem Splitting entstehen Sibling-Positionen
+- [ ] Cart: Längen-LineItem mit korrektem Preis; bei aktiviertem Splitting bleibt es eine Position, deren Name die Teilstücke nennt
 - [ ] Screenreader (ab 1.6.0): Hinweis-Modal hat Fokus beim Öffnen, Escape schließt, Fokus kehrt zum Input zurück; Validierungsfehler werden angesagt
-- [ ] Logs: Plugin-Events erscheinen unter dem Channel `rc_dynamic_price` (ab 1.6.0)
+- [ ] Logs: Plugin-Events erscheinen im Standard-Log von Shopware, jeweils mit dem Präfix `RcDynamicPrice:`
 
 ### Was pro Versions-Sprung neu ist
 
@@ -285,27 +283,27 @@ Vor dem Produktions-Rollout auf einer Staging-Instanz durchspielen:
 |--------|-----|---------------------------------------|
 | 1.4.x → 1.5.0 | Tri-State-`rc_meter_price_active`, Kategorie-CustomFieldSet, Cache-Tag-Schema | `plugin:update` führt zwei Migrations aus; HTTP-Cache verwerfen. **Breaking:** Integrationen mit `customFields.rc_meter_price_active === true` müssen auf `=== 'on'` umstellen. |
 | 1.5.0 → 1.5.3 | Migration-Batch-Atomarität, Cache-Invalidation bei Kategorie-Delete | Nur `cache:clear`, keine neuen Migrations. |
-| 1.5.x → 1.6.0 | Monolog-Channel, `DynamicPriceException`, BFSG-Accessibility, Integration-Tests | **`cache:clear` zwingend** (Container-Rebuild registriert den Channel). `bin/build-storefront.sh` (JS und Twig geändert). **Breaking:** `catch (\InvalidArgumentException)` auf Plugin-Aufrufe bricht — neue Exception erbt von `\RuntimeException`. |
+| 1.5.x → 1.6.0 | Monolog-Channel, `DynamicPriceException`, BFSG-Accessibility, Integration-Tests | **`cache:clear` zwingend** (Container-Rebuild registriert den Channel). `bin/build-storefront.sh` (JS und Twig geändert). **Breaking:** `catch (\InvalidArgumentException)` auf Plugin-Aufrufe bricht, die neue Exception erbt von `\RuntimeException`. |
 | 1.6.0 → 1.6.1 | Monolog-Channel-Registrierung via `Plugin::build()` | `cache:clear` (Container-Rebuild). Ohne 1.6.1-Fix tritt in 1.6.0 `ServiceNotFoundException` beim ersten Request auf. |
 | 1.6.1 → 1.6.2 | Kategorie-Custom-Fields mit eigenem Namespace `rc_meter_price_cat_*` | `plugin:update` registriert das Kategorie-CustomFieldSet (in 1.5.0/1.6.x scheiterte die Migration silent mit `UniqueConstraintViolation`). Keine Datenaktion nötig. **Breaking:** Integrationen, die Kategorie-Felder lesen oder schreiben, auf `rc_meter_price_cat_*`-Namen umstellen. |
 
 ### Log-Aggregation anpassen
 
-Seit 1.6.0 schreibt das Plugin strukturierte Events auf den Monolog-Channel `rc_dynamic_price`:
+Seit 1.10.2 schreibt das Plugin seine Ereignisse in den Standard-Channel von Shopware (`monolog.logger`), und jede Meldung beginnt mit `RcDynamicPrice:`:
 
-- `info` beim Add-to-Cart mit der aufgelösten Scope-Herkunft pro Feld (`activeScope`, `minLengthScope`, …). Hilft bei Support-Fällen „warum ist der Preis X?".
+- `info` beim Add-to-Cart mit der aufgelösten Scope-Herkunft pro Feld (`activeScope`, `minLengthScope`, …). Das hilft bei Support-Fällen der Art „warum ist der Preis X?".
 - `warning` beim Verwerfen ungültiger Eingaben (Bounds, Format).
 - `info` beim Auslösen eines Splits mit Teilstück-Vektor.
 
-Wenn Ops Log-Filter (Graylog, ELK, Loki, CloudWatch Insights etc.) pflegt, den Channel `rc_dynamic_price` dort ergänzen — sonst laufen die Events nur im Default-Channel auf und fallen im gefilterten View weg.
+Auf den Channel `rc_dynamic_price` schreibt nur noch der `LoggingMetricsRecorder`, und das nur bei eingeschalteten Metriken. Wer Log-Filter pflegt (Graylog, ELK, Loki, CloudWatch Insights usw.), filtert die Ereignisse über das Präfix und ergänzt für die Kennzahlen den Channel `rc_dynamic_price`.
 
 ### Multi-Shop-Hinweis
 
-Wird das Plugin in mehreren Instanzen betrieben (Staging, Live, evtl. weitere Mandanten), ist die obige Sequenz **pro Instanz** zu durchlaufen. `plugin:update` greift auf die DB der jeweiligen Instanz — `cache:clear` betrifft das Filesystem der jeweiligen Instanz.
+Läuft das Plugin in mehreren Instanzen (Staging, Live, eventuell weitere Mandanten), ist die obige Sequenz **pro Instanz** zu durchlaufen. `plugin:update` greift auf die Datenbank der jeweiligen Instanz zu, `cache:clear` auf deren Dateisystem.
 
 ## Rollback
 
-Falls ein Release zurückgerollt werden muss, gelten diese Schritte. Vorab **DB-Snapshot** und einen kurzen Storefront-Test auf Staging einplanen.
+Muss ein Release zurückgerollt werden, gelten diese Schritte. Vorab gehören ein **DB-Snapshot** und ein kurzer Storefront-Test auf Staging in den Plan.
 
 ### Rollback 1.6.x → 1.5.x
 
@@ -316,7 +314,7 @@ Falls ein Release zurückgerollt werden muss, gelten diese Schritte. Vorab **DB-
    php bin/console plugin:refresh
    php bin/console plugin:update RcDynamicPrice
    ```
-2. **Keine Datenbank-Rückmigration nötig.** 1.6.x hat keine Migrations hinzugefügt — die Änderungen betrafen Exception-API, Monolog-Channel, Accessibility-Templates und Integration-Tests.
+2. **Keine Datenbank-Rückmigration nötig.** 1.6.x hat keine Migrations hinzugefügt. Die Änderungen betrafen Exception-API, Monolog-Channel, Accessibility-Templates und Integration-Tests.
 3. **Externe Integrationen prüfen.** Falls ein externer Consumer auf `DynamicPriceException::getErrorCode()` umgebaut wurde, existiert die Methode nach dem Rollback nicht mehr. Rückfall auf `\RuntimeException` oder `\InvalidArgumentException` (1.5.x-Verhalten).
 4. **Log-Aggregation:** Der Channel `rc_dynamic_price` verschwindet. Wenn Filter für diesen Channel gepflegt wurden, wieder auf den Default-Channel umhängen, sonst werden Plugin-Logs nicht mehr eingesammelt.
 5. **Caches verwerfen und Storefront neu bauen** (die a11y-Attribute im Twig und im JS fallen weg, JS-Bundles ändern sich):
@@ -346,13 +344,13 @@ Falls ein Release zurückgerollt werden muss, gelten diese Schritte. Vorab **DB-
        END
    ) WHERE JSON_EXTRACT(custom_fields, '$.rc_meter_price_active') IS NOT NULL;
    ```
-   `inherit` und `off` werden beide zu `false` — der Effekt entspricht „Meterpreis aus", weil 1.4.x kein Inherit-Konzept kennt.
-3. **Custom-Field-Definition auf bool zurück.** Auch das `custom_field`-Schema muss rückumgestellt werden, sonst versteckt sich das Feld im Admin-UI:
+   `inherit` und `off` werden beide zu `false`. Im Ergebnis heißt das „Meterpreis aus", weil 1.4.x kein Inherit-Konzept kennt.
+3. **Custom-Field-Definition auf bool zurück.** Auch das `custom_field`-Schema muss zurückgestellt werden, sonst versteckt sich das Feld im Admin-UI:
    ```sql
    UPDATE custom_field SET type = 'bool', config = '{"type":"checkbox","label":{"de-DE":"Meterpreis aktiv","en-GB":"Meter price active"},"customFieldType":"checkbox","customFieldPosition":1}'
    WHERE name = 'rc_meter_price_active';
    ```
-4. **Kategorie-Custom-Field-Set stilllegen.** 1.4.x ignoriert `rc_dynamic_price_category` komplett; die Tabelle bleibt bestehen. Will man sie physisch entfernen:
+4. **Kategorie-Custom-Field-Set stilllegen.** 1.4.x ignoriert `rc_dynamic_price_category` komplett; die Tabelle bleibt bestehen. Wer sie physisch entfernen will:
    ```sql
    DELETE FROM custom_field_set WHERE name = 'rc_dynamic_price_category';
    ```
@@ -362,7 +360,7 @@ Falls ein Release zurückgerollt werden muss, gelten diese Schritte. Vorab **DB-
    php bin/console cache:clear
    php bin/console http:cache:clear
    ```
-6. **Plugin-Config-Keys**, die 1.5.x hinzugefügt hat (`applyToAllProducts`, `splitMode`, `maxPieceLength`, `splitHintTemplate`), werden von 1.4.x ignoriert — keine Datenaktion nötig.
+6. **Plugin-Config-Keys**, die 1.5.x hinzugefügt hat (`applyToAllProducts`, `splitMode`, `maxPieceLength`, `splitHintTemplate`), ignoriert 1.4.x. Eine Datenaktion ist nicht nötig.
 7. **Smoke-Test** auf einem aktivierten Meterprodukt: PDP lädt, Längeneingabe funktioniert, Cart-Position korrekt.
 
 ### Was nicht rückgängig gemacht werden kann
@@ -380,17 +378,18 @@ composer quality   # cs-check + phpstan + test
 ## Geschwindigkeit messen
 
 Das Messprojekt unter `benchmarks/` läuft getrennt vom Testlauf und gehört in kein Ausrollpaket
-(`export-ignore`). Ein Lauf misst gegen eine Testinstanz mit Shopware (ddev):
+(`export-ignore`). Ein Lauf misst gegen eine Testinstanz mit Shopware (ddev), die auf einem per SSH
+erreichbaren Rechner liegt:
 
 ```bash
-bash benchmarks/run.sh <instanz>
+bash benchmarks/run.sh <instanz> <rechner>
 ```
 
-Zuerst Produktseite, Warenkorb und Warenkorb-Leiste mit einem Zuschnitt über HTTP (Median aus 12
-Aufrufen), dann mit PHPBench das Auflösen der Einstellungen gegen den Bestand und das Aufteilen in
-Teilstücke bis zur Grenze von 1 km. Jeder Lauf hängt seine Werte mit Datum, Fassung und Rechner an
-`benchmarks/results.csv` an. Verglichen wird die Reihe derselben Instanz.
+Zuerst kommen Produktseite, Warenkorb und Warenkorb-Leiste mit einem Zuschnitt über HTTP an die Reihe
+(Median aus 12 Aufrufen), dann misst PHPBench das Auflösen der Einstellungen gegen den Bestand und das
+Aufteilen in Teilstücke bis zur Grenze von 1 km. Jeder Lauf hängt seine Werte mit Datum, Fassung und
+Rechner an `benchmarks/results.csv` an. Verglichen wird die Reihe derselben Instanz.
 
 ## Lizenz
 
-MIT — siehe [LICENSE](LICENSE).
+MIT, siehe [LICENSE](LICENSE).

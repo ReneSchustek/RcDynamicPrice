@@ -2,8 +2,8 @@
 // Schritte nach dem Laden der Seite als beantwortet gelten. Der Quelltext wird in einer
 // Stub-Umgebung evaluiert, wie beim Längenschalter.
 //
-// Grundlage ist der echte Bestand: das Relinggeländer `EB270100-2-0` mit zwölf Maßen und fünf
-// Pfostenzahlen, von denen es 18 Kombinationen gibt (live-clone, 2026-10-05).
+// Grundlage ist ein echter Shopbestand: das Relinggeländer `EB270100-2-0` mit zwölf Maßen und fünf
+// Pfostenzahlen, von denen es 18 Kombinationen gibt (Stand 2026-10-05).
 
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';

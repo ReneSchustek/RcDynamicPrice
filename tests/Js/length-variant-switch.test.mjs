@@ -437,7 +437,7 @@ describe('Der Ablauf — ein Fenster, nicht zwei', () => {
 });
 
 describe('Feste Maße — die Längen der Bausätze', () => {
-    // Die Maße des Relinggeländers `EB270100-2-0`, gelesen am 2026-10-05 auf live-clone.
+    // Die Maße des Relinggeländers `EB270100-2-0`, gelesen am 2026-10-05 in einer Kopie des Shops.
     const sizes = ['1,0 m', '1,2 m', '1,5 m', '2,0 m', '2,5 m', '3,0 m', '3,5 m', '4,0 m', '4,5 m', '5,0 m', '5,5 m', '6,0 m']
         .map((text) => LengthVariantSwitchPlugin.parseRange(text));
     const fixedSizeRanges = LengthVariantSwitchPlugin.completeFixedSizes(sizes);

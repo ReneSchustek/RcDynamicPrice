@@ -1,18 +1,19 @@
 #!/bin/bash
-# Messlauf der Meterpreis-Erweiterung gegen eine Instanz der DevBox: erst die Seitenzeiten über HTTP,
+# Messlauf der Meterpreis-Erweiterung gegen eine ddev-Instanz auf einem Testrechner: erst die Seitenzeiten über HTTP,
 # dann die Dienste über PHPBench. Die Werte werden an benchmarks/results.csv angehängt, mit Datum,
 # Fassung (aus der Instanz, nicht aus dem Quellbaum) und Rechner. Spalte `ms`: bei Seiten der Median
 # von 12 Aufrufen, bei Diensten der Modus, den PHPBench über die Durchläufe ermittelt.
 #
-# Aufruf vom Arbeitsplatz: bash benchmarks/run.sh [instanz]
+# Aufruf vom Arbeitsplatz: bash benchmarks/run.sh <instanz> <rechner>
+# <rechner> ist der SSH-Name des Testrechners, auf dem die Instanz läuft.
 #
 # Zahlen verschiedener Rechner oder Instanzen sind nicht vergleichbar; verglichen wird die Reihe
 # derselben Instanz. Unter APP_ENV=dev liegen die Seitenzeiten höher als auf Live, die
 # Unterschiede zwischen zwei Läufen bleiben aussagekräftig.
 set -euo pipefail
 
-INSTANCE=${1:-live-clone}
-HOST=devbox
+INSTANCE=${1:?Aufruf: bash benchmarks/run.sh <instanz> <rechner>}
+HOST=${2:?Aufruf: bash benchmarks/run.sh <instanz> <rechner>}
 PLUGIN=RcDynamicPrice
 PHPBENCH_VERSION='^1.7'
 ROOT=$(cd "$(dirname "$0")/.." && pwd)

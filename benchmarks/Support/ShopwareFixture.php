@@ -27,7 +27,7 @@ use Symfony\Component\HttpKernel\KernelInterface;
  */
 final class ShopwareFixture
 {
-    /** Variante eines Bodenprofils mit Meterpreis am Elternartikel, im Bestand von live-clone. */
+    /** Variante eines Bodenprofils mit Meterpreis am Elternartikel, im Bestand der Testinstanz. */
     public const PRODUCT_NUMBER = 'BP-1110';
 
     private static ?KernelInterface $kernel = null;

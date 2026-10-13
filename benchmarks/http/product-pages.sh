@@ -1,12 +1,12 @@
 #!/bin/bash
 # Antwortzeiten der Seiten mit einem Meterpreis-Artikel: Produktseite, Warenkorb und Warenkorb-Leiste
-# mit einem Zuschnitt von 2500 mm, je 12 warme Aufrufe, Median in Millisekunden. Läuft auf der DevBox
-# gegen eine ddev-Instanz.
+# mit einem Zuschnitt von 2500 mm, je 12 warme Aufrufe, Median in Millisekunden. Läuft auf dem
+# Testrechner gegen eine ddev-Instanz.
 #
 # Ausgabe je Seite eine Zeile: Seite;Median_ms;HTTP-Status
 # Aufruf: product-pages.sh <instanz>
 set -u
-INSTANCE=${1:-live-clone}
+INSTANCE=${1:?Aufruf: product-pages.sh <instanz>}
 RUNS=12
 BASE=https://$INSTANCE.ddev.site
 JAR=$(mktemp)
