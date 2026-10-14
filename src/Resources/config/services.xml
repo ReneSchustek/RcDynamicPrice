@@ -73,6 +73,7 @@
         <service id="Ruhrcoder\RcDynamicPrice\Storefront\Subscriber\LengthSettingsSubscriber">
             <argument type="service" id="Ruhrcoder\RcDynamicPrice\Service\LengthSettingsResolver"/>
             <argument type="service" id="Shopware\Core\Content\Product\SalesChannel\Detail\AvailableCombinationLoader"/>
+            <argument type="service" id="Shopware\Core\System\SystemConfig\SystemConfigService"/>
             <tag name="kernel.event_subscriber"/>
         </service>
 

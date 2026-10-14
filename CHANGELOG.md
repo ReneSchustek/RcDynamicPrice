@@ -1,3 +1,10 @@
+# 1.28.0
+
+- **Geführte Auswahl für alle Variantenartikel** (Karte „Geführte Auswahl", Vorgabe aus): Auch Artikel ohne Länge
+  führen den Kunden. Er wählt zuerst die oberste Gruppe, etwa die Glasstärke, die er kennt; danach zeigt jede weitere
+  Gruppe nur, was dazu kaufbar ist. Durchgestrichene Werte gibt es damit nicht mehr. Artikel mit Längengruppe beginnen
+  wie bisher mit der Länge. Welche Gruppe oben steht, legt das Theme fest.
+
 # 1.27.1
 
 - **Der Hinweis zu den Eingaben steht unter der Länge.** „Jede abweichende Eingabe ergibt eine eigene Position im

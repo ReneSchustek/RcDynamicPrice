@@ -12,6 +12,7 @@ use Shopware\Core\Content\Cms\SalesChannel\Struct\BuyBoxStruct;
 use Shopware\Core\Content\Product\SalesChannel\Detail\AbstractAvailableCombinationLoader;
 use Shopware\Core\Content\Property\PropertyGroupCollection;
 use Shopware\Core\System\SalesChannel\SalesChannelContext;
+use Shopware\Core\System\SystemConfig\SystemConfigService;
 use Shopware\Storefront\Page\Product\ProductPage;
 use Shopware\Storefront\Page\Product\ProductPageLoadedEvent;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
@@ -36,6 +37,7 @@ final class LengthSettingsSubscriber implements EventSubscriberInterface
     public function __construct(
         private readonly LengthSettingsResolver $resolver,
         private readonly AbstractAvailableCombinationLoader $combinationLoader,
+        private readonly ?SystemConfigService $systemConfig = null,
     ) {
     }
 
@@ -59,7 +61,18 @@ final class LengthSettingsSubscriber implements EventSubscriberInterface
         }
 
         $settings = $this->resolver->forProduct($product, $salesChannelContext->getSalesChannelId(), $salesChannelContext->getContext());
+
+        // Geführte Auswahl für alle Variantenartikel (Rene, 14.10.2026: „Es darf nirgends mehr die durchgestrichenen
+        // Artikel da sein. Das soll ja den Kunden führen und muss logisch sein."): Ohne Längengruppe beginnt sie mit
+        // der obersten Gruppe der Seite; welche das ist, legt das Theme fest (etwa die Glasstärke vor dem Glashalter).
+        $guidedForAll = $this->systemConfig?->getBool('RcDynamicPrice.config.guidedSelectionAllVariants', $salesChannelContext->getSalesChannelId()) ?? false;
+
         if ($settings->isEmpty()) {
+            $firstGroupId = self::firstGroupId($page->getConfiguratorSettings());
+            if ($guidedForAll && $firstGroupId !== null) {
+                $this->addGuidedSelection($page, $parentId, $firstGroupId, $salesChannelContext);
+            }
+
             return;
         }
 
@@ -76,9 +89,18 @@ final class LengthSettingsSubscriber implements EventSubscriberInterface
 
         $page->addExtension(self::EXTENSION_NAME, new LengthSettingsStruct($settings->lengthSwitch, $lengthOnly, $lengthGroupId, $settings->lengthFieldNumber));
 
-        if ($settings->guidedSelection && $lengthGroupId !== null && !$lengthOnly) {
-            $this->addGuidedSelection($page, $parentId, $lengthGroupId, $salesChannelContext);
+        $entryGroupId = $lengthGroupId ?? self::firstGroupId($page->getConfiguratorSettings());
+        if (!$lengthOnly && $entryGroupId !== null && (($settings->guidedSelection && $lengthGroupId !== null) || $guidedForAll)) {
+            $this->addGuidedSelection($page, $parentId, $entryGroupId, $salesChannelContext);
         }
+    }
+
+    /**
+     * Die oberste Gruppe der Seite, wenn es mindestens zwei gibt; mit einer gibt es nichts zu führen.
+     */
+    public static function firstGroupId(PropertyGroupCollection $groups): ?string
+    {
+        return $groups->count() >= 2 ? $groups->first()?->getId() : null;
     }
 
     /**

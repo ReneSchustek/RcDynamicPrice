@@ -29,6 +29,7 @@ use Shopware\Core\Content\Property\PropertyGroupEntity;
 use Shopware\Core\Framework\Api\Context\SystemSource;
 use Shopware\Core\Framework\Context;
 use Shopware\Core\System\SalesChannel\SalesChannelContext;
+use Shopware\Core\System\SystemConfig\SystemConfigService;
 use Shopware\Storefront\Page\Product\ProductPage;
 use Shopware\Storefront\Page\Product\ProductPageLoadedEvent;
 use Symfony\Component\HttpFoundation\Request;
@@ -215,7 +216,29 @@ final class LengthSettingsSubscriberTest extends TestCase
         self::assertFalse($page->hasExtension(LengthSettingsSubscriber::GUIDED_EXTENSION_NAME));
     }
 
-    private function subscriber(AvailableCombinationResult $combinations, ?string $expectedParentId): LengthSettingsSubscriber
+    /**
+     * Was: Artikel ohne Längeneinstellung, Schalter „Geführte Auswahl für alle Variantenartikel" an.
+     * Warum: Auch ohne Länge soll nichts durchgestrichen dastehen; geführt wird ab der obersten Gruppe.
+     * Erwartet: geführte Auswahl, erste Gruppe ist die oberste der Seite; ohne Schalter keine.
+     */
+    public function testGuidedSelectionForAllVariantsStartsWithTheTopGroup(): void
+    {
+        $combinations = new AvailableCombinationResult();
+        $combinations->addCombination(['p-2', 'm-1'], true);
+
+        $config = $this->createMock(SystemConfigService::class);
+        $config->method('getBool')->willReturn(true);
+
+        $page = $this->page([]);
+        $this->subscriber($combinations, 'eltern', $config)->onProductPageLoaded($this->event($page));
+
+        self::assertTrue($page->hasExtension(LengthSettingsSubscriber::GUIDED_EXTENSION_NAME));
+        $guided = $page->getExtension(LengthSettingsSubscriber::GUIDED_EXTENSION_NAME);
+        self::assertInstanceOf(GuidedSelectionStruct::class, $guided);
+        self::assertSame(self::POSTS, $guided->getGroups()[0]['id']);
+    }
+
+    private function subscriber(AvailableCombinationResult $combinations, ?string $expectedParentId, ?SystemConfigService $config = null): LengthSettingsSubscriber
     {
         $chainLoader = $this->createMock(CategoryChainLoaderInterface::class);
         $chainLoader->method('loadChain')->willReturn([]);
@@ -229,7 +252,7 @@ final class LengthSettingsSubscriberTest extends TestCase
                 return $combinations;
             });
 
-        return new LengthSettingsSubscriber(new LengthSettingsResolver($chainLoader), $loader);
+        return new LengthSettingsSubscriber(new LengthSettingsResolver($chainLoader), $loader, $config);
     }
 
     /**

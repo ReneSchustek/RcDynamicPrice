@@ -155,6 +155,20 @@
     </card>
 
     <card>
+        <title lang="de-DE">Geführte Auswahl</title>
+        <title lang="en-GB">Guided selection</title>
+
+        <input-field type="bool">
+            <name>guidedSelectionAllVariants</name>
+            <label lang="de-DE">Geführte Auswahl für alle Variantenartikel</label>
+            <label lang="en-GB">Guided selection for all variant products</label>
+            <defaultValue>false</defaultValue>
+            <helpText lang="de-DE">Auch ohne Länge: Der Kunde wählt zuerst die oberste Gruppe (etwa die Glasstärke, die er kennt), danach sieht er in jeder weiteren Gruppe nur, was dazu kaufbar ist. Nichts steht durchgestrichen da. Bei Artikeln mit Längengruppe beginnt die Auswahl wie bisher mit der Länge.</helpText>
+            <helpText lang="en-GB">Also without a length: the customer first picks the top group (e.g. the glass thickness they know), then each further group shows only what can be bought with it. Nothing is shown struck through. Products with a length group start with the length as before.</helpText>
+        </input-field>
+    </card>
+
+    <card>
         <title lang="de-DE">Observability (Metriken)</title>
         <title lang="en-GB">Observability (metrics)</title>
 
