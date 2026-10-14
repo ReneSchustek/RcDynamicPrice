@@ -31,7 +31,7 @@
             "askUnit": "Meinen Sie %value% m? Bitte geben Sie die Länge mit Einheit ein, etwa „%value% m“ oder „%value%000 mm“."
         },
         "guidedSelection": {
-            "chooseFirst": "Bitte wählen Sie zuerst die Länge. Danach zeigen wir nur, was es dazu gibt.",
+            "chooseFirst": "Bitte wählen Sie zuerst: %group%. Danach zeigen wir nur, was es dazu gibt.",
             "chooseNext": "Bitte wählen Sie noch: %group%",
             "placeholder": "Bitte wählen"
         }

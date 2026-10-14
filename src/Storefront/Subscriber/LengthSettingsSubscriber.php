@@ -9,8 +9,11 @@ use Ruhrcoder\RcDynamicPrice\Service\LengthSettingsResolver;
 use Ruhrcoder\RcDynamicPrice\Storefront\Struct\GuidedSelectionStruct;
 use Ruhrcoder\RcDynamicPrice\Storefront\Struct\LengthSettingsStruct;
 use Shopware\Core\Content\Cms\SalesChannel\Struct\BuyBoxStruct;
+use Shopware\Core\Content\Product\ProductCollection;
 use Shopware\Core\Content\Product\SalesChannel\Detail\AbstractAvailableCombinationLoader;
 use Shopware\Core\Content\Property\PropertyGroupCollection;
+use Shopware\Core\Framework\DataAbstractionLayer\EntityRepository;
+use Shopware\Core\Framework\DataAbstractionLayer\Search\Criteria;
 use Shopware\Core\System\SalesChannel\SalesChannelContext;
 use Shopware\Core\System\SystemConfig\SystemConfigService;
 use Shopware\Storefront\Page\Product\ProductPage;
@@ -34,10 +37,14 @@ final class LengthSettingsSubscriber implements EventSubscriberInterface
 
     public const GUIDED_EXTENSION_NAME = 'rcGuidedSelection';
 
+    /**
+     * @param EntityRepository<ProductCollection>|null $productRepository
+     */
     public function __construct(
         private readonly LengthSettingsResolver $resolver,
         private readonly AbstractAvailableCombinationLoader $combinationLoader,
         private readonly ?SystemConfigService $systemConfig = null,
+        private readonly ?EntityRepository $productRepository = null,
     ) {
     }
 
@@ -193,9 +200,35 @@ final class LengthSettingsSubscriber implements EventSubscriberInterface
             return;
         }
 
+        [$parentName, $parentNumber] = $this->parentLabels($page, $parentId, $context);
+
         $page->addExtension(
             self::GUIDED_EXTENSION_NAME,
-            new GuidedSelectionStruct($lengthGroupId, self::orderedGroups($settings, $lengthGroupId), $combinations),
+            new GuidedSelectionStruct($lengthGroupId, self::orderedGroups($settings, $lengthGroupId), $combinations, $parentName, $parentNumber),
         );
+    }
+
+    /**
+     * Name und Nummer des Elternartikels. Ruft jemand den Elternartikel auf, lädt der Kern die beste Variante, und die
+     * Seite hieße „… Milchglas (3m)", obwohl noch keine Länge gewählt ist. Bis zur Wahl zeigt das Skript deshalb Name
+     * und Nummer des Elternartikels; die Variantennamen bleiben im Markup für Suchmaschinen und ohne Skript.
+     *
+     * @return array{0: ?string, 1: ?string}
+     */
+    private function parentLabels(ProductPage $page, string $parentId, SalesChannelContext $context): array
+    {
+        $product = $page->getProduct();
+        if ($this->productRepository === null || $product->getId() === $parentId) {
+            return [null, null];
+        }
+
+        $parent = $this->productRepository->search(new Criteria([$parentId]), $context->getContext())->getEntities()->first();
+        if ($parent === null) {
+            return [null, null];
+        }
+
+        $name = trim((string) ($parent->getTranslation('name') ?? $parent->getName()));
+
+        return [$name !== '' ? $name : null, $parent->getProductNumber()];
     }
 }

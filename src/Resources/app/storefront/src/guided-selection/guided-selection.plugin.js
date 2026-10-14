@@ -34,6 +34,14 @@ export default class GuidedSelectionPlugin extends Plugin {
         textChooseNext: '',
         textPlaceholder: '',
 
+        // Name und Nummer des Elternartikels, solange nichts gewählt ist (leer: nichts tauschen).
+        parentName: '',
+        parentNumber: '',
+        variantName: '',
+        variantNumber: '',
+        nameSelector: '.product-detail-name',
+        numberSelector: '.product-detail-ordernumber, [data-rc-product-number]',
+
         configuratorSelector: '.product-detail-configurator-container',
         groupSelector: '.product-detail-configurator-group',
         groupTitleSelector: '.product-detail-configurator-group-title',
@@ -299,14 +307,47 @@ export default class GuidedSelectionPlugin extends Plugin {
 
         document.body.classList.toggle(this.options.incompleteClass, !complete);
         this._hint.hidden = complete;
+        this._showParent(next === 0);
 
         if (complete) {
             return;
         }
 
-        this._hint.textContent = next === 0
-            ? this.options.textChooseFirst
-            : this.options.textChooseNext.split('%group%').join(this._groupTitle(this._groups[next].id));
+        // Der erste Schritt nennt die oberste Gruppe; das ist nicht immer die Länge (etwa die Glasstärke).
+        const text = next === 0 ? this.options.textChooseFirst : this.options.textChooseNext;
+        this._hint.textContent = text.split('%group%').join(this._groupTitle(this._groups[next].id));
+    }
+
+    /**
+     * Solange nichts gewählt ist, Name und Nummer des Elternartikels statt der vorgeladenen Variante: Der Kern zeigt beim
+     * Aufruf des Elternartikels die beste Variante, deren Name schon eine Länge nennt, die niemand gewählt hat.
+     */
+    _showParent(show) {
+        const { parentName, parentNumber, variantName, variantNumber } = this.options;
+        if (!parentName || !variantName || (parentName === variantName && (!parentNumber || parentNumber === variantNumber))) {
+            return;
+        }
+
+        if (this._titleBase === undefined) {
+            this._titleBase = document.title;
+        }
+
+        const name = show ? parentName : variantName;
+        const number = show ? (parentNumber || variantNumber) : variantNumber;
+
+        if (parentName !== variantName) {
+            document.querySelectorAll(this.options.nameSelector).forEach((element) => {
+                element.textContent = name;
+            });
+        }
+        document.querySelectorAll(this.options.numberSelector).forEach((element) => {
+            if ((variantNumber && element.textContent.includes(variantNumber)) || (parentNumber && element.textContent.includes(parentNumber))) {
+                element.textContent = number;
+            }
+        });
+        if (parentName !== variantName) {
+            document.title = show ? this._titleBase.split(variantName).join(parentName) : this._titleBase;
+        }
     }
 
     _groupTitle(groupId) {

@@ -25,7 +25,22 @@ final class GuidedSelectionStruct extends Struct
         private readonly string $lengthGroupId,
         private readonly array $groups,
         private readonly array $combinations,
+        private readonly ?string $parentName = null,
+        private readonly ?string $parentNumber = null,
     ) {
+    }
+
+    /**
+     * Name des Elternartikels: steht da, solange in der geführten Auswahl nichts gewählt ist.
+     */
+    public function getParentName(): ?string
+    {
+        return $this->parentName;
+    }
+
+    public function getParentNumber(): ?string
+    {
+        return $this->parentNumber;
     }
 
     public function getLengthGroupId(): string

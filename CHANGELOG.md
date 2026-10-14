@@ -1,3 +1,11 @@
+# 1.29.0
+
+- **Der erste Hinweis nennt die oberste Gruppe:** „Bitte wählen Sie zuerst: Glasstärke. …" statt immer „die Länge".
+- **Name und Nummer des Elternartikels, solange nichts gewählt ist:** Ruft jemand den Elternartikel auf, lädt Shopware
+  die beste Variante, und Überschrift, Seitentitel und Produktnummer nannten schon eine Länge („… Milchglas (3m)").
+  Bis zur ersten Wahl stehen jetzt Name und Nummer des Elternartikels da. Im Markup bleibt der Variantenname, für
+  Suchmaschinen und ohne Skript.
+
 # 1.28.0
 
 - **Geführte Auswahl für alle Variantenartikel** (Karte „Geführte Auswahl", Vorgabe aus): Auch Artikel ohne Länge

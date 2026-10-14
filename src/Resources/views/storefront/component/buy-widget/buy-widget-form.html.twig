@@ -74,7 +74,11 @@
                  combinations: rcGuided.combinations,
                  textChooseFirst: 'rc-dynamic-price.guidedSelection.chooseFirst'|trans,
                  textChooseNext: 'rc-dynamic-price.guidedSelection.chooseNext'|trans,
-                 textPlaceholder: 'rc-dynamic-price.guidedSelection.placeholder'|trans
+                 textPlaceholder: 'rc-dynamic-price.guidedSelection.placeholder'|trans,
+                 parentName: rcGuided.parentName ?? '',
+                 parentNumber: rcGuided.parentNumber ?? '',
+                 variantName: product.translated.name,
+                 variantNumber: product.productNumber
              }|json_encode|e('html_attr') }}'
              hidden></div>
     {% endif %}
