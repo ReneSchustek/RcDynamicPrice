@@ -219,7 +219,7 @@ final class LengthSettingsSubscriberTest extends TestCase
     /**
      * Was: Artikel ohne Längeneinstellung, Schalter „Geführte Auswahl für alle Variantenartikel" an.
      * Warum: Auch ohne Länge soll nichts durchgestrichen dastehen; geführt wird ab der obersten Gruppe.
-     * Erwartet: geführte Auswahl, erste Gruppe ist die oberste der Seite; ohne Schalter keine.
+     * Erwartet: geführte Auswahl, erste Gruppe ist die oberste der Seite.
      */
     public function testGuidedSelectionForAllVariantsStartsWithTheTopGroup(): void
     {

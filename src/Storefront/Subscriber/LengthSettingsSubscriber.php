@@ -38,6 +38,9 @@ final class LengthSettingsSubscriber implements EventSubscriberInterface
     public const GUIDED_EXTENSION_NAME = 'rcGuidedSelection';
 
     /**
+     * Konfiguration und Produktablage sind optional, damit Einheitstests ohne sie auskommen. Ohne Konfiguration bleibt
+     * die geführte Auswahl für alle Variantenartikel aus, ohne Produktablage fehlen Name und Nummer des Elternartikels.
+     *
      * @param EntityRepository<ProductCollection>|null $productRepository
      */
     public function __construct(
@@ -69,9 +72,9 @@ final class LengthSettingsSubscriber implements EventSubscriberInterface
 
         $settings = $this->resolver->forProduct($product, $salesChannelContext->getSalesChannelId(), $salesChannelContext->getContext());
 
-        // Geführte Auswahl für alle Variantenartikel (Rene, 14.10.2026: „Es darf nirgends mehr die durchgestrichenen
-        // Artikel da sein. Das soll ja den Kunden führen und muss logisch sein."): Ohne Längengruppe beginnt sie mit
-        // der obersten Gruppe der Seite; welche das ist, legt das Theme fest (etwa die Glasstärke vor dem Glashalter).
+        // Mit der geführten Auswahl für alle Variantenartikel trifft der Kunde nirgends auf durchgestrichene
+        // Kombinationen, er wird Schritt für Schritt geführt. Ohne Längengruppe beginnt sie mit der obersten Gruppe der
+        // Seite; welche das ist, legt das Theme fest (etwa die Glasstärke vor dem Glashalter).
         $guidedForAll = $this->systemConfig?->getBool('RcDynamicPrice.config.guidedSelectionAllVariants', $salesChannelContext->getSalesChannelId()) ?? false;
 
         if ($settings->isEmpty()) {
@@ -96,6 +99,9 @@ final class LengthSettingsSubscriber implements EventSubscriberInterface
 
         $page->addExtension(self::EXTENSION_NAME, new LengthSettingsStruct($settings->lengthSwitch, $lengthOnly, $lengthGroupId, $settings->lengthFieldNumber));
 
+        // Die am Artikel oder an der Kategorie eingestellte Führung braucht die Längengruppe, die für alle
+        // Variantenartikel beginnt notfalls mit der obersten Gruppe. Bei „Größen nur über die Länge" sind die
+        // Längenknöpfe ausgeblendet, mit denen die Führung beginnen würde.
         $entryGroupId = $lengthGroupId ?? self::firstGroupId($page->getConfiguratorSettings());
         if (!$lengthOnly && $entryGroupId !== null && (($settings->guidedSelection && $lengthGroupId !== null) || $guidedForAll)) {
             $this->addGuidedSelection($page, $parentId, $entryGroupId, $salesChannelContext);
@@ -186,6 +192,10 @@ final class LengthSettingsSubscriber implements EventSubscriberInterface
         return $groups;
     }
 
+    /**
+     * `$lengthGroupId` ist die Gruppe des ersten Schritts: die Längengruppe oder, ohne sie, die oberste Gruppe der
+     * Seite. Ohne kaufbare Kombination gibt es nichts zu führen, und die Seite bleibt beim Verhalten des Kerns.
+     */
     private function addGuidedSelection(ProductPage $page, string $parentId, string $lengthGroupId, SalesChannelContext $context): void
     {
         $settings = $page->getConfiguratorSettings();
@@ -218,6 +228,7 @@ final class LengthSettingsSubscriber implements EventSubscriberInterface
     private function parentLabels(ProductPage $page, string $parentId, SalesChannelContext $context): array
     {
         $product = $page->getProduct();
+        // Zeigt die Seite den Elternartikel selbst, trägt sie schon seinen Namen und seine Nummer.
         if ($this->productRepository === null || $product->getId() === $parentId) {
             return [null, null];
         }

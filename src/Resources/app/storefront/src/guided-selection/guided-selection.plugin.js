@@ -37,9 +37,13 @@ export default class GuidedSelectionPlugin extends Plugin {
         // Name und Nummer des Elternartikels, solange nichts gewählt ist (leer: nichts tauschen).
         parentName: '',
         parentNumber: '',
+
+        // Name und Nummer der vorgeladenen Variante; an ihnen findet das Skript die Stellen im Markup wieder.
         variantName: '',
         variantNumber: '',
         nameSelector: '.product-detail-name',
+
+        // Die Nummer steht an mehreren Stellen; getauscht wird nur, wo eine der beiden Nummern tatsächlich steht.
         numberSelector: '.product-detail-ordernumber, [data-rc-product-number]',
 
         configuratorSelector: '.product-detail-configurator-container',
@@ -307,6 +311,7 @@ export default class GuidedSelectionPlugin extends Plugin {
 
         document.body.classList.toggle(this.options.incompleteClass, !complete);
         this._hint.hidden = complete;
+        // Gewählt ist etwas erst, wenn der erste Schritt beantwortet ist.
         this._showParent(next === 0);
 
         if (complete) {
@@ -319,20 +324,23 @@ export default class GuidedSelectionPlugin extends Plugin {
     }
 
     /**
-     * Solange nichts gewählt ist, Name und Nummer des Elternartikels statt der vorgeladenen Variante: Der Kern zeigt beim
-     * Aufruf des Elternartikels die beste Variante, deren Name schon eine Länge nennt, die niemand gewählt hat.
+     * Solange nichts gewählt ist, Name und Nummer des Elternartikels statt der vorgeladenen Variante. Der Kern zeigt
+     * beim Aufruf des Elternartikels die beste Variante, deren Name schon eine Länge nennt, die niemand gewählt hat.
      */
     _showParent(show) {
         const { parentName, parentNumber, variantName, variantNumber } = this.options;
+        // Ohne Elternangaben gibt es nichts zu tauschen, ebenso bei gleichem Namen ohne abweichende Nummer.
         if (!parentName || !variantName || (parentName === variantName && (!parentNumber || parentNumber === variantNumber))) {
             return;
         }
 
+        // Der Seitentitel der Variante wird beim ersten Aufruf gemerkt; aus ihm entstehen beide Fassungen.
         if (this._titleBase === undefined) {
             this._titleBase = document.title;
         }
 
         const name = show ? parentName : variantName;
+        // Ohne Nummer des Elternartikels bleibt die der Variante stehen.
         const number = show ? (parentNumber || variantNumber) : variantNumber;
 
         if (parentName !== variantName) {

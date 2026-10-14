@@ -7,8 +7,11 @@ namespace Ruhrcoder\RcDynamicPrice\Storefront\Struct;
 use Shopware\Core\Framework\Struct\Struct;
 
 /**
- * Was das Skript der geführten Auswahl wissen muss: die Gruppen in der Reihenfolge der Schritte und
- * die kaufbaren Kombinationen.
+ * Was das Skript der geführten Auswahl wissen muss: die Gruppen in der Reihenfolge der Schritte, die
+ * kaufbaren Kombinationen und Name und Nummer des Elternartikels.
+ *
+ * `lengthGroupId` ist die Gruppe des ersten Schritts. Meist ist das die Längengruppe; bei Artikeln ohne
+ * Längeneinstellung ist es die oberste Gruppe der Seite.
  *
  * Die Kombinationen kommen vom Server, nicht aus den Markierungen im Markup. Der Kern kennzeichnet
  * eine Option nur als „kombinierbar mit der gerade gezeigten Variante"; welche Pfosten es zu einer
@@ -31,7 +34,8 @@ final class GuidedSelectionStruct extends Struct
     }
 
     /**
-     * Name des Elternartikels: steht da, solange in der geführten Auswahl nichts gewählt ist.
+     * Name des Elternartikels; steht da, solange in der geführten Auswahl nichts gewählt ist. `null`, wenn die Seite
+     * den Elternartikel selbst zeigt.
      */
     public function getParentName(): ?string
     {

@@ -58,12 +58,14 @@
         {% endif %}
     {% endif %}
 
-    {# Geführte Auswahl: erst die Länge, dann nur die dazu kaufbaren Optionen.
+    {# Geführte Auswahl: erst die Länge oder, ohne Längengruppe, die oberste Gruppe, dann nur die dazu
+       kaufbaren Optionen.
 
-       Die Angaben setzt `GuidedSelectionSubscriber` nur, wenn Haken, Längengruppe und kaufbare
-       Kombinationen da sind. Das Skript blendet aus, was noch nicht dran ist; ohne Skript bleibt die
+       Die Angaben setzt `LengthSettingsSubscriber`, wenn die Führung eingestellt ist und es kaufbare
+       Kombinationen gibt. Das Skript blendet aus, was noch nicht dran ist; ohne Skript bleibt die
        Auswahl, wie der Kern sie baut. Den Hinweis auf den nächsten Schritt setzt das Skript hinter die
-       Auswahl; hier stünde er im Kasten, der bis zur eindeutigen Variante verborgen ist. #}
+       Auswahl; hier stünde er im Kasten, der bis zur eindeutigen Variante verborgen ist. Name und Nummer
+       des Elternartikels zeigt das Skript, solange noch nichts gewählt ist. #}
     {% if page.extensions.rcGuidedSelection is defined %}
         {% set rcGuided = page.extensions.rcGuidedSelection %}
         <div class="rc-guided-selection"
