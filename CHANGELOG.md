@@ -1,3 +1,11 @@
+# 1.27.0
+
+- **Geführte Auswahl zeigt den Preis „ab …".** Bis die Variante feststeht, bleiben Preis und Kaufknopf verborgen; über
+  der Auswahl steht jetzt aber der Preis der günstigsten Variante, z. B. „Ab 1.220,31 €*". Steht die Variante fest,
+  tritt der richtige Preis an seine Stelle.
+
+> **Deployment:** `plugin:update RcDynamicPrice`, `theme:compile`, `cache:clear`.
+
 # 1.26.1
 
 - **Das Hinweisfenster nimmt den Radius des Themes.** Bisher fest 8 Pixel; in Design 2027 sind es 2. Im

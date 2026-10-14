@@ -57,6 +57,21 @@
     margin-top: 1rem;
 }
 
+// Der Preis der günstigsten Variante als „ab …", nur solange die Variante noch nicht feststeht.
+.rc-guided-from-price {
+    display: none;
+    margin: 0 0 1rem;
+    font-size: 1.125rem;
+
+    strong {
+        font-size: 1.5rem;
+    }
+}
+
+.rc-guided-incomplete .rc-guided-from-price {
+    display: block;
+}
+
 // Die Längeneingabe steht direkt unter der Längengruppe.
 //
 // Variantenauswahl und Eingabefelder von TMMS sind getrennte Formulare und stehen im Quelltext
@@ -74,7 +89,8 @@ div:has(> .rc-length-order) {
     }
 
     > .product-detail-price-container,
-    > .product-detail-tax-container {
+    > .product-detail-tax-container,
+    > .rc-guided-from-price {
         order: 0;
     }
 
