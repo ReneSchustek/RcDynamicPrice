@@ -1,3 +1,11 @@
+# 1.27.1
+
+- **Der Hinweis zu den Eingaben steht unter der Länge.** „Jede abweichende Eingabe ergibt eine eigene Position im
+  Warenkorb …" stand bei Längenschalter mit weiteren Feldern (etwa Endkappen) hinter allen Feldern. Er gehört zur
+  Längeneingabe und steht jetzt direkt darunter.
+
+> **Deployment:** `plugin:update RcDynamicPrice`, `theme:compile`, `cache:clear`.
+
 # 1.27.0
 
 - **Geführte Auswahl zeigt den Preis „ab …".** Bis die Variante feststeht, bleiben Preis und Kaufknopf verborgen; über

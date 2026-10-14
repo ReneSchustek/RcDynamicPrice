@@ -112,6 +112,13 @@ div:has(> .rc-length-order) {
     > .rc-guided-selection__hint {
         order: 3;
     }
+
+    // Der Hinweis unter den Eingabefeldern („Jede abweichende Eingabe ergibt eine eigene Position …", Wortlaut von
+    // RcCartSplitter) gehört zur Länge: Er steht direkt unter der Längeneingabe, nicht hinter weiteren Feldern wie den
+    // Endkappen. Im Quelltext folgt er allen Eingaben, `order: 2` setzt ihn hinter das Längenfeld.
+    > .tmms-customer-input-alert-info {
+        order: 2;
+    }
 }
 
 // Die Längeneingabe selbst; TMMS nummeriert seine Formulare `…-<Nummer>` und kennt höchstens fünf Felder.
