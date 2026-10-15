@@ -963,6 +963,15 @@ export default class LengthVariantSwitchPlugin extends Plugin {
      * Von Hand, ohne Bibliothek: Es sind vier Platzhalter in drei Sätzen, und eine Abhängigkeit dafür
      * kostete im Bau und in der Pflege mehr als diese Schleife.
      */
+    static escapeHtml(value) {
+        return String(value ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
     static fillPlaceholders(text, values) {
         return Object.entries(values).reduce(
             (carry, [placeholder, value]) => carry.split(placeholder).join(String(value)),
@@ -1031,8 +1040,12 @@ export default class LengthVariantSwitchPlugin extends Plugin {
     _openModal(text, title = 'Hinweis zur Länge') {
         // Die Überschrift trägt die Klasse, die Shopware sucht, und erscheint so im Kopf des Fensters.
         // Ein eigenes Wurzelelement fehlt absichtlich; es ersetzte die Hülle samt Schließen-Knopf.
-        const content = `<div class="js-pseudo-modal-template-title-element">${title}</div>`
-            + `<div class="rc-length-switch-modal">${text}</div>`;
+        //
+        // Beide Texte werden maskiert: `PseudoModalUtil` setzt den Inhalt als Markup, und im Text stehen
+        // Beschriftungen der Größen aus dem Zwischenlager oder die Eingabe des Kunden selbst. Die Textbausteine
+        // tragen kein Markup, das dabei verloren ginge.
+        const content = `<div class="js-pseudo-modal-template-title-element">${LengthVariantSwitchPlugin.escapeHtml(title)}</div>`
+            + `<div class="rc-length-switch-modal">${LengthVariantSwitchPlugin.escapeHtml(text)}</div>`;
 
         // Das Fenster bleibt, wo Shopware es hinstellt. Eine Klasse wie `modal-dialog-centered` im
         // Rückruf nach dem Öffnen käme zu spät: Das Fenster stünde schon sichtbar oben und wanderte dann

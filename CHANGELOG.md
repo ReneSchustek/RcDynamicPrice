@@ -1,3 +1,12 @@
+# 1.29.1
+
+> **Deployment:** `bin/build-storefront.sh`, `php bin/console cache:clear`.
+
+- **Hinweisfenster des Längenschalters maskiert seine Texte:** Beschriftungen der Größen und die Eingabe des Kunden
+  wurden als Markup ins Fenster gesetzt.
+- **Ein Kennzeichen als Array im Warenkorb-Aufruf** (`rcTmmsActive[]=1`) führte zu HTTP 400 statt zu einer normalen
+  Bearbeitung.
+
 # 1.29.0
 
 - **Der erste Hinweis nennt die oberste Gruppe:** „Bitte wählen Sie zuerst: Glasstärke. …" statt immer „die Länge".

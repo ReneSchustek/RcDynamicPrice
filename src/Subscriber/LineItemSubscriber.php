@@ -348,7 +348,8 @@ final class LineItemSubscriber implements EventSubscriberInterface
     private function hasForeignIdControllerMarker(Request $request): bool
     {
         foreach (self::FOREIGN_ID_CONTROLLER_KEYS as $key) {
-            $value = $request->request->get($key, '');
+            // all() statt get(): get() wirft bei einem Array-Wert (`rcTmmsActive[]=1`), siehe readRequestedLength().
+            $value = $request->request->all()[$key] ?? '';
             if (\is_string($value) && $value !== '') {
                 return true;
             }

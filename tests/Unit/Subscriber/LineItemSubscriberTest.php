@@ -372,6 +372,36 @@ final class LineItemSubscriberTest extends TestCase
         $this->subscriber->onBeforeLineItemAdded($this->createEvent($lineItem, 'sc-id'));
     }
 
+    /**
+     * Ein Kennzeichen als Array (`rcTmmsActive[]=1`) ist kein gültiges Kennzeichen, darf aber nicht mit HTTP 400
+     * enden: InputBag::get() würfe dabei eine BadRequestException.
+     */
+    public function testArrayMarkerIsIgnoredWithoutException(): void
+    {
+        $this->setCurrentRequest(['mmLength' => '8000', 'rcTmmsActive' => ['1']]);
+        $this->meterProductHelper->method('loadProduct')->willReturn(new ProductEntity());
+        $this->configResolver->method('resolveForProduct')->willReturn($this->activeResolved(
+            minLength: 1,
+            maxLength: 10000,
+            splitMode: SplitMode::Equal,
+            maxPieceLength: 5000,
+        ));
+
+        $lineItem = new LineItem('line-id', LineItem::PRODUCT_LINE_ITEM_TYPE, 'product-id');
+
+        $this->assembler
+            ->expects($this->once())
+            ->method('assemble')
+            ->with(
+                $this->anything(),
+                $this->anything(),
+                8000,
+                $this->callback(static fn (MeterSplittingConfig $c): bool => $c->splitMode === SplitMode::Equal),
+            );
+
+        $this->subscriber->onBeforeLineItemAdded($this->createEvent($lineItem, 'sc-id'));
+    }
+
     public function testReducesSplitModeToHintWhenTmmsMarkerIsNestedInLineItemsPayload(): void
     {
         // RcCartSplitter setzt sein Kennzeichen als lineItems[{productId}][payload][rcTmmsActive]=1.

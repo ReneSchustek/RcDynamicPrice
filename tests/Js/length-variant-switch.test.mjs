@@ -512,3 +512,17 @@ describe('groupByRange — Längen verschiedener Größen nacheinander', () => {
         );
     });
 });
+
+describe('escapeHtml — Texte im Hinweisfenster', () => {
+    test('eine Beschriftung mit Markup wird zu Text', () => {
+        assert.equal(
+            LengthVariantSwitchPlugin.escapeHtml('4,5 m <img src=x onerror="alert(1)">'),
+            '4,5 m &lt;img src=x onerror=&quot;alert(1)&quot;&gt;',
+        );
+    });
+
+    test('Kaufmanns-Und und Apostroph, leere Werte', () => {
+        assert.equal(LengthVariantSwitchPlugin.escapeHtml("A & B's"), 'A &amp; B&#39;s');
+        assert.equal(LengthVariantSwitchPlugin.escapeHtml(undefined), '');
+    });
+});
