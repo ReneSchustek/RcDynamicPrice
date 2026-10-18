@@ -68,7 +68,7 @@ final class DynamicPriceConstants
     public const CAT_FIELD_LENGTH_ONLY = 'rc_length_only_cat';
 
     /**
-     * Die Einzelfelder der Längengruppe aus 1.23.0 und 1.23.1. Sie kamen nie auf Staging oder Live;
+     * Altfelder der Längengruppe mit nur einem Wert, die es allein auf Entwicklungsinstanzen gibt.
      * `Migration1788400000ReplaceLengthGroupWithLengthGroups` übernimmt ihre Werte und entfernt sie.
      */
     public const LEGACY_FIELD_GUIDED_LENGTH_GROUP = 'rc_guided_length_group';

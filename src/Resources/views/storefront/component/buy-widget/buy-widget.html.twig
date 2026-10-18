@@ -30,8 +30,8 @@
 
 {# Geführte Auswahl: Bis die Variante feststeht, sind Preis und Kaufknopf verborgen (base.scss,
    `.rc-guided-incomplete`). Damit der Kunde trotzdem weiß, wo der Artikel preislich liegt, steht über der Auswahl
-   der Preis der günstigsten Variante als „ab …" — Rene, 14.10.2026: „den günstigsten Preis (also für die kleinste
-   Variante) schon einblenden". Steht die Variante fest, tritt der richtige Preis an seine Stelle. #}
+   der Preis der günstigsten, also meist der kleinsten Variante als „ab …". Steht die Variante fest, tritt der
+   richtige Preis an seine Stelle. #}
 {% block buy_widget_configurator_include %}
     {% set rcFromPrice = page.extensions.rcGuidedSelection is defined ? (page.product.calculatedCheapestPrice ?? null) : null %}
     {% if rcFromPrice %}

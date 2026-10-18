@@ -103,7 +103,7 @@ final class CacheInvalidationSubscriberTest extends TestCase
     }
 
     /**
-     * Die drei Einstellungen, die eine feste Liste vergessen hatte: Sie gehen über die Abrechnung der
+     * Die drei Einstellungen, die eine feste Liste leicht vergisst: Sie gehen über die Abrechnung der
      * gleichmäßigen Teilung und den Hinweistext in die Produktseite ein.
      */
     #[DataProvider('pageSettings')]
