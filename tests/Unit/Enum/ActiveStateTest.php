@@ -8,9 +8,9 @@ use PHPUnit\Framework\TestCase;
 use Ruhrcoder\RcDynamicPrice\Enum\ActiveState;
 
 /**
- * Das Aktiv-Feld des Meterpreises liest Werte aus zwei Zeiten der Datenbank: Wahrheitswerte des
- * früheren Hakens und die drei Zustände der Auswahl. Ein falsch gelesener Wert schaltet den
- * Meterpreis an einem Artikel ein oder aus, ohne dass es jemand gewollt hat.
+ * Das Aktiv-Feld des Meterpreises liest zwei Arten von Werten: Wahrheitswerte, wie sie ein nicht
+ * umgestellter Bestand als Haken trägt, und die drei Zustände der Auswahl. Ein falsch gelesener
+ * Wert schaltet den Meterpreis an einem Artikel ein oder aus, ohne dass es jemand gewollt hat.
  */
 final class ActiveStateTest extends TestCase
 {

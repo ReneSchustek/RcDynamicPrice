@@ -19,7 +19,7 @@ enum ActiveState: string
     /**
      * Wandelt Zusatzfeld-Werte duldsam in einen Zustand:
      * - `inherit`, `on` und `off` werden direkt übernommen.
-     * - `true` gilt als `On`: Felder aus der Zeit des Hakens tragen noch einen Wahrheitswert.
+     * - `true` gilt als `On`: Ein nicht umgestelltes Feld trägt den Haken als Wahrheitswert.
      * - `false`, `null`, ein leerer Text und Unbekanntes gelten als `Inherit`, also nicht entschieden.
      */
     public static function fromMixed(mixed $value): self

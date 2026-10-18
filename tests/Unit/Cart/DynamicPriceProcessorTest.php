@@ -533,8 +533,8 @@ final class DynamicPriceProcessorTest extends TestCase
     }
 
     /**
-     * Bestandswarenkörbe aus der Zeit vor den Auftrags-Positionen tragen keine Teilstück-Liste.
-     * Für sie gilt die Eingabelänge als einziges Teilstück — ihr Preis darf sich nicht ändern.
+     * Eine Position aus einem Bestandswarenkorb kann ohne Teilstück-Liste kommen. Für sie gilt die
+     * Eingabelänge als einziges Teilstück — ihr Preis darf sich dabei nicht ändern.
      */
     public function testLegacyLineItemWithoutSplitPiecesKeepsItsPrice(): void
     {

@@ -122,15 +122,15 @@ Set 6 Bodenprofil 2.0 aufgesetzt (Zuschnitt 5.100 mm:      Anzahl 1     1.809,24
 Zwei identische Eingaben mergen weiterhin zu einer Position mit Menge n. Der Preis ist die Summe der
 abgerechneten Teilstücke, nicht die aufgerundete Eingabelänge.
 
-Bis einschließlich 1.15.0 war jedes Teilstück ein eigenes LineItem. Der Kunde konnte damit ein
-Reststück einzeln aus dem Warenkorb löschen und bestellte kommentarlos eine kürzere Länge, als er
-eingegeben hatte. Strukturell geht das heute nicht mehr.
+Die Teilstücke sind keine eigenen LineItems. Wären sie es, könnte der Kunde ein Reststück einzeln
+aus dem Warenkorb löschen und bestellte kommentarlos eine kürzere Länge, als er eingegeben hat. Als
+eine Position lässt sich der Auftrag nur ganz oder gar nicht entfernen.
 
 **Versandkosten (wichtig):** Die `DeliveryInformation` einer Position trägt die **längste
 Einzellänge**, nicht die Gesamtlänge. Längenbasierte Versandregeln (`cartLineItemDimensionLength`)
-sehen damit das längste zu versendende Stück. Früher sah jede Regel jedes Teilstück einzeln, und ein
-kurzes Reststück konnte eine günstigere Versandart freischalten, die es ohne Split nie gegeben hätte.
-Wer solche Regeln nutzt, prüft nach dem Update die Versandart für gesplittete Warenkörbe.
+sehen damit das längste zu versendende Stück. Sähe jede Regel jedes Teilstück einzeln, könnte ein
+kurzes Reststück eine günstigere Versandart freischalten, die es ohne Split nie gäbe. Wer solche
+Regeln nutzt, prüft die Versandart mit einem gesplitteten Warenkorb.
 
 ### Die Länge steht im Positionsnamen
 
@@ -192,10 +192,10 @@ entscheidet `equalSplitEnforceMin`, ob kurze Teilstücke mit der Mindestlänge b
 | `rc_max_piece_length_mm` | längste abgerechnete Einzellänge, speist die `DeliveryInformation` |
 | `rc_split_summary` | gruppierte **Schnittlängen** für den Positionsnamen (`[{length, count}, …]`) |
 
-`rc_billed_length_mm` bezeichnete vor diesem Umbau die Länge **eines Teilstücks**. Wer den Wert
-außerhalb des Plugins auswertet (Export, Reporting), muss das nachziehen. Positionen aus
-Bestandswarenkörben tragen die neuen Keys nicht; sie werden weiter mit ihrer bisherigen Länge und zum
-bisherigen Preis berechnet.
+`rc_billed_length_mm` ist die Summe aller Teilstücke, nicht die Länge **eines Teilstücks**. Wer den
+Wert außerhalb des Plugins auswertet (Export, Reporting), rechnet mit der Gesamtlänge. Eine Position
+ohne `rc_split_pieces`, etwa aus einem lange gespeicherten Warenkorb, zählt ihre Eingabelänge als
+einziges Teilstück; ihr Preis bleibt dabei stabil.
 
 ## Backend-Sprache
 
@@ -243,7 +243,7 @@ Den Deployment-Hinweis je Version nennt die CHANGELOG.md.
 
 ## Update / Live-Gang
 
-Beim Update auf eine neue Plugin-Version gelten diese Schritte pro Shop-Instanz. **Die Reihenfolge ist nicht optional.** Ein `plugin:update` ohne anschließenden `cache:clear` lässt neue DI-Services (z. B. den Monolog-Channel seit 1.6.0) nicht auflösen und produziert beim ersten Request eine `ServiceNotFoundException`.
+Beim Update auf eine neue Plugin-Version gelten diese Schritte pro Shop-Instanz. **Die Reihenfolge ist nicht optional.** Ein `plugin:update` ohne anschließenden `cache:clear` lässt neue DI-Services (z. B. den Monolog-Channel `rc_dynamic_price`) nicht auflösen und produziert beim ersten Request eine `ServiceNotFoundException`.
 
 ### Pflicht-Sequenz
 
@@ -262,7 +262,7 @@ php bin/console cache:clear
 # 4. Theme/Storefront-Assets — das vorkompilierte JS liegt bei, kein Node-Build nötig
 php bin/console theme:compile
 
-# 6. HTTP-Cache verwerfen — greift auch Cache-Tag-Schema-Änderungen ab 1.5.0
+# 6. HTTP-Cache verwerfen — erfasst auch Seiten, deren Cache-Tags einem geänderten Schema folgen
 php bin/console http:cache:clear
 ```
 
@@ -271,10 +271,10 @@ php bin/console http:cache:clear
 Vor dem Produktions-Rollout auf einer Staging-Instanz durchspielen:
 
 - [ ] Admin-Backend lädt, Plugin-Config öffnet ohne Exception
-- [ ] Produkt-Edit → Individuelle Felder → Meterpreis: erwartete Optionen vorhanden (ab 1.5.x: Vererben / Aktiv / Inaktiv)
+- [ ] Produkt-Edit → Individuelle Felder → Meterpreis: erwartete Optionen vorhanden (Vererben / Aktiv / Inaktiv)
 - [ ] Storefront-PDP eines aktiven Meterproduktes lädt, Längeneingabe funktioniert, Live-Preis aktualisiert
 - [ ] Cart: Längen-LineItem mit korrektem Preis; bei aktiviertem Splitting bleibt es eine Position, deren Name die Teilstücke nennt
-- [ ] Screenreader (ab 1.6.0): Hinweis-Modal hat Fokus beim Öffnen, Escape schließt, Fokus kehrt zum Input zurück; Validierungsfehler werden angesagt
+- [ ] Screenreader: Hinweis-Modal hat Fokus beim Öffnen, Escape schließt, Fokus kehrt zum Input zurück; Validierungsfehler werden angesagt
 - [ ] Logs: Plugin-Events erscheinen im Standard-Log von Shopware, jeweils mit dem Präfix `RcDynamicPrice:`
 
 ### Was pro Versions-Sprung neu ist
@@ -289,13 +289,13 @@ Vor dem Produktions-Rollout auf einer Staging-Instanz durchspielen:
 
 ### Log-Aggregation anpassen
 
-Seit 1.10.2 schreibt das Plugin seine Ereignisse in den Standard-Channel von Shopware (`monolog.logger`), und jede Meldung beginnt mit `RcDynamicPrice:`:
+Das Plugin schreibt seine Ereignisse in den Standard-Channel von Shopware (`monolog.logger`), und jede Meldung beginnt mit `RcDynamicPrice:`:
 
 - `info` beim Add-to-Cart mit der aufgelösten Scope-Herkunft pro Feld (`activeScope`, `minLengthScope`, …). Das hilft bei Support-Fällen der Art „warum ist der Preis X?".
 - `warning` beim Verwerfen ungültiger Eingaben (Bounds, Format).
 - `info` beim Auslösen eines Splits mit Teilstück-Vektor.
 
-Auf den Channel `rc_dynamic_price` schreibt nur noch der `LoggingMetricsRecorder`, und das nur bei eingeschalteten Metriken. Wer Log-Filter pflegt (Graylog, ELK, Loki, CloudWatch Insights usw.), filtert die Ereignisse über das Präfix und ergänzt für die Kennzahlen den Channel `rc_dynamic_price`.
+Auf den Channel `rc_dynamic_price` schreibt allein der `LoggingMetricsRecorder`, und das nur bei eingeschalteten Metriken. Wer Log-Filter pflegt (Graylog, ELK, Loki, CloudWatch Insights usw.), filtert die Ereignisse über das Präfix und ergänzt für die Kennzahlen den Channel `rc_dynamic_price`.
 
 ### Multi-Shop-Hinweis
 

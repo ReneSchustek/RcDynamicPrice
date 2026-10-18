@@ -220,8 +220,8 @@ final class DynamicPriceConstants
      * Werden Teilstücke unter der Mindestlänge mit der Mindestlänge abgerechnet?
      *
      * `max_rest` immer, `equal` nach der Händler-Option `equalSplitEnforceMin`. Fehlt der Schlüssel,
-     * wird nicht angehoben: Positionen aus der Zeit vor der Trennung von Schnitt- und Abrechnungslänge
-     * tragen die Anhebung schon in ihren Schnittlängen, ihr Preis bleibt so unverändert.
+     * wird nicht angehoben: Eine Position ohne getrennte Schnitt- und Abrechnungslänge trägt die
+     * Anhebung schon in ihren Schnittlängen, ihr Preis bleibt so unverändert.
      */
     public const PAYLOAD_MIN_BILLING = 'rc_min_billing';
 
@@ -231,8 +231,8 @@ final class DynamicPriceConstants
     /**
      * Abgerechnete Gesamtlänge des Auftrags in mm, die Summe der abgerechneten Teilstücke.
      *
-     * Positionen aus der Zeit, als jedes Teilstück eine eigene Position war, tragen hier noch die
-     * Länge eines einzelnen Teilstücks.
+     * Steht in einem Bestandswarenkorb jedes Teilstück als eigene Position, trägt jede hier die Länge
+     * ihres einen Teilstücks.
      */
     public const PAYLOAD_BILLED_LENGTH_MM = 'rc_billed_length_mm';
 

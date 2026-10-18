@@ -11,7 +11,7 @@ use PHPUnit\Framework\TestCase;
  * `ue` oder `ss`.
  *
  * Geprüft wird der Dateibaum, nicht der Unterschied zum letzten Stand: `git diff` sieht noch nicht
- * erfasste Dateien nicht, und gerade neue Dateien rutschten so unbemerkt in eine Fassung. Die
+ * erfasste Dateien nicht, und gerade neue Dateien könnten so unbemerkt in eine Fassung geraten. Die
  * Bezeichnungen im Verwaltungsbereich prüft `AdminLabelCleanlinessTest`.
  */
 final class SourceUmlautCleanlinessTest extends TestCase

@@ -272,8 +272,8 @@ final class DynamicPriceProcessor implements CartProcessorInterface
      * (5.000 + 1.000 mm = 6.000 mm). Der Kunde bekommt, was er bestellt hat, und zahlt den
      * Mindestzuschnitt.
      *
-     * Positionen aus der Zeit vor `rc_min_billing` tragen die Anhebung schon in ihren Schnittlängen;
-     * ihr Preis bleibt unverändert.
+     * Eine Position ohne `rc_min_billing` trägt die Anhebung schon in ihren Schnittlängen; ein zweites
+     * Anheben änderte ihren Preis.
      *
      * @param non-empty-list<int> $cutPieces
      *
@@ -296,8 +296,8 @@ final class DynamicPriceProcessor implements CartProcessorInterface
     /**
      * Die Schnittlängen der Position, also das, was die Fertigung schneidet.
      *
-     * Positionen aus Warenkörben, die vor der Umstellung auf Auftrags-Positionen angelegt wurden,
-     * tragen keine Teilstück-Liste. Für sie gilt die Eingabelänge als einziges Teilstück.
+     * Trägt eine Position keine Teilstück-Liste, etwa aus einem lange gespeicherten Warenkorb, gilt die
+     * Eingabelänge als einziges Teilstück.
      *
      * @return non-empty-list<int>
      */
