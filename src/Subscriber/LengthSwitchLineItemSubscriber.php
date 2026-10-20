@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Ruhrcoder\RcDynamicPrice\Subscriber;
 
 use Ruhrcoder\RcDynamicPrice\DynamicPriceConstants;
-use Ruhrcoder\RcDynamicPrice\Service\LengthSettingsResolver;
+use Ruhrcoder\RcDynamicPrice\Service\LengthSettingsResolverInterface;
 use Ruhrcoder\RcDynamicPrice\Service\MeterProductHelperInterface;
 use Shopware\Core\Checkout\Cart\Event\BeforeLineItemAddedEvent;
 use Shopware\Core\Checkout\Cart\LineItem\LineItem;
@@ -31,7 +31,7 @@ final class LengthSwitchLineItemSubscriber implements EventSubscriberInterface
      */
     public function __construct(
         private readonly MeterProductHelperInterface $productHelper,
-        private readonly LengthSettingsResolver $resolver,
+        private readonly LengthSettingsResolverInterface $resolver,
         private readonly EntityRepository $propertyGroupRepository,
     ) {
     }

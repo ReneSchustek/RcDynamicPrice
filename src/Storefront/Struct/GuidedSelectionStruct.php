@@ -10,7 +10,7 @@ use Shopware\Core\Framework\Struct\Struct;
  * Was das Skript der geführten Auswahl wissen muss: die Gruppen in der Reihenfolge der Schritte, die
  * kaufbaren Kombinationen und Name und Nummer des Elternartikels.
  *
- * `lengthGroupId` ist die Gruppe des ersten Schritts. Meist ist das die Längengruppe; bei Artikeln ohne
+ * `entryGroupId` ist die Gruppe des ersten Schritts. Meist ist das die Längengruppe; bei Artikeln ohne
  * Längeneinstellung ist es die oberste Gruppe der Seite.
  *
  * Die Kombinationen kommen vom Server, nicht aus den Markierungen im Markup. Der Kern kennzeichnet
@@ -20,12 +20,12 @@ use Shopware\Core\Framework\Struct\Struct;
 final class GuidedSelectionStruct extends Struct
 {
     /**
-     * @param list<array{id: string, optionIds: list<string>}> $groups       die Längengruppe zuerst, dann
-     *                                                                       die übrigen in ihrer Reihenfolge
+     * @param list<array{id: string, optionIds: list<string>}> $groups       die Gruppe des ersten Schritts zuerst,
+     *                                                                       dann die übrigen in ihrer Reihenfolge
      * @param list<list<string>>                               $combinations je kaufbarer Variante ihre Optionen
      */
     public function __construct(
-        private readonly string $lengthGroupId,
+        private readonly string $entryGroupId,
         private readonly array $groups,
         private readonly array $combinations,
         private readonly ?string $parentName = null,
@@ -47,9 +47,9 @@ final class GuidedSelectionStruct extends Struct
         return $this->parentNumber;
     }
 
-    public function getLengthGroupId(): string
+    public function getEntryGroupId(): string
     {
-        return $this->lengthGroupId;
+        return $this->entryGroupId;
     }
 
     /**

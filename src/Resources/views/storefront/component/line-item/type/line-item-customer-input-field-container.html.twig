@@ -24,8 +24,8 @@
    Leiste landeten Zwischensumme und Kassenknöpfe dadurch außerhalb des scrollenden Bereichs, auf der
    Warenkorbseite fielen Positionen aus der Tabelle.
 
-   Der Block gehört TMMS. Benennt ein Update ihn um, rendert dieser Override wortlos nichts, und das Tor
-   für Phantom-Overrides kennt nur Blöcke des Kerns; nach jedem TMMS-Update deshalb von Hand nachsehen. #}
+   Der Block gehört TMMS. Benennt ein Update ihn um, rendert dieser Override wortlos nichts; nach jedem
+   TMMS-Update deshalb nachsehen, ob es den Block noch gibt. #}
 {% block component_line_item_type_product_customerinput_inner %}
     {% set rcLengthSwitchActive = lineItem.payload.rc_length_switch|default(0) == tmmsCustomerInputCount %}
     {% set rcFieldIsReadOnly = customerInputCanChanged is not defined or customerInputCanChanged !== 1 %}

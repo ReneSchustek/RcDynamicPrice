@@ -18,6 +18,15 @@ final class MeterPriceError extends Error
 {
     private const KEY = 'rc-dynamic-price-meter-price-unavailable';
 
+    /*
+     * Gründe, warum sich kein Meterpreis ermitteln lässt. Sie stehen im Protokoll und als Kennzahl-Tag, nicht in der
+     * Meldung an den Kunden; deshalb englische Schlüssel, die sich zählen und filtern lassen.
+     */
+    public const REASON_INVALID_LENGTH = 'invalid_length';
+    public const REASON_BELOW_MINIMUM = 'length_below_minimum';
+    public const REASON_ABOVE_MAXIMUM = 'length_above_maximum';
+    public const REASON_NO_BASE_PRICE = 'no_base_price';
+
     public function __construct(
         private readonly string $lineItemId,
         private readonly string $reason,

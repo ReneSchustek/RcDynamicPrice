@@ -60,7 +60,8 @@ export default class LengthVariantSwitchPlugin extends Plugin {
         // Feld steht, welche Länge berechnet wird. Gedacht für Stangenmaterial.
         lengthOnly: false,
 
-        // So lange wartet eine fertige Angabe nach der letzten Taste, bevor die Seite handelt (ms).
+        // So lange wartet eine fertige Angabe nach der letzten Taste, bevor die Seite handelt (ms). Kürzer sprang die
+        // Seite schon, während jemand eine zweite Länge nach dem Semikolon tippte; länger wirkte das Feld träge.
         typingPause: 1200,
 
         // Die Texte kommen aus den Übersetzungen und werden am Element übergeben. Die Überschriften hier
@@ -252,8 +253,13 @@ export default class LengthVariantSwitchPlugin extends Plugin {
         return marked ? value.replace(/\s*\([^)]*\)\s*$/, '') : value;
     }
 
+    /**
+     * Eine bewusste Warnung an den Betreiber: Ist eine Größenstufe nicht lesbar, bleibt die Automatik still aus, und
+     * der Kunde merkt nichts. Wer prüft, warum sie auf einer Seite nicht springt, findet den Grund in der Konsole des
+     * Browsers; ein Protokoll auf dem Server gibt es für diese Seite nicht.
+     */
     static warnUnreadable(text) {
-        // eslint-disable-next-line no-console
+        // eslint-disable-next-line no-console -- Betreiberwarnung, siehe oben
         console.warn(
             '[RcLengthVariantSwitch] Größenstufe nicht lesbar — die Automatik bleibt auf dieser Seite aus.',
             String(text || '').trim(),
@@ -320,15 +326,6 @@ export default class LengthVariantSwitchPlugin extends Plugin {
     }
 
     /**
-     * Zerlegt die Eingabe in einzelne Längen in Millimetern.
-     *
-     * Mehrere Angaben trennt der Kunde mit Semikolon, so steht es im Hinweistext über dem Feld. Jede Angabe
-     * darf eine Einheit tragen (`parseLength()`). Ein leeres Feld ergibt eine leere Liste, eine unlesbare
-     * Angabe `null`: Das Feld ist ein Textfeld, und wer noch tippt, soll nicht angesprungen werden.
-     *
-     * @return {number[]|null}
-     */
-    /**
      * Zerlegt die Eingabe in einzelne Längen. Kunden trennen mit Semikolon, Leerzeichen oder Komma
      * („1200; 1300", „1200 1300", „1200, 1300"). Das Komma ist zugleich Dezimalkomma („4,2 m"); als Trenner
      * gilt es nur mit Leerzeichen danach, direkt hinter einer Einheit oder mit drei und mehr Ziffern davor:
@@ -361,6 +358,14 @@ export default class LengthVariantSwitchPlugin extends Plugin {
         return tokens.map((token) => token.text);
     }
 
+    /**
+     * Zerlegt die Eingabe in einzelne Längen in Millimetern; welche Trenner gelten, steht bei `splitLengths()`.
+     *
+     * Jede Angabe darf eine Einheit tragen (`parseLength()`). Ein leeres Feld ergibt eine leere Liste, eine unlesbare
+     * Angabe `null`: Das Feld ist ein Textfeld, und wer noch tippt, soll nicht angesprungen werden.
+     *
+     * @return {number[]|null}
+     */
     static parseLengths(value) {
         const parts = LengthVariantSwitchPlugin.splitLengths(value);
 
@@ -555,20 +560,34 @@ export default class LengthVariantSwitchPlugin extends Plugin {
         const lengths = LengthVariantSwitchPlugin.parseLengths(this._input.value);
 
         if (lengths === null) {
-            const ask = LengthVariantSwitchPlugin.unitQuestion(this._input.value);
-
-            if (ask !== null) {
-                this._openModal(
-                    LengthVariantSwitchPlugin.fillPlaceholders(this.options.textAskUnit, { '%value%': ask }),
-                    this.options.titleHint,
-                );
-            }
+            this._askForUnit();
 
             return;
         }
 
         this._normalizeInput(lengths);
+        this._applyEvaluation(lengths);
+    }
 
+    /**
+     * Ohne Einheit ist eine kurze Zahl mehrdeutig („4"); dann fragt das Fenster nach, statt zu raten.
+     */
+    _askForUnit() {
+        const ask = LengthVariantSwitchPlugin.unitQuestion(this._input.value);
+
+        if (ask !== null) {
+            this._openModal(
+                LengthVariantSwitchPlugin.fillPlaceholders(this.options.textAskUnit, { '%value%': ask }),
+                this.options.titleHint,
+            );
+        }
+    }
+
+    /**
+     * Wählt zu den Längen die Größe: außerhalb des Lieferbaren ein Hinweis, gemischte Größen Schritt für Schritt, sonst
+     * die passende Größe, wenn nötig mit Wechsel der Variante.
+     */
+    _applyEvaluation(lengths) {
         const result = LengthVariantSwitchPlugin.evaluate(
             this._ranges,
             lengths,
@@ -876,6 +895,7 @@ export default class LengthVariantSwitchPlugin extends Plugin {
 
             return Array.isArray(steps) ? steps : [];
         } catch (error) {
+            // Kein Speicher oder unlesbarer Inhalt: keine offenen Schritte, der Kunde trägt die Längen selbst ein.
             return [];
         }
     }
@@ -1004,6 +1024,7 @@ export default class LengthVariantSwitchPlugin extends Plugin {
             raw = window.sessionStorage.getItem(this._stashKey());
             window.sessionStorage.removeItem(this._stashKey());
         } catch (error) {
+            // Kein Speicher: nichts mitgenommen, die Seite zeigt den Wechsel ohne Hinweis.
             return null;
         }
 
@@ -1014,6 +1035,7 @@ export default class LengthVariantSwitchPlugin extends Plugin {
         try {
             return JSON.parse(raw);
         } catch (error) {
+            // Unlesbares Zwischenlager: wie ohne, statt mit halben Angaben weiterzuarbeiten.
             return null;
         }
     }
@@ -1037,7 +1059,7 @@ export default class LengthVariantSwitchPlugin extends Plugin {
      * Das Fenster des Kerns (`PseudoModalUtil`): Es bringt Fokus, Tastaturbedienung und Schließen mit,
      * die ein eigenes Fenster nachbauen müsste.
      */
-    _openModal(text, title = 'Hinweis zur Länge') {
+    _openModal(text, title) {
         // Die Überschrift trägt die Klasse, die Shopware sucht, und erscheint so im Kopf des Fensters.
         // Ein eigenes Wurzelelement fehlt absichtlich; es ersetzte die Hülle samt Schließen-Knopf.
         //

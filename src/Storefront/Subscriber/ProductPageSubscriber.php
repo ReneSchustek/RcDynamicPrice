@@ -27,6 +27,8 @@ final class ProductPageSubscriber implements EventSubscriberInterface
      */
     private const CACHE_TAGS_REQUEST_ATTRIBUTE = '_rc_dynamic_price_cache_tags';
 
+    public const EXTENSION_NAME = 'rcDynamicPriceConfig';
+
     public function __construct(
         private readonly SystemConfigService $systemConfigService,
         private readonly MeterConfigResolverInterface $configResolver,
@@ -45,7 +47,7 @@ final class ProductPageSubscriber implements EventSubscriberInterface
     public function onProductPageLoaded(ProductPageLoadedEvent $event): void
     {
         $product = $event->getPage()->getProduct();
-        $salesChannelId = $event->getSalesChannelContext()->getSalesChannel()->getId();
+        $salesChannelId = $event->getSalesChannelContext()->getSalesChannelId();
         $context = $event->getSalesChannelContext()->getContext();
 
         $resolved = $this->configResolver->resolveForProduct($product, $salesChannelId, $context);
@@ -62,7 +64,7 @@ final class ProductPageSubscriber implements EventSubscriberInterface
         );
 
         $event->getPage()->addExtension(
-            'rcDynamicPriceConfig',
+            self::EXTENSION_NAME,
             new RcDynamicPriceConfigStruct(
                 hintText: $hintText,
                 minLength: $resolved->minLength,

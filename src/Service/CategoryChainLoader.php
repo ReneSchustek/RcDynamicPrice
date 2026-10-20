@@ -9,21 +9,45 @@ use Shopware\Core\Content\Category\CategoryEntity;
 use Shopware\Core\Framework\Context;
 use Shopware\Core\Framework\DataAbstractionLayer\EntityRepository;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\Criteria;
+use Symfony\Contracts\Service\ResetInterface;
 
 /**
  * Lädt eine Primärkategorie und alle ihre Vorfahren mit zwei Abfragen. Der Kern führt den Pfad
  * schon als `category.path` (`|eltern1|eltern2|`); daraus kommen die Vorfahren in einem Zug statt
  * einer Abfrage je Ebene.
  */
-final class CategoryChainLoader implements CategoryChainLoaderInterface
+final class CategoryChainLoader implements CategoryChainLoaderInterface, ResetInterface
 {
+    /**
+     * Längen- und Meterpreis-Einstellungen lösen dieselbe Kette auf, auf der Produktseite wie beim Hinzufügen; je
+     * Anfrage einmal genügt.
+     *
+     * @var array<string, list<array{id: string, customFields: array<string, mixed>}>>
+     */
+    private array $chains = [];
+
     /** @param EntityRepository<CategoryCollection> $categoryRepository */
     public function __construct(
         private readonly EntityRepository $categoryRepository,
     ) {
     }
 
+    public function reset(): void
+    {
+        $this->chains = [];
+    }
+
     public function loadChain(string $primaryCategoryId, Context $context): array
+    {
+        $key = $primaryCategoryId . '|' . implode(',', $context->getLanguageIdChain()) . '|' . $context->getVersionId();
+
+        return $this->chains[$key] ??= $this->buildChain($primaryCategoryId, $context);
+    }
+
+    /**
+     * @return list<array{id: string, customFields: array<string, mixed>}>
+     */
+    private function buildChain(string $primaryCategoryId, Context $context): array
     {
         $primary = $this->loadCategory($primaryCategoryId, $context);
         if ($primary === null) {

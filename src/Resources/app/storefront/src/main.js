@@ -7,10 +7,11 @@ const PluginManager = window.PluginManager;
 // für die Farbauswahl und bekommt kein eigenes Skript.
 PluginManager.register('DynamicPrice', DynamicPricePlugin, '.rc-dynamic-price[data-dynamic-price]');
 
-// Die eingegebene Länge wählt die Größenstufe. Das Element rendert die Kaufbox nur, wenn der Artikel
-// das Zusatzfeld `rc_length_variant_switch` trägt; ohne Haken läuft auch kein Skript.
+// Die eingegebene Länge wählt die Größenstufe. Das Element rendert die Kaufbox nur, wenn der Längenschalter am
+// Artikel (`rc_length_variant_switch`) oder an seiner Kategorie (`rc_length_variant_switch_cat`) an ist und der
+// Artikel ein Längenfeld hat; sonst läuft auch kein Skript.
 PluginManager.register('RcLengthVariantSwitch', LengthVariantSwitchPlugin, '[data-rc-length-variant-switch]');
 
-// Geführte Auswahl: erst die Länge, dann nur die dazu kaufbaren Optionen. Das Element rendert die
-// Kaufbox nur, wenn der Server die Angaben dafür mitgibt.
+// Geführte Auswahl: erst die Längengruppe oder, ohne sie, die oberste Gruppe, dann nur die dazu kaufbaren Optionen. Das
+// Element rendert die Kaufbox nur, wenn der Server die Angaben dafür mitgibt.
 PluginManager.register('RcGuidedSelection', GuidedSelectionPlugin, '[data-rc-guided-selection]');

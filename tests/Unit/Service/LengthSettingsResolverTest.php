@@ -43,8 +43,8 @@ final class LengthSettingsResolverTest extends TestCase
     public function testEverythingInheritedFromTheCategory(): void
     {
         $settings = LengthSettingsResolver::resolve(self::lengthField(), [
-            ['id' => 'eigene', 'customFields' => []],
-            ['id' => 'stangenmaterial', 'customFields' => [
+            ['id' => 'own', 'customFields' => []],
+            ['id' => 'bar-stock', 'customFields' => [
                 DynamicPriceConstants::CAT_FIELD_LENGTH_VARIANT_SWITCH => true,
                 DynamicPriceConstants::CAT_FIELD_LENGTH_ONLY => true,
                 DynamicPriceConstants::CAT_FIELD_LENGTH_GROUPS => [self::GROUP_SIZES, self::GROUP_LENGTH],
@@ -65,8 +65,8 @@ final class LengthSettingsResolverTest extends TestCase
     public function testAnUnsetHookCloserDoesNotCancelOneFurtherUp(): void
     {
         $settings = LengthSettingsResolver::resolve(self::lengthField(), [
-            ['id' => 'nah', 'customFields' => [DynamicPriceConstants::CAT_FIELD_GUIDED_SELECTION => false]],
-            ['id' => 'oben', 'customFields' => [DynamicPriceConstants::CAT_FIELD_GUIDED_SELECTION => true]],
+            ['id' => 'near', 'customFields' => [DynamicPriceConstants::CAT_FIELD_GUIDED_SELECTION => false]],
+            ['id' => 'top', 'customFields' => [DynamicPriceConstants::CAT_FIELD_GUIDED_SELECTION => true]],
         ]);
 
         self::assertTrue($settings->guidedSelection);
@@ -76,7 +76,7 @@ final class LengthSettingsResolverTest extends TestCase
     {
         $settings = LengthSettingsResolver::resolve(
             self::lengthField() + [DynamicPriceConstants::FIELD_LENGTH_GROUPS => [self::GROUP_LENGTH]],
-            [['id' => 'kategorie', 'customFields' => [
+            [['id' => 'category', 'customFields' => [
                 DynamicPriceConstants::CAT_FIELD_LENGTH_GROUPS => [self::GROUP_SIZES, self::GROUP_LENGTH],
             ]]],
         );
@@ -85,15 +85,15 @@ final class LengthSettingsResolverTest extends TestCase
     }
 
     /**
-     * Der Fall von Staging: „Balkongeländer" trägt „Länge", „Bausätze" darüber „Maße" und „Länge". Ein
+     * „Balkongeländer" trägt „Länge", „Bausätze" darüber „Maße" und „Länge". Ein
      * Relinggeländer unter „Balkongeländer" hat nur „Maße"; nähme die nächste Stelle alles, bekäme es
      * keine Längengruppe, und geführte Auswahl und Längenschalter fielen aus.
      */
     public function testANearerCategoryDoesNotHideTheGroupsFurtherUp(): void
     {
         $settings = LengthSettingsResolver::resolve(self::lengthField(), [
-            ['id' => 'balkongeländer', 'customFields' => [DynamicPriceConstants::CAT_FIELD_LENGTH_GROUPS => [self::GROUP_LENGTH]]],
-            ['id' => 'bausätze', 'customFields' => [
+            ['id' => 'balcony-railings', 'customFields' => [DynamicPriceConstants::CAT_FIELD_LENGTH_GROUPS => [self::GROUP_LENGTH]]],
+            ['id' => 'kits', 'customFields' => [
                 DynamicPriceConstants::CAT_FIELD_GUIDED_SELECTION => true,
                 DynamicPriceConstants::CAT_FIELD_LENGTH_GROUPS => [self::GROUP_SIZES, self::GROUP_LENGTH],
             ]],
@@ -144,7 +144,7 @@ final class LengthSettingsResolverTest extends TestCase
     {
         $settings = LengthSettingsResolver::resolve(
             ['tmms_customer_input_1_active' => true, 'tmms_customer_input_1_title' => 'Wandabstand'],
-            [['id' => 'kategorie', 'customFields' => [
+            [['id' => 'category', 'customFields' => [
                 DynamicPriceConstants::CAT_FIELD_LENGTH_VARIANT_SWITCH => true,
                 DynamicPriceConstants::CAT_FIELD_LENGTH_ONLY => true,
             ]]],

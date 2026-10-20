@@ -5,19 +5,19 @@ declare(strict_types=1);
 namespace Ruhrcoder\RcDynamicPrice\Service;
 
 use Ruhrcoder\RcDynamicPrice\DynamicPriceConstants;
-use Ruhrcoder\RcDynamicPrice\Service\Metrics\MetricsRecorderInterface;
 use Shopware\Core\Content\Product\ProductCollection;
 use Shopware\Core\Content\Product\ProductEntity;
 use Shopware\Core\Framework\Context;
 use Shopware\Core\Framework\DataAbstractionLayer\EntityRepository;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\Criteria;
 use Shopware\Core\Framework\Uuid\Uuid;
+use Symfony\Contracts\Service\ResetInterface;
 
 /**
  * Produktladung und Rundung für den Meterpreis. Welche Einstellung gilt, entscheidet nicht diese
  * Klasse, sondern der MeterConfigResolver.
  */
-final class MeterProductHelper implements MeterProductHelperInterface
+final class MeterProductHelper implements MeterProductHelperInterface, ResetInterface
 {
     /**
      * Die Schrittweite jedes Rundungsmodus in Millimetern, die einzige Tabelle dafür. Der Server
@@ -36,11 +36,22 @@ final class MeterProductHelper implements MeterProductHelperInterface
         DynamicPriceConstants::ROUNDING_FULL_M => 1000,
     ];
 
+    /**
+     * Beim Hinzufügen fragen zwei Subscriber nach demselben Produkt; geladen wird es je Anfrage einmal.
+     *
+     * @var array<string, ProductEntity|null>
+     */
+    private array $loaded = [];
+
     /** @param EntityRepository<ProductCollection> $productRepository */
     public function __construct(
         private readonly EntityRepository $productRepository,
-        private readonly MetricsRecorderInterface $metrics,
     ) {
+    }
+
+    public function reset(): void
+    {
+        $this->loaded = [];
     }
 
     public function loadProduct(string $productId, Context $context): ?ProductEntity
@@ -53,6 +64,11 @@ final class MeterProductHelper implements MeterProductHelperInterface
             return null;
         }
 
+        $key = $productId . '|' . implode(',', $context->getLanguageIdChain()) . '|' . $context->getVersionId();
+        if (\array_key_exists($key, $this->loaded)) {
+            return $this->loaded[$key];
+        }
+
         $criteria = new Criteria([$productId]);
         $criteria->setLimit(1);
         // Der Resolver braucht die Kategorien des Produkts, um die Kette zu finden.
@@ -63,24 +79,13 @@ final class MeterProductHelper implements MeterProductHelperInterface
 
         $product = $this->productRepository->search($criteria, $context)->getEntities()->first();
 
-        return $product instanceof ProductEntity ? $product : null;
+        return $this->loaded[$key] = $product instanceof ProductEntity ? $product : null;
     }
 
     public function roundUp(int $mm, string $mode): int
     {
-        // Die Dauer geht an den Recorder; ohne eingeschaltete Metriken verwirft er sie. Er wirft per
-        // Vertrag nie, die Rechnung bleibt davon unberührt.
-        $start = microtime(true);
-
         $step = self::ROUNDING_STEPS[$mode] ?? 0;
-        $result = $step <= 0 ? $mm : (int) (ceil($mm / $step) * $step);
 
-        $this->metrics->timing(
-            DynamicPriceConstants::METRIC_ROUNDING_DURATION,
-            (microtime(true) - $start) * 1000.0,
-            ['mode' => $mode],
-        );
-
-        return $result;
+        return $step <= 0 ? $mm : (int) (ceil($mm / $step) * $step);
     }
 }

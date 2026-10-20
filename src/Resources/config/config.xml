@@ -27,9 +27,8 @@
             <label lang="en-GB">Hint text in input modal</label>
             <placeholder lang="de-DE">Bitte Länge in Millimetern eingeben – z. B. 1500 für 1,5 m</placeholder>
             <placeholder lang="en-GB">Please enter the length in millimetres – e.g. 1500 for 1.5 m</placeholder>
-            <defaultValue>Bitte Länge in Millimetern eingeben – z. B. 1500 für 1,5 m</defaultValue>
-            <helpText lang="de-DE">Wird angezeigt, wenn der Kunde das Längenfeld fokussiert.</helpText>
-            <helpText lang="en-GB">Displayed when the customer focuses the length input field.</helpText>
+            <helpText lang="de-DE">Wird angezeigt, wenn der Kunde das Längenfeld fokussiert. Leer = Vorgabe aus den Übersetzungen.</helpText>
+            <helpText lang="en-GB">Displayed when the customer focuses the length input field. Empty = default from the translations.</helpText>
         </input-field>
 
         <input-field type="int">
@@ -100,8 +99,8 @@
             <name>splitHintTemplate</name>
             <label lang="de-DE">Hinweistext-Vorlage</label>
             <label lang="en-GB">Hint text template</label>
-            <helpText lang="de-DE">Platzhalter: {length}, {maxPiece}, {pieces}, {pieceLength}, {remainder}. Leer = Snippet-Default.</helpText>
-            <helpText lang="en-GB">Placeholders: {length}, {maxPiece}, {pieces}, {pieceLength}, {remainder}. Empty = snippet default.</helpText>
+            <helpText lang="de-DE">Platzhalter: {length}, {maxPiece}, {pieces}, {pieceLength}, {remainder}. Leer = Vorgabe aus den Übersetzungen.</helpText>
+            <helpText lang="en-GB">Placeholders: {length}, {maxPiece}, {pieces}, {pieceLength}, {remainder}. Empty = default from the translations.</helpText>
         </input-field>
     </card>
 
@@ -177,8 +176,8 @@
             <label lang="de-DE">Metriken protokollieren</label>
             <label lang="en-GB">Log metrics</label>
             <defaultValue>false</defaultValue>
-            <helpText lang="de-DE">Schreibt optionale Kennzahlen (verarbeitete Meterpositionen, Rundungsdauer, eingeblendete Widgets) in den Plugin-Logkanal „rc_dynamic_price". Standardmäßig deaktiviert – ohne Aktivierung entsteht kein Mehraufwand.</helpText>
-            <helpText lang="en-GB">Writes optional metrics (processed meter items, rounding duration, shown widgets) to the plugin log channel "rc_dynamic_price". Off by default – no overhead unless enabled.</helpText>
+            <helpText lang="de-DE">Schreibt optionale Kennzahlen (verarbeitete und abgelehnte Meterpositionen) in den Plugin-Logkanal „rc_dynamic_price". Standardmäßig deaktiviert – ohne Aktivierung entsteht kein Mehraufwand.</helpText>
+            <helpText lang="en-GB">Writes optional metrics (processed and rejected meter items) to the plugin log channel "rc_dynamic_price". Off by default – no overhead unless enabled.</helpText>
         </input-field>
     </card>
 </config>

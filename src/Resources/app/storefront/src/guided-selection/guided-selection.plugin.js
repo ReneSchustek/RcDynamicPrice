@@ -1,14 +1,15 @@
 import Plugin from 'src/plugin-system/plugin.class';
 
 /**
- * Geführte Variantenauswahl: erst die Länge, dann nur die dazu kaufbaren Optionen.
+ * Geführte Variantenauswahl: erst die Längengruppe oder, ohne sie, die oberste Gruppe, dann nur die dazu kaufbaren
+ * Optionen.
  *
  * Der Kern zeigt alle Optionen aller Gruppen zugleich und streicht durch, was zur gerade gezeigten
  * Variante nicht passt. Beim Relinggeländer wirkt dadurch alles ab „3 Pfosten" gesperrt, und der
  * Kunde hält den Artikel für nicht konfigurierbar. Gefragt wird deshalb Schritt für Schritt: zuerst
  * die Längengruppe, dann jede weitere Gruppe in ihrer Reihenfolge, jeweils nur mit den Optionen, die
- * es zu den bisherigen Antworten zu kaufen gibt. Preis und Kaufknopf erscheinen, wenn die Variante
- * feststeht.
+ * es zu den bisherigen Antworten zu kaufen gibt. Ohne Längengruppe beginnt die Führung mit der obersten Gruppe. Preis
+ * und Kaufknopf erscheinen, wenn die Variante feststeht.
  *
  * Den Variantenwechsel macht weiter der Kern. Wählt der Kunde eine Option, die eine andere Variante
  * bedeutet, lädt der Kern die Seite wie immer; davor merkt sich das Skript die Antworten im
@@ -22,7 +23,6 @@ import Plugin from 'src/plugin-system/plugin.class';
  */
 export default class GuidedSelectionPlugin extends Plugin {
     static options = {
-        lengthGroupId: '',
 
         // Die Gruppen in der Reihenfolge der Schritte, je mit ihren Optionen.
         groups: [],
@@ -73,7 +73,7 @@ export default class GuidedSelectionPlugin extends Plugin {
         }
 
         this._current = this._readCurrent();
-        this._moveLengthGroupFirst();
+        this._moveEntryGroupFirst();
         this._hint = this._createHint();
 
         const remembered = this._takeStash();
@@ -188,10 +188,11 @@ export default class GuidedSelectionPlugin extends Plugin {
     }
 
     /**
-     * Die Längengruppe nach oben: Der Kern ordnet die Gruppen nach ihrer Position, beim
-     * Relinggeländer steht „Ausführung" vor „Maße". Der zweite Schritt erschiene sonst über dem ersten.
+     * Die Gruppe des ersten Schritts nach oben (`groups[0]`, die Längengruppe oder die oberste Gruppe): Der Kern ordnet
+     * die Gruppen nach ihrer Position, beim Relinggeländer steht „Ausführung" vor „Maße". Der zweite Schritt erschiene
+     * sonst über dem ersten.
      */
-    _moveLengthGroupFirst() {
+    _moveEntryGroupFirst() {
         const first = this._field(this._groups[0].id).closest(this.options.groupSelector);
         const top = first.parentElement.querySelector(this.options.groupSelector);
 

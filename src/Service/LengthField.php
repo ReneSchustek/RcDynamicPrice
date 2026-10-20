@@ -16,8 +16,8 @@ namespace Ruhrcoder\RcDynamicPrice\Service;
  */
 final class LengthField
 {
-    // TMMS nummeriert seine Felder ab 1; mehr als zehn trägt kein Artikel im Bestand (höchstens vier).
-    private const MAX_FIELDS = 10;
+    // TMMS nummeriert seine Felder ab 1 und kennt höchstens fünf (`tmms_customer_input_1` bis `_5`, TMMS 1.4.6).
+    private const MAX_FIELDS = 5;
 
     /**
      * @param array<string, mixed> $productFields
@@ -27,8 +27,7 @@ final class LengthField
     public static function numberIn(array $productFields): ?int
     {
         for ($number = 1; $number <= self::MAX_FIELDS; ++$number) {
-            $active = $productFields["tmms_customer_input_{$number}_active"] ?? null;
-            if ($active !== true && $active !== 1 && $active !== '1') {
+            if (!ProductCustomFields::isChecked($productFields["tmms_customer_input_{$number}_active"] ?? null)) {
                 continue;
             }
 

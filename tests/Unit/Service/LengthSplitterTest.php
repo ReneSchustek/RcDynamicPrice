@@ -25,8 +25,6 @@ final class LengthSplitterTest extends TestCase
         $this->splitter = new LengthSplitter();
     }
 
-    // Grundverhalten
-
     public function testReturnsSingleLengthWhenBelowOrAtMaxPiece(): void
     {
         $this->assertSame([4000], $this->splitter->split(4000, 5000, SplitMode::Equal));
@@ -52,8 +50,6 @@ final class LengthSplitterTest extends TestCase
     {
         $this->assertSame([8000], $this->splitter->split(8000, 5000, SplitMode::Hint));
     }
-
-    // Modus equal
 
     public function testEqualSplitsExactlyDivisibleIntoTwoEqualPieces(): void
     {
@@ -156,8 +152,6 @@ final class LengthSplitterTest extends TestCase
         // Eine Mindestlänge von 0 darf nicht zu einem Reststück von 0 mm führen.
         $this->assertSame([5000, 1000], $this->splitter->split(6000, 5000, SplitMode::MaxRest));
     }
-
-    // Fehlerfälle
 
     public function testThrowsOnZeroTotal(): void
     {

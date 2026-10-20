@@ -467,7 +467,7 @@ final class DynamicPriceProcessorTest extends TestCase
 
     /**
      * Der Preis eines Zuschnitt-Auftrags ist die Summe der einzeln aufgerundeten Teilstücke, nicht
-     * die aufgerundete Eingabelänge. Beispiel aus der Live-Konfiguration: 5.100 mm, max_rest,
+     * die aufgerundete Eingabelänge. Beispiel: 5.100 mm, max_rest,
      * Höchstmaß 5.000, Mindestlänge 1.000, Rundung full_m. Der Rest von 100 mm wird auf die
      * Mindestlänge angehoben; berechnet werden 5.000 + 1.000 = 6.000 mm zu je 301,54 € je Meter.
      */

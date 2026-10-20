@@ -15,6 +15,7 @@ use Shopware\Core\Checkout\Cart\CartProcessorInterface;
 use Shopware\Core\Checkout\Cart\LineItem\CartDataCollection;
 use Shopware\Core\Checkout\Cart\LineItem\LineItem;
 use Shopware\Core\Checkout\Cart\Price\QuantityPriceCalculator;
+use Shopware\Core\Checkout\Cart\Price\Struct\CalculatedPrice;
 use Shopware\Core\Checkout\Cart\Price\Struct\QuantityPriceDefinition;
 use Shopware\Core\System\Locale\LanguageLocaleCodeProvider;
 use Shopware\Core\System\SalesChannel\SalesChannelContext;
@@ -53,97 +54,113 @@ final class DynamicPriceProcessor implements CartProcessorInterface
             }
 
             $mmLength = $lineItem->getPayloadValue(DynamicPriceConstants::PAYLOAD_LENGTH_MM);
-
-            if (!is_int($mmLength) || $mmLength <= 0) {
-                $this->logger->warning('RcDynamicPrice: Ungültige Länge im LineItem', [
-                    'lineItemId' => $lineItem->getId(),
-                    'meterLengthMm' => $mmLength,
-                ]);
-                $this->rejectLineItem($toCalculate, $lineItem, 'ungültige Länge');
-                continue;
-            }
-
-            // Die Grenzen stehen seit dem Hinzufügen im Payload; geprüft wird bei jeder Berechnung neu,
-            // weil auch ein wiederhergestellter oder von außen gebauter Warenkorb hier durchläuft.
-            $minLength = $lineItem->getPayloadValue(DynamicPriceConstants::PAYLOAD_MIN_LENGTH);
-            $maxLength = $lineItem->getPayloadValue(DynamicPriceConstants::PAYLOAD_MAX_LENGTH);
-
-            if (is_int($minLength) && $mmLength < $minLength) {
-                $this->logger->warning('RcDynamicPrice: Länge unter Minimum', [
-                    'lineItemId' => $lineItem->getId(),
-                    'meterLengthMm' => $mmLength,
-                    'minLength' => $minLength,
-                ]);
-                $this->rejectLineItem($toCalculate, $lineItem, 'Länge unter der Mindestlänge');
-                continue;
-            }
-
-            if (is_int($maxLength) && $mmLength > $maxLength) {
-                $this->logger->warning('RcDynamicPrice: Länge über Maximum', [
-                    'lineItemId' => $lineItem->getId(),
-                    'meterLengthMm' => $mmLength,
-                    'maxLength' => $maxLength,
-                ]);
-                $this->rejectLineItem($toCalculate, $lineItem, 'Länge über der Maximallänge');
-                continue;
-            }
-
             $price = $lineItem->getPrice();
-            if ($price === null || $price->getUnitPrice() <= 0.0) {
-                $this->logger->warning('RcDynamicPrice: Kein oder ungültiger Preis am LineItem', [
-                    'lineItemId' => $lineItem->getId(),
-                    'unitPrice' => $price?->getUnitPrice(),
-                ]);
-                $this->rejectLineItem($toCalculate, $lineItem, 'kein gültiger Grundpreis am Artikel');
+            $reason = $this->rejectionReason($lineItem, $mmLength, $price);
+            if ($reason !== null || !\is_int($mmLength) || $price === null) {
+                $this->rejectLineItem($toCalculate, $lineItem, $reason ?? MeterPriceError::REASON_INVALID_LENGTH);
+
                 continue;
             }
 
-            $roundingMode = $lineItem->getPayloadValue(DynamicPriceConstants::PAYLOAD_ROUNDING);
-
-            $cutPieces = $this->cutPieces($lineItem, $mmLength);
-
-            // Abgerechnet wird je Teilstück, auf die Mindestlänge angehoben und einzeln aufgerundet, dann
-            // summiert, und nicht die gerundete Eingabelänge. Ist die Rundungsstufe kein Teiler der
-            // Teilstücklängen, ergeben beide Wege verschiedene Beträge.
-            $billedPieces = $this->billedPieces($lineItem, $cutPieces, $roundingMode);
-            $billedLength = \array_sum($billedPieces);
-            $longestPiece = \max($billedPieces);
-
-            // Der Grundpreis des Artikels ist ein Meterpreis, die Längen stehen in Millimetern.
-            $adjustedUnitPrice = ($price->getUnitPrice() / 1000.0) * $billedLength;
-
-            $definition = new QuantityPriceDefinition(
-                $adjustedUnitPrice,
-                $price->getTaxRules(),
-                $lineItem->getQuantity()
-            );
-
-            $lineItem->setPrice($this->calculator->calculate($definition, $context));
-
-            // Gruppiert werden die Schnittlängen: Der Positionsname ist die Anweisung an die Fertigung
-            // und sagt, was zu schneiden ist. Die Abrechnungslänge steht als eigene Angabe dahinter.
-            $splitSummary = $this->groupPieces($cutPieces);
-
-            $lineItem->setPayloadValue(DynamicPriceConstants::PAYLOAD_BILLED_PIECES, $billedPieces);
-            $lineItem->setPayloadValue(DynamicPriceConstants::PAYLOAD_BILLED_LENGTH_MM, $billedLength);
-            $lineItem->setPayloadValue(DynamicPriceConstants::PAYLOAD_MAX_PIECE_LENGTH_MM, $longestPiece);
-            $lineItem->setPayloadValue(DynamicPriceConstants::PAYLOAD_SPLIT_SUMMARY, $splitSummary);
-
-            $this->applyLabel($lineItem, $mmLength, $billedLength, $cutPieces, $splitSummary, $this->locale($context));
-
-            // Die DeliveryInformation trägt die längste Einzellänge, nicht die Gesamtlänge. Shopwares
-            // Längenregeln (LineItemDimensionLengthRule) wählen die Versandart, und versendet werden
-            // die einzelnen Zuschnitte; das längste Stück entscheidet zwischen Paket und Spedition.
-            $delivery = $lineItem->getDeliveryInformation();
-            if ($delivery !== null) {
-                $delivery->setLength((float)$longestPiece);
-            }
-
-            // Kein try/catch: Der Recorder wirft per Vertrag nie.
-            $this->metrics->increment(DynamicPriceConstants::METRIC_CART_ITEM_PROCESSED, [
-                'rounding' => \is_string($roundingMode) ? $roundingMode : DynamicPriceConstants::ROUNDING_NONE,
-            ]);
+            $this->applyMeterPrice($lineItem, $mmLength, $price, $context);
         }
+    }
+
+    /**
+     * Warum sich für die Position kein Meterpreis ermitteln lässt, `null`, wenn alles stimmt.
+     *
+     * Die Grenzen stehen seit dem Hinzufügen im Payload; geprüft wird bei jeder Berechnung neu, weil auch ein
+     * wiederhergestellter oder von außen gebauter Warenkorb hier durchläuft.
+     */
+    private function rejectionReason(LineItem $lineItem, mixed $mmLength, ?CalculatedPrice $price): ?string
+    {
+        if (!\is_int($mmLength) || $mmLength <= 0) {
+            $this->logger->warning('RcDynamicPrice: Ungültige Länge im LineItem', [
+                'lineItemId' => $lineItem->getId(),
+                'meterLengthMm' => $mmLength,
+            ]);
+
+            return MeterPriceError::REASON_INVALID_LENGTH;
+        }
+
+        $minLength = $lineItem->getPayloadValue(DynamicPriceConstants::PAYLOAD_MIN_LENGTH);
+        if (\is_int($minLength) && $mmLength < $minLength) {
+            $this->logger->warning('RcDynamicPrice: Länge unter Minimum', [
+                'lineItemId' => $lineItem->getId(),
+                'meterLengthMm' => $mmLength,
+                'minLength' => $minLength,
+            ]);
+
+            return MeterPriceError::REASON_BELOW_MINIMUM;
+        }
+
+        $maxLength = $lineItem->getPayloadValue(DynamicPriceConstants::PAYLOAD_MAX_LENGTH);
+        if (\is_int($maxLength) && $mmLength > $maxLength) {
+            $this->logger->warning('RcDynamicPrice: Länge über Maximum', [
+                'lineItemId' => $lineItem->getId(),
+                'meterLengthMm' => $mmLength,
+                'maxLength' => $maxLength,
+            ]);
+
+            return MeterPriceError::REASON_ABOVE_MAXIMUM;
+        }
+
+        if ($price === null || $price->getUnitPrice() <= 0.0) {
+            $this->logger->warning('RcDynamicPrice: Kein oder ungültiger Preis am LineItem', [
+                'lineItemId' => $lineItem->getId(),
+                'unitPrice' => $price?->getUnitPrice(),
+            ]);
+
+            return MeterPriceError::REASON_NO_BASE_PRICE;
+        }
+
+        return null;
+    }
+
+    /**
+     * Rechnet den Preis aus der Länge und schreibt Abrechnung, Positionsnamen und Versandmaß an die Position.
+     */
+    private function applyMeterPrice(LineItem $lineItem, int $mmLength, CalculatedPrice $price, SalesChannelContext $context): void
+    {
+        $roundingMode = $lineItem->getPayloadValue(DynamicPriceConstants::PAYLOAD_ROUNDING);
+
+        $cutPieces = $this->cutPieces($lineItem, $mmLength);
+
+        // Abgerechnet wird je Teilstück, auf die Mindestlänge angehoben und einzeln aufgerundet, dann
+        // summiert, und nicht die gerundete Eingabelänge. Ist die Rundungsstufe kein Teiler der
+        // Teilstücklängen, ergeben beide Wege verschiedene Beträge.
+        $billedPieces = $this->billedPieces($lineItem, $cutPieces, $roundingMode);
+        $billedLength = \array_sum($billedPieces);
+        $longestPiece = \max($billedPieces);
+
+        // Der Grundpreis des Artikels ist ein Meterpreis, die Längen stehen in Millimetern.
+        $definition = new QuantityPriceDefinition(
+            ($price->getUnitPrice() / 1000.0) * $billedLength,
+            $price->getTaxRules(),
+            $lineItem->getQuantity()
+        );
+        $lineItem->setPrice($this->calculator->calculate($definition, $context));
+
+        // Gruppiert werden die Schnittlängen: Der Positionsname ist die Anweisung an die Fertigung
+        // und sagt, was zu schneiden ist. Die Abrechnungslänge steht als eigene Angabe dahinter.
+        $splitSummary = $this->groupPieces($cutPieces);
+
+        $lineItem->setPayloadValue(DynamicPriceConstants::PAYLOAD_BILLED_PIECES, $billedPieces);
+        $lineItem->setPayloadValue(DynamicPriceConstants::PAYLOAD_BILLED_LENGTH_MM, $billedLength);
+        $lineItem->setPayloadValue(DynamicPriceConstants::PAYLOAD_MAX_PIECE_LENGTH_MM, $longestPiece);
+        $lineItem->setPayloadValue(DynamicPriceConstants::PAYLOAD_SPLIT_SUMMARY, $splitSummary);
+
+        $this->applyLabel($lineItem, $mmLength, $billedLength, $cutPieces, $splitSummary, $this->locale($context));
+
+        // Die DeliveryInformation trägt die längste Einzellänge, nicht die Gesamtlänge. Shopwares
+        // Längenregeln (LineItemDimensionLengthRule) wählen die Versandart, und versendet werden
+        // die einzelnen Zuschnitte; das längste Stück entscheidet zwischen Paket und Spedition.
+        $lineItem->getDeliveryInformation()?->setLength((float) $longestPiece);
+
+        // Kein try/catch: Der Recorder wirft per Vertrag nie.
+        $this->metrics->increment(DynamicPriceConstants::METRIC_CART_ITEM_PROCESSED, [
+            'rounding' => \is_string($roundingMode) ? $roundingMode : DynamicPriceConstants::ROUNDING_NONE,
+        ]);
     }
 
     /**

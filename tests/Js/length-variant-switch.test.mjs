@@ -54,7 +54,7 @@ const LengthVariantSwitchPlugin = new Function(wrapped)();
 
 const MM_PER_CM = 10;
 
-/** Die Stufen des Artikels `FB96-300-0.1`, gelesen am 2026-09-01 auf Staging. */
+/** Die Stufen des Artikels `FB96-300-0.1`. */
 const ranges = [
     [96, 116], [116, 130], [130, 140], [140, 150], [150, 160], [160, 170], [170, 180],
     [180, 190], [190, 200], [200, 210], [210, 220], [220, 230], [230, 240], [240, 250],
@@ -168,7 +168,7 @@ describe('parseLengths — die Eingabe des Kunden', () => {
 });
 
 describe('findRange — die Stufe zu einer Länge', () => {
-    test('Renes Beispiel: 1350 mm gehört zu 130 – 140 cm', () => {
+    test('1350 mm gehört zu 130 – 140 cm', () => {
         assert.equal(LengthVariantSwitchPlugin.findRange(ranges, 1350, MM_PER_CM).label, '130 – 140 cm');
     });
 

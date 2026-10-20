@@ -12,7 +12,7 @@ parameters:
     bootstrapFiles:
         - vendor/autoload.php
     ignoreErrors:
-        # **Diese Regel greift hier daneben, und ihre Befolgung wäre gefährlich.** Sie behauptet,
+        # Diese Regel greift hier daneben, und ihre Befolgung wäre gefährlich. Sie behauptet,
         # `?->` links von `??` sei überflüssig, weil `??` den Fall schon abfange. Das stimmt nicht:
         # `??` fängt nicht gesetzte Werte ab, nicht den Zugriff auf ein nicht vorhandenes Objekt.
         # Wäre `$resolved->splitMode` leer, löste `->value` eine Warnung aus — und die wird in

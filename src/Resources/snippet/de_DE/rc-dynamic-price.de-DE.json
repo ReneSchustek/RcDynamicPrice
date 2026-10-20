@@ -1,6 +1,7 @@
 {
     "rc-dynamic-price": {
         "label": "Länge in Millimetern",
+        "hintText": "Bitte Länge in Millimetern eingeben – z. B. 1500 für 1,5 m",
         "placeholder": "z. B. 1500 oder 1,5 m",
         "unit": "mm",
         "calculatedPrice": "Berechneter Preis:",

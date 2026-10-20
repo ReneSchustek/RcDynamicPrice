@@ -4,16 +4,12 @@ declare(strict_types=1);
 
 namespace Ruhrcoder\RcDynamicPrice\Storefront\Subscriber;
 
-use Ruhrcoder\RcDynamicPrice\Service\LengthSettings;
-use Ruhrcoder\RcDynamicPrice\Service\LengthSettingsResolver;
-use Ruhrcoder\RcDynamicPrice\Storefront\Struct\GuidedSelectionStruct;
+use Ruhrcoder\RcDynamicPrice\DynamicPriceConstants;
+use Ruhrcoder\RcDynamicPrice\Service\GuidedSelectionBuilder;
+use Ruhrcoder\RcDynamicPrice\Service\LengthSettingsResolverInterface;
+use Ruhrcoder\RcDynamicPrice\Service\VariantGroupOrder;
 use Ruhrcoder\RcDynamicPrice\Storefront\Struct\LengthSettingsStruct;
 use Shopware\Core\Content\Cms\SalesChannel\Struct\BuyBoxStruct;
-use Shopware\Core\Content\Product\ProductCollection;
-use Shopware\Core\Content\Product\SalesChannel\Detail\AbstractAvailableCombinationLoader;
-use Shopware\Core\Content\Property\PropertyGroupCollection;
-use Shopware\Core\Framework\DataAbstractionLayer\EntityRepository;
-use Shopware\Core\Framework\DataAbstractionLayer\Search\Criteria;
 use Shopware\Core\System\SalesChannel\SalesChannelContext;
 use Shopware\Core\System\SystemConfig\SystemConfigService;
 use Shopware\Storefront\Page\Product\ProductPage;
@@ -25,11 +21,8 @@ use Symfony\Component\EventDispatcher\EventSubscriberInterface;
  * Angaben der geführten Auswahl.
  *
  * Von den eingestellten Längengruppen gilt die erste, die der Artikel hat. So passt eine Einstellung an
- * der Kategorie auch dort, wo die Längen mal „Maße", mal „Länge" heißen.
- *
- * Kaufbar heißt für die geführte Auswahl dasselbe wie beim Kern, der unmögliche Kombinationen
- * durchstreicht: aktiv, im Verkaufskanal sichtbar und verfügbar. Deshalb kommen die Kombinationen aus
- * seinem eigenen Lader.
+ * der Kategorie auch dort, wo die Längen mal „Maße", mal „Länge" heißen. Die geführte Auswahl baut
+ * {@see GuidedSelectionBuilder}, die Reihenfolge der Gruppen {@see VariantGroupOrder}.
  */
 final class LengthSettingsSubscriber implements EventSubscriberInterface
 {
@@ -37,17 +30,10 @@ final class LengthSettingsSubscriber implements EventSubscriberInterface
 
     public const GUIDED_EXTENSION_NAME = 'rcGuidedSelection';
 
-    /**
-     * Konfiguration und Produktablage sind optional, damit Einheitstests ohne sie auskommen. Ohne Konfiguration bleibt
-     * die geführte Auswahl für alle Variantenartikel aus, ohne Produktablage fehlen Name und Nummer des Elternartikels.
-     *
-     * @param EntityRepository<ProductCollection>|null $productRepository
-     */
     public function __construct(
-        private readonly LengthSettingsResolver $resolver,
-        private readonly AbstractAvailableCombinationLoader $combinationLoader,
-        private readonly ?SystemConfigService $systemConfig = null,
-        private readonly ?EntityRepository $productRepository = null,
+        private readonly LengthSettingsResolverInterface $resolver,
+        private readonly GuidedSelectionBuilder $guidedSelection,
+        private readonly SystemConfigService $systemConfig,
     ) {
     }
 
@@ -73,12 +59,12 @@ final class LengthSettingsSubscriber implements EventSubscriberInterface
         $settings = $this->resolver->forProduct($product, $salesChannelContext->getSalesChannelId(), $salesChannelContext->getContext());
 
         // Mit der geführten Auswahl für alle Variantenartikel trifft der Kunde nirgends auf durchgestrichene
-        // Kombinationen, er wird Schritt für Schritt geführt. Ohne Längengruppe beginnt sie mit der obersten Gruppe der
-        // Seite; welche das ist, legt das Theme fest (etwa die Glasstärke vor dem Glashalter).
-        $guidedForAll = $this->systemConfig?->getBool('RcDynamicPrice.config.guidedSelectionAllVariants', $salesChannelContext->getSalesChannelId()) ?? false;
+        // Kombinationen, er wird Schritt für Schritt geführt. Ohne Längengruppe beginnt sie mit der obersten Gruppe
+        // (siehe VariantGroupOrder).
+        $guidedForAll = $this->systemConfig->getBool(DynamicPriceConstants::CONFIG_GUIDED_SELECTION_ALL_VARIANTS, $salesChannelContext->getSalesChannelId());
 
         if ($settings->isEmpty()) {
-            $firstGroupId = self::firstGroupId($page->getConfiguratorSettings());
+            $firstGroupId = VariantGroupOrder::firstGroupId($page->getConfiguratorSettings());
             if ($guidedForAll && $firstGroupId !== null) {
                 $this->addGuidedSelection($page, $parentId, $firstGroupId, $salesChannelContext);
             }
@@ -86,12 +72,12 @@ final class LengthSettingsSubscriber implements EventSubscriberInterface
             return;
         }
 
-        $lengthGroupId = self::lengthGroupOnPage($page->getConfiguratorSettings(), $settings);
+        $lengthGroupId = VariantGroupOrder::lengthGroupOnPage($page->getConfiguratorSettings(), $settings);
 
         // Die Länge steht oben: Der Kunde soll sie kennen, bevor er über Ausführung, Farbe oder Gehrung
         // entscheidet. Der Kern ordnet die Gruppen nach ihrer eigenen Position.
         if ($lengthGroupId !== null) {
-            self::putLengthGroupFirst($page, $lengthGroupId);
+            self::putGroupFirst($page, $lengthGroupId);
         }
 
         // Ohne Längengruppe auf der Seite gäbe es keine Knöpfe, die sich ausblenden ließen.
@@ -102,32 +88,18 @@ final class LengthSettingsSubscriber implements EventSubscriberInterface
         // Die am Artikel oder an der Kategorie eingestellte Führung braucht die Längengruppe, die für alle
         // Variantenartikel beginnt notfalls mit der obersten Gruppe. Bei „Größen nur über die Länge" sind die
         // Längenknöpfe ausgeblendet, mit denen die Führung beginnen würde.
-        $entryGroupId = $lengthGroupId ?? self::firstGroupId($page->getConfiguratorSettings());
+        $entryGroupId = $lengthGroupId ?? VariantGroupOrder::firstGroupId($page->getConfiguratorSettings());
         if (!$lengthOnly && $entryGroupId !== null && (($settings->guidedSelection && $lengthGroupId !== null) || $guidedForAll)) {
             $this->addGuidedSelection($page, $parentId, $entryGroupId, $salesChannelContext);
         }
     }
 
-    /**
-     * Die oberste Gruppe der Seite, wenn es mindestens zwei gibt; mit einer gibt es nichts zu führen.
-     */
-    public static function firstGroupId(PropertyGroupCollection $groups): ?string
+    private function addGuidedSelection(ProductPage $page, string $parentId, string $entryGroupId, SalesChannelContext $context): void
     {
-        return $groups->count() >= 2 ? $groups->first()?->getId() : null;
-    }
-
-    /**
-     * Die erste eingestellte Längengruppe, die unter den Gruppen der Seite ist.
-     */
-    public static function lengthGroupOnPage(PropertyGroupCollection $pageGroups, LengthSettings $settings): ?string
-    {
-        foreach ($settings->lengthGroupIds as $groupId) {
-            if ($pageGroups->has($groupId)) {
-                return $groupId;
-            }
+        $guided = $this->guidedSelection->build($page, $parentId, $entryGroupId, $context);
+        if ($guided !== null) {
+            $page->addExtension(self::GUIDED_EXTENSION_NAME, $guided);
         }
-
-        return null;
     }
 
     /**
@@ -136,110 +108,17 @@ final class LengthSettingsSubscriber implements EventSubscriberInterface
      * Seite umzustellen änderte dort nichts. Ein Variantenwechsel lädt die Seite neu und kommt wieder hier
      * vorbei.
      */
-    private static function putLengthGroupFirst(ProductPage $page, string $lengthGroupId): void
+    private static function putGroupFirst(ProductPage $page, string $groupId): void
     {
-        $page->setConfiguratorSettings(self::lengthGroupFirst($page->getConfiguratorSettings(), $lengthGroupId));
+        $page->setConfiguratorSettings(VariantGroupOrder::groupFirst($page->getConfiguratorSettings(), $groupId));
 
         // Über den Artikel, nicht über die Seite: Ohne eigenes Layout setzt der Kern die Erlebniswelt der
         // Seite nie, und der Zugriff auf die nicht belegte Eigenschaft würfe. Es ist dasselbe Objekt.
         foreach ($page->getProduct()->getCmsPage()?->getAllElements() ?? [] as $slot) {
             $data = $slot->getData();
             if ($data instanceof BuyBoxStruct && $data->getConfiguratorSettings() !== null) {
-                $data->setConfiguratorSettings(self::lengthGroupFirst($data->getConfiguratorSettings(), $lengthGroupId));
+                $data->setConfiguratorSettings(VariantGroupOrder::groupFirst($data->getConfiguratorSettings(), $groupId));
             }
         }
-    }
-
-    /**
-     * Dieselben Gruppen, die Längengruppe vorn; die übrigen behalten ihre Reihenfolge.
-     */
-    public static function lengthGroupFirst(PropertyGroupCollection $groups, string $lengthGroupId): PropertyGroupCollection
-    {
-        $lengthGroup = $groups->get($lengthGroupId);
-        if ($lengthGroup === null) {
-            return $groups;
-        }
-
-        $ordered = new PropertyGroupCollection([$lengthGroup]);
-        foreach ($groups as $group) {
-            if ($group->getId() !== $lengthGroupId) {
-                $ordered->add($group);
-            }
-        }
-
-        return $ordered;
-    }
-
-    /**
-     * Die Gruppen der Seite als Schritte: die Längengruppe zuerst, die übrigen in der Reihenfolge, in der
-     * der Kern sie zeigt.
-     *
-     * @return list<array{id: string, optionIds: list<string>}>
-     */
-    public static function orderedGroups(PropertyGroupCollection $settings, string $lengthGroupId): array
-    {
-        $groups = [];
-        foreach ($settings as $group) {
-            $entry = ['id' => $group->getId(), 'optionIds' => array_values($group->getOptions()?->getIds() ?? [])];
-
-            if ($group->getId() === $lengthGroupId) {
-                array_unshift($groups, $entry);
-            } else {
-                $groups[] = $entry;
-            }
-        }
-
-        return $groups;
-    }
-
-    /**
-     * `$lengthGroupId` ist die Gruppe des ersten Schritts: die Längengruppe oder, ohne sie, die oberste Gruppe der
-     * Seite. Ohne kaufbare Kombination gibt es nichts zu führen, und die Seite bleibt beim Verhalten des Kerns.
-     */
-    private function addGuidedSelection(ProductPage $page, string $parentId, string $lengthGroupId, SalesChannelContext $context): void
-    {
-        $settings = $page->getConfiguratorSettings();
-
-        $result = $this->combinationLoader->loadCombinations($parentId, $context);
-        $combinations = array_values(array_filter(
-            array_map(static fn (array $optionIds): array => array_values($optionIds), $result->getCombinations()),
-            static fn (array $optionIds): bool => $result->isAvailable($optionIds),
-        ));
-
-        if ($combinations === []) {
-            return;
-        }
-
-        [$parentName, $parentNumber] = $this->parentLabels($page, $parentId, $context);
-
-        $page->addExtension(
-            self::GUIDED_EXTENSION_NAME,
-            new GuidedSelectionStruct($lengthGroupId, self::orderedGroups($settings, $lengthGroupId), $combinations, $parentName, $parentNumber),
-        );
-    }
-
-    /**
-     * Name und Nummer des Elternartikels. Ruft jemand den Elternartikel auf, lädt der Kern die beste Variante, und die
-     * Seite hieße „… Milchglas (3m)", obwohl noch keine Länge gewählt ist. Bis zur Wahl zeigt das Skript deshalb Name
-     * und Nummer des Elternartikels; die Variantennamen bleiben im Markup für Suchmaschinen und ohne Skript.
-     *
-     * @return array{0: ?string, 1: ?string}
-     */
-    private function parentLabels(ProductPage $page, string $parentId, SalesChannelContext $context): array
-    {
-        $product = $page->getProduct();
-        // Zeigt die Seite den Elternartikel selbst, trägt sie schon seinen Namen und seine Nummer.
-        if ($this->productRepository === null || $product->getId() === $parentId) {
-            return [null, null];
-        }
-
-        $parent = $this->productRepository->search(new Criteria([$parentId]), $context->getContext())->getEntities()->first();
-        if ($parent === null) {
-            return [null, null];
-        }
-
-        $name = trim((string) ($parent->getTranslation('name') ?? $parent->getName()));
-
-        return [$name !== '' ? $name : null, $parent->getProductNumber()];
     }
 }

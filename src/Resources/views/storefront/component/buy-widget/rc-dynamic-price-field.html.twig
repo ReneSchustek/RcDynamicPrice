@@ -5,7 +5,7 @@
    das versteckte Feld als `form`-Attribut, damit die Länge mit dem Kauf abgeschickt wird, der Rahmen als
    `data-form`, damit das Skript sein Formular findet. #}
 {% set rcFormId = rcFormId|default(null) %}
-{% set hintText = rcConfig.hintText %}
+{% set hintText = rcConfig.hintText ?: 'rc-dynamic-price.hintText'|trans %}
 {% set minLength = rcConfig.minLength %}
 {% set maxLength = rcConfig.maxLength %}
 {% set splitMode = rcConfig.splitMode %}

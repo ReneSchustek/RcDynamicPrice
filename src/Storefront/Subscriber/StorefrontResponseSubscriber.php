@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Ruhrcoder\RcDynamicPrice\Storefront\Subscriber;
 
-use Shopware\Storefront\Event\StorefrontRenderEvent;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Event\ResponseEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
 
@@ -28,24 +28,10 @@ final class StorefrontResponseSubscriber implements EventSubscriberInterface
     public static function getSubscribedEvents(): array
     {
         return [
-            // Schreibt während des Renderns, damit der Response-Listener die Tags noch findet.
-            StorefrontRenderEvent::class => 'onStorefrontRender',
+            // Nach den übrigen Zuhörern, die den Header füllen, und vor `CacheResponseSubscriber::setResponseCache()`
+            // (-1500), der die Antwort mit ihren Tags ablegt.
             KernelEvents::RESPONSE => ['onResponse', -1024],
         ];
-    }
-
-    public function onStorefrontRender(StorefrontRenderEvent $event): void
-    {
-        $tags = $this->pullTags($event->getRequest());
-        if ($tags === []) {
-            return;
-        }
-
-        // Wieder ans Request-Attribut, damit das später ausgelöste ResponseEvent die Tags findet.
-        $event->getRequest()->attributes->set(
-            ProductPageSubscriber::getCacheTagsRequestAttribute(),
-            $tags,
-        );
     }
 
     public function onResponse(ResponseEvent $event): void
@@ -91,24 +77,18 @@ final class StorefrontResponseSubscriber implements EventSubscriberInterface
             return [];
         }
 
-        if (!\is_array($decoded)) {
-            return [];
-        }
-
-        $tags = [];
-        foreach ($decoded as $tag) {
-            if (\is_string($tag) && $tag !== '') {
-                $tags[] = $tag;
-            }
-        }
-
-        return $tags;
+        return self::stringsIn($decoded);
     }
 
     /** @return list<string> */
-    private function pullTags(\Symfony\Component\HttpFoundation\Request $request): array
+    private function pullTags(Request $request): array
     {
-        $raw = $request->attributes->get(ProductPageSubscriber::getCacheTagsRequestAttribute(), []);
+        return self::stringsIn($request->attributes->get(ProductPageSubscriber::getCacheTagsRequestAttribute(), []));
+    }
+
+    /** @return list<string> */
+    private static function stringsIn(mixed $raw): array
+    {
         if (!\is_array($raw)) {
             return [];
         }

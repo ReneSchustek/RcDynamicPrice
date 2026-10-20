@@ -16,6 +16,7 @@ use Ruhrcoder\RcDynamicPrice\Service\ConfigScope;
 use Ruhrcoder\RcDynamicPrice\Service\MeterConfigResolverInterface;
 use Ruhrcoder\RcDynamicPrice\Service\MeterProductHelperInterface;
 use Ruhrcoder\RcDynamicPrice\Service\MeterSplittingConfig;
+use Ruhrcoder\RcDynamicPrice\Service\RequestedLengthReader;
 use Ruhrcoder\RcDynamicPrice\Service\ResolvedMeterConfig;
 use Ruhrcoder\RcDynamicPrice\Subscriber\LineItemSubscriber;
 use Shopware\Core\Checkout\Cart\Cart;
@@ -53,6 +54,7 @@ final class LineItemSubscriberTest extends TestCase
             $this->meterProductHelper,
             $this->configResolver,
             $this->assembler,
+            new RequestedLengthReader(new NullLogger()),
             new NullLogger(),
         );
     }
@@ -575,6 +577,7 @@ final class LineItemSubscriberTest extends TestCase
             $this->meterProductHelper,
             $this->configResolver,
             $this->assembler,
+            new RequestedLengthReader($logger),
             $logger,
         );
 
@@ -767,6 +770,7 @@ final class LineItemSubscriberTest extends TestCase
             $this->meterProductHelper,
             $this->configResolver,
             $this->assembler,
+            new RequestedLengthReader($logger),
             $logger,
         );
 

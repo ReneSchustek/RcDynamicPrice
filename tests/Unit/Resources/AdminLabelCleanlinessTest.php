@@ -81,7 +81,7 @@ final class AdminLabelCleanlinessTest extends TestCase
         }
 
         self::assertSame([], $violations, \sprintf(
-            "Unzulaessige Labels in config.xml:\n%s",
+            "Unzulässige Labels in config.xml:\n%s",
             implode("\n", $violations)
         ));
     }
@@ -110,7 +110,7 @@ final class AdminLabelCleanlinessTest extends TestCase
         }
 
         self::assertSame([], $violations, \sprintf(
-            "Unzulaessige Labels in Migrations:\n%s",
+            "Unzulässige Labels in Migrations:\n%s",
             implode("\n", $violations)
         ));
     }

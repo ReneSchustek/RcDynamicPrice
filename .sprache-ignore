@@ -1,0 +1,18 @@
+# Ausnahmen des Sprachprüfers — ein Wort je Zeile, `path:` für ganze Dateien.
+
+# Die Ausnahmeliste des Spurenprüfers. Sie erklärt in ihren Kommentaren, welche Wörter sie
+# durchlässt und welche nicht — und dafür muss sie die Ersatzschreibung wörtlich zeigen.
+# Als Prosa gelesen ist das ein Kategorienfehler: Dort steht kein Satz, sondern ein Beleg.
+# Dieselbe Lage wie bei den Regeldateien und dem Sprachprüfer selbst.
+path:.ai-trace-ignore
+
+# Der Wächter gegen Ersatzschreibung nennt in seiner Ausnahmeliste Beispiele der falschen Schreibweise
+# (etwa die Schlüssel der berichtigenden Migration); sie sind Daten, kein Satz.
+path:tests/Unit/Resources/SourceUmlautCleanlinessTest.php
+
+# Die Migration berichtigt alte Beschriftungen mit Ersatzschreibung; sie muss die alten Werte wörtlich
+# suchen, und ihr Test gibt genau diese Werte hinein. Der Wächter der Beschriftungen führt dieselben
+# Schreibweisen als Muster, nach denen er sucht. Daten, kein Satz.
+path:src/Migration/Migration1745700000FixCustomFieldLabelsUmlauts.php
+path:tests/Unit/Migration/Migration1745700000FixCustomFieldLabelsUmlautsTest.php
+path:tests/Unit/Resources/AdminLabelCleanlinessTest.php

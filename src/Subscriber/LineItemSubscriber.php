@@ -11,10 +11,13 @@ use Ruhrcoder\RcDynamicPrice\Service\CartItemSplitAssemblerInterface;
 use Ruhrcoder\RcDynamicPrice\Service\MeterConfigResolverInterface;
 use Ruhrcoder\RcDynamicPrice\Service\MeterProductHelperInterface;
 use Ruhrcoder\RcDynamicPrice\Service\MeterSplittingConfig;
+use Ruhrcoder\RcDynamicPrice\Service\RequestedLengthReader;
 use Ruhrcoder\RcDynamicPrice\Service\ResolvedMeterConfig;
 use Shopware\Core\Checkout\Cart\Cart;
 use Shopware\Core\Checkout\Cart\Event\BeforeLineItemAddedEvent;
 use Shopware\Core\Checkout\Cart\LineItem\LineItem;
+use Shopware\Core\Content\Product\ProductEntity;
+use Shopware\Core\Framework\Context;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
@@ -28,34 +31,12 @@ use Symfony\Component\HttpFoundation\RequestStack;
  */
 final class LineItemSubscriber implements EventSubscriberInterface
 {
-    /**
-     * Kennzeichen, die RcCartSplitter (bei TMMS-Eingaben) und RcCustomFields in den Request
-     * schreiben. Ist eines gesetzt, bestimmt dieses Plugin die Kennung der Position, und statt
-     * automatisch zu teilen, gibt es nur den Hinweis.
-     */
-    private const FOREIGN_ID_CONTROLLER_KEYS = [
-        'rcTmmsActive',
-        'rcCustomFieldsActive',
-    ];
-
-    /**
-     * Das Feld, unter dem Kaufformular und Store-API-Clients die gewünschte Länge senden.
-     */
-    private const REQUEST_KEY_LENGTH = 'mmLength';
-
-    /**
-     * Längenschlüssel je Position im Request (`lineItems[<lineItemId>][payload][meterLengthMm]`),
-     * damit ein Request mehrere Positionen mit verschiedenen Längen anlegen kann. Er ist derselbe
-     * wie der Payload-Schlüssel {@see DynamicPriceConstants::PAYLOAD_LENGTH_MM}: Der Wert läuft so
-     * ohne Umbenennung durch, und „meterLengthMm" steht nur an einer Stelle.
-     */
-    private const REQUEST_KEY_LENGTH_PAYLOAD = DynamicPriceConstants::PAYLOAD_LENGTH_MM;
-
     public function __construct(
         private readonly RequestStack $requestStack,
         private readonly MeterProductHelperInterface $meterProductHelper,
         private readonly MeterConfigResolverInterface $configResolver,
         private readonly CartItemSplitAssemblerInterface $splitAssembler,
+        private readonly RequestedLengthReader $lengthReader,
         private readonly LoggerInterface $logger,
     ) {
     }
@@ -103,11 +84,23 @@ final class LineItemSubscriber implements EventSubscriberInterface
             return;
         }
 
-        $salesChannelId = $event->getSalesChannelContext()->getSalesChannel()->getId();
+        $resolved = $this->resolveConfig($product, $productId, $event->getSalesChannelContext()->getSalesChannelId(), $context);
+        if (!$resolved->active) {
+            return;
+        }
+
+        $this->enforceSingleQuantity($lineItem, $productId);
+        $this->addWithLength($event, $request, $lineItem, $productId, $resolved);
+    }
+
+    /**
+     * Die Herkunft jedes Werts steht mit im Protokoll; bei „warum kostet das so viel?" ist dann sofort zu sehen, ob
+     * Produkt, Kategorie, Grundeinstellung oder Vorgabe gewonnen hat.
+     */
+    private function resolveConfig(ProductEntity $product, string $productId, string $salesChannelId, Context $context): ResolvedMeterConfig
+    {
         $resolved = $this->configResolver->resolveForProduct($product, $salesChannelId, $context);
 
-        // Die Herkunft jedes Werts steht mit im Protokoll; bei „warum kostet das so viel?" ist dann
-        // sofort zu sehen, ob Produkt, Kategorie, Grundeinstellung oder Vorgabe gewonnen hat.
         $this->logger->info('RcDynamicPrice: Meterpreis-Konfiguration aufgelöst', [
             'productId' => $productId,
             'active' => $resolved->active,
@@ -120,13 +113,17 @@ final class LineItemSubscriber implements EventSubscriberInterface
             'splitHintTemplateScope' => $resolved->splitHintTemplateScope->value,
         ]);
 
-        if (!$resolved->active) {
-            return;
-        }
+        return $resolved;
+    }
 
-        $this->enforceSingleQuantity($lineItem, $productId);
+    /**
+     * Prüft die Länge und legt die Position an, geteilt, wenn die Einstellung es verlangt. Eine fehlende oder
+     * unzulässige Länge macht die Position unberechenbar, statt sie still zum Stückpreis durchzulassen.
+     */
+    private function addWithLength(BeforeLineItemAddedEvent $event, Request $request, LineItem $lineItem, string $productId, ResolvedMeterConfig $resolved): void
+    {
 
-        $mmLength = $this->readRequestedLength($request, $lineItem);
+        $mmLength = $this->lengthReader->lengthFor($request, $lineItem);
 
         if ($mmLength === null) {
             $this->logger->warning('RcDynamicPrice: Meter-Position ohne verwertbare Längenangabe', [
@@ -221,90 +218,6 @@ final class LineItemSubscriber implements EventSubscriberInterface
         }
     }
 
-    /**
-     * Liest die angeforderte Länge aus drei Quellen; die erste gültige gewinnt:
-     *
-     *   1. Länge je Position im Request: `lineItems[<lineItemId>][payload][meterLengthMm]`. Damit
-     *      legt ein Request mehrere Positionen mit verschiedenen Längen an (RcB2bSuite
-     *      QuickOrder/QuoteRequest).
-     *   2. Der schon gesetzte Payload der Position, `meterLengthMm`. Er trägt die Länge beim
-     *      Wiederherstellen eines Warenkorbs (etwa FroshPlatformShareBasket), wenn der Request keine
-     *      Länge mitbringt.
-     *   3. Der flache Schlüssel `mmLength` aus dem Kaufformular und von Store-API-Clients.
-     *
-     * Geprüft wird in allen Quellen gleich: Das Formular sendet die Länge als Text, ein JSON-Client
-     * als Zahl, beides gilt. Alles andere (Kommazahl, "5000abc", true, Array) bleibt ungültig; ein
-     * blinder (int)-Cast verwandelte solche Eingaben still in eine Länge.
-     *
-     * Gelesen wird über all() statt get(): InputBag::get() wirft bei einem Array eine
-     * BadRequestException und beantwortete einen veränderten Request mit 400 statt mit einer
-     * sauberen Ablehnung im Warenkorb.
-     */
-    private function readRequestedLength(Request $request, LineItem $lineItem): ?int
-    {
-        $perPosition = $this->normalizeLength($this->readPerPositionLength($request, $lineItem->getId()));
-        if ($perPosition !== null) {
-            $flat = $this->normalizeLength($request->request->all()[self::REQUEST_KEY_LENGTH] ?? null);
-            if ($flat !== null && $flat !== $perPosition) {
-                // Beide Quellen gesetzt und widersprüchlich: Die Länge je Position gewinnt, und der
-                // Widerspruch kommt ins Protokoll, weil er auf einen falsch gebauten Request deutet.
-                $this->logger->warning('RcDynamicPrice: mehrdeutige Längenangabe, Per-Positions-Key gewinnt', [
-                    'lineItemId' => $lineItem->getId(),
-                    'perPosition' => $perPosition,
-                    'flat' => $flat,
-                ]);
-            }
-
-            return $perPosition;
-        }
-
-        $fromPayload = $this->normalizeLength($lineItem->getPayloadValue(self::REQUEST_KEY_LENGTH_PAYLOAD));
-        if ($fromPayload !== null) {
-            return $fromPayload;
-        }
-
-        return $this->normalizeLength($request->request->all()[self::REQUEST_KEY_LENGTH] ?? null);
-    }
-
-    /**
-     * Der rohe Wert aus `lineItems[<id>][payload][meterLengthMm]`, oder `null`, wenn der Request dort
-     * nichts trägt. Geprüft wird er in {@see normalizeLength()}.
-     */
-    private function readPerPositionLength(Request $request, string $lineItemId): mixed
-    {
-        $lineItems = $request->request->all('lineItems');
-
-        $entry = $lineItems[$lineItemId] ?? null;
-        if (!\is_array($entry)) {
-            return null;
-        }
-
-        $payload = $entry['payload'] ?? null;
-        if (!\is_array($payload)) {
-            return null;
-        }
-
-        return $payload[self::REQUEST_KEY_LENGTH_PAYLOAD] ?? null;
-    }
-
-    /**
-     * Eine positive Ganzzahl in Millimetern aus Text (Formular) oder Zahl (JSON), sonst `null`.
-     */
-    private function normalizeLength(mixed $raw): ?int
-    {
-        if (\is_int($raw)) {
-            return $raw > 0 ? $raw : null;
-        }
-
-        if (!\is_string($raw) || !\ctype_digit($raw)) {
-            return null;
-        }
-
-        $mm = (int) $raw;
-
-        return $mm > 0 ? $mm : null;
-    }
-
     private function buildSplittingConfig(
         ResolvedMeterConfig $resolved,
         string $productId,
@@ -333,47 +246,11 @@ final class LineItemSubscriber implements EventSubscriberInterface
             return $configured;
         }
 
-        if ($this->hasForeignIdControllerMarker($request)) {
+        if ($this->lengthReader->hasForeignIdControllerMarker($request)) {
             return SplitMode::Hint;
         }
 
         return $configured;
     }
 
-    /**
-     * Ob RcCartSplitter oder RcCustomFields den Request mitgestaltet hat. Beide schreiben ihr
-     * Kennzeichen in den Payload der Position (`lineItems[{productId}][payload][rcTmmsActive]=1`);
-     * die Prüfung auf oberster Ebene deckt ein Plugin ab, das es dort setzt.
-     */
-    private function hasForeignIdControllerMarker(Request $request): bool
-    {
-        foreach (self::FOREIGN_ID_CONTROLLER_KEYS as $key) {
-            // all() statt get(): get() wirft bei einem Array-Wert (`rcTmmsActive[]=1`), siehe readRequestedLength().
-            $value = $request->request->all()[$key] ?? '';
-            if (\is_string($value) && $value !== '') {
-                return true;
-            }
-        }
-
-        $lineItems = $request->request->all('lineItems');
-        foreach ($lineItems as $lineItemData) {
-            if (!\is_array($lineItemData)) {
-                continue;
-            }
-
-            $payload = $lineItemData['payload'] ?? null;
-            if (!\is_array($payload)) {
-                continue;
-            }
-
-            foreach (self::FOREIGN_ID_CONTROLLER_KEYS as $key) {
-                $payloadValue = $payload[$key] ?? null;
-                if (\is_string($payloadValue) && $payloadValue !== '') {
-                    return true;
-                }
-            }
-        }
-
-        return false;
-    }
 }

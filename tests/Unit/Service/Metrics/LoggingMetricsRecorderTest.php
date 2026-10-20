@@ -98,6 +98,8 @@ final class LoggingMetricsRecorderTest extends TestCase
             ->willThrowException(new \RuntimeException('config down'));
 
         $this->logger->expects($this->never())->method('info');
+        // Die Warnung erscheint einmal, nicht bei jedem Aufruf.
+        $this->logger->expects($this->once())->method('warning');
 
         $recorder = $this->recorder();
         $recorder->increment('key');

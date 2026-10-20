@@ -219,8 +219,6 @@ final class MeterConfigResolverTest extends TestCase
         $this->assertSame(0, $config->maxPieceLength);
     }
 
-    // Rundung
-
     public function testRoundingFromProductWins(): void
     {
         $config = $this->activeConfig(
@@ -264,8 +262,6 @@ final class MeterConfigResolverTest extends TestCase
         $this->assertSame('half_m', $config->roundingMode);
         $this->assertSame(ConfigScope::Category, $config->roundingModeScope);
     }
-
-    // Aufteilung
 
     public function testSplitModeFromProduct(): void
     {
@@ -393,8 +389,6 @@ final class MeterConfigResolverTest extends TestCase
         // Die gepflegte Hauptkategorie gewinnt gegen die sortierte Ersatzkategorie (cat-aaa).
         $this->assertSame('cat-bbb', $captured);
     }
-
-    // Hilfsfunktionen
 
     /**
      * @param array<string, mixed>                                          $productFields

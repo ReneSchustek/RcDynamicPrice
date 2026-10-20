@@ -24,7 +24,7 @@ final class RcDynamicPriceConfigStruct extends Struct
         private readonly string $hintText,
         private readonly int $minLength,
         private readonly int $maxLength,
-        private readonly string $roundingMode = 'none',
+        private readonly string $roundingMode = DynamicPriceConstants::ROUNDING_NONE,
         // Als Text statt SplitMode, damit Twig ihn ohne `.value` ins Datenattribut schreibt. Maßgeblich
         // bleibt das Enum; umgewandelt wird im ProductPageSubscriber.
         private readonly string $splitMode = '',

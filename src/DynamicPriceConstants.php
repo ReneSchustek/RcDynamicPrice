@@ -68,7 +68,7 @@ final class DynamicPriceConstants
     public const CAT_FIELD_LENGTH_ONLY = 'rc_length_only_cat';
 
     /**
-     * Altfelder der Längengruppe mit nur einem Wert, die es allein auf Entwicklungsinstanzen gibt.
+     * Altfelder der Längengruppe mit nur einem Wert (Fassung 1.23.0).
      * `Migration1788400000ReplaceLengthGroupWithLengthGroups` übernimmt ihre Werte und entfernt sie.
      */
     public const LEGACY_FIELD_GUIDED_LENGTH_GROUP = 'rc_guided_length_group';
@@ -81,6 +81,11 @@ final class DynamicPriceConstants
     public const ACTIVE_ON = 'on';
     public const ACTIVE_OFF = 'off';
 
+    // Vorgaben ohne jede Einstellung: Ein Zuschnitt hat eine Länge; längere Zuschnitte als 10 m verlangen eine
+    // ausdrückliche Einstellung an Produkt, Kategorie oder in der Grundeinstellung.
+    public const DEFAULT_MIN_LENGTH = 1;
+    public const DEFAULT_MAX_LENGTH = 10000;
+
     // Schlüssel der Grundeinstellung
 
     public const CONFIG_APPLY_TO_ALL_PRODUCTS = 'RcDynamicPrice.config.applyToAllProducts';
@@ -92,6 +97,7 @@ final class DynamicPriceConstants
     public const CONFIG_HINT_TEXT = 'RcDynamicPrice.config.hintText';
     public const CONFIG_EQUAL_BILLING = 'RcDynamicPrice.config.equalSplitBilling';
     public const CONFIG_EQUAL_ENFORCE_MIN = 'RcDynamicPrice.config.equalSplitEnforceMin';
+    public const CONFIG_GUIDED_SELECTION_ALL_VARIANTS = 'RcDynamicPrice.config.guidedSelectionAllVariants';
 
     /** Schaltet das Protokollieren von Kennzahlen im LoggingMetricsRecorder (Vorgabe aus) */
     public const CONFIG_ENABLE_METRICS = 'RcDynamicPrice.config.enableMetrics';
@@ -118,8 +124,6 @@ final class DynamicPriceConstants
     /** Zähler: Meterposition ohne ermittelbaren Preis, die die Bestellung sperrt */
     public const METRIC_CART_ITEM_REJECTED = 'cart.meter_item.rejected';
 
-    /** Dauer: Rundung in Millisekunden */
-    public const METRIC_ROUNDING_DURATION = 'rounding.duration_ms';
 
     /** Zähler: auf der Produktseite gezeigtes Meterpreis-Widget */
     public const METRIC_PRODUCT_PAGE_WIDGET_SHOWN = 'product_page.meter_widget.shown';

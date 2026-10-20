@@ -29,6 +29,11 @@ export default class DynamicPricePlugin extends Plugin {
         this._submitBtn   = this._form ? this._form.querySelector('[type="submit"]') : null;
         this._productId   = this.el.dataset.productId;
 
+        // Ohne Feld oder Formular gibt es nichts zu bedienen; die Ereignisse unten setzen beide voraus.
+        if (!this._input || !this._form) {
+            return;
+        }
+
         this._productPrice = document.querySelector('.product-detail-price');
         this._originalPriceHtml = this._productPrice ? this._productPrice.innerHTML : '';
 
@@ -165,65 +170,19 @@ export default class DynamicPricePlugin extends Plugin {
             return;
         }
 
-        const ask = parseLength(raw);
-
-        // „4" ohne Einheit: als Millimeter sinnlos, als Meter geraten. Die Frage steht, bis der Kunde
-        // weitertippt; aus „4" wird beim Tippen von „4200" ohnehin gleich eine eindeutige Zahl.
-        if (ask !== null && ask.ask !== undefined) {
-            this._showError((this.el.dataset.snippetAskUnit || '%value% m?').split('%value%').join(String(ask.ask)));
-            this._clearSplitInfo();
-            this._resetInput();
-            return;
-        }
-
-        const mm = this._parse(raw);
-
+        const mm = this._validate(raw);
         if (mm === null) {
-            this._showError(this.el.dataset.snippetErrorInteger || 'Invalid input');
             this._clearSplitInfo();
             this._resetInput();
             return;
         }
 
-        const min = parseInt(this.el.dataset.minLength, 10) || 1;
-        const max = parseInt(this.el.dataset.maxLength, 10) || 10000;
-        const locale = document.documentElement.lang || 'de-DE';
-
-        if (mm < min) {
-            const msg = (this.el.dataset.snippetErrorMin || 'Min: %minLength% mm')
-                .replace('%minLength%', min.toLocaleString(locale));
-            this._showError(msg);
-            this._clearSplitInfo();
-            this._resetInput();
-            return;
-        }
-
-        if (mm > max) {
-            const msg = (this.el.dataset.snippetErrorMax || 'Max: %maxLength% mm')
-                .replace('%maxLength%', max.toLocaleString(locale));
-            this._showError(msg);
-            this._clearSplitInfo();
-            this._resetInput();
-            return;
-        }
-
-        const configuredSplitMode = this.el.dataset.splitMode || '';
+        const splitMode = this._effectiveSplitMode();
         const maxPiece = parseInt(this.el.dataset.maxPieceLength, 10) || 0;
-
-        // Steuert eine Erweiterung mit höherer Rangfolge die Kennung, gelingt das automatische Aufteilen
-        // nicht: Die anderen Erweiterungen lösen kein eigenes `BeforeLineItemAdded` aus, und die Eingaben
-        // aus TMMS oder Zusatzfeldern gingen verloren. Dann gilt der Hinweis-Modus.
-        const hasForeignIdController = this._hasForeignIdController();
-
-        const splitMode = (hasForeignIdController && (configuredSplitMode === 'equal' || configuredSplitMode === 'max_rest'))
-            ? 'hint'
-            : configuredSplitMode;
 
         // Hinweis-Modus: Eine Eingabe über der größten Teilstücklänge wird abgewiesen; der Kunde teilt selbst auf.
         if (splitMode === 'hint' && maxPiece > 0 && mm > maxPiece) {
-            const template = this.el.dataset.splitHintTemplate
-                || this.el.dataset.snippetErrorMaxPiece
-                || 'Max piece length: %maxPiece% mm';
+            const template = this.el.dataset.splitHintTemplate || this.el.dataset.snippetErrorMaxPiece || '';
             const preview = this._previewSplit(mm, maxPiece, 'equal');
             this._clearError();
             this._showBlockingInfo(this._renderSplitText(template, mm, maxPiece, preview));
@@ -232,17 +191,74 @@ export default class DynamicPricePlugin extends Plugin {
         }
 
         this._clearError();
+        this._applyLength(mm, splitMode, maxPiece);
+    }
 
+    /**
+     * Die Eingabe in Millimetern, wenn sie lesbar ist und in den Grenzen liegt; sonst steht die Meldung am Feld, und
+     * das Ergebnis ist `null`. Die Texte kommen aus den Übersetzungen der Vorlage.
+     */
+    _validate(raw) {
+        const ask = parseLength(raw);
+
+        // „4" ohne Einheit: als Millimeter sinnlos, als Meter geraten. Die Frage steht, bis der Kunde
+        // weitertippt; aus „4" wird beim Tippen von „4200" ohnehin gleich eine eindeutige Zahl.
+        if (ask !== null && ask.ask !== undefined) {
+            this._showError((this.el.dataset.snippetAskUnit || '').split('%value%').join(String(ask.ask)));
+            return null;
+        }
+
+        const mm = this._parse(raw);
+        if (mm === null) {
+            this._showError(this.el.dataset.snippetErrorInteger || '');
+            return null;
+        }
+
+        const locale = document.documentElement.lang || 'de-DE';
+        if (mm < this._minLength()) {
+            this._showError((this.el.dataset.snippetErrorMin || '').replace('%minLength%', this._minLength().toLocaleString(locale)));
+            return null;
+        }
+
+        const max = parseInt(this.el.dataset.maxLength, 10);
+        if (mm > max) {
+            this._showError((this.el.dataset.snippetErrorMax || '').replace('%maxLength%', max.toLocaleString(locale)));
+            return null;
+        }
+
+        return mm;
+    }
+
+    /**
+     * Die Mindestlänge. Die Grenzen setzt der Server immer (`RcDynamicPriceConfigStruct`); eine eigene Vorgabe hier
+     * liefe der des Servers irgendwann davon.
+     */
+    _minLength() {
+        return parseInt(this.el.dataset.minLength, 10);
+    }
+
+    /**
+     * Steuert eine Erweiterung mit höherer Rangfolge die Kennung, gelingt das automatische Aufteilen nicht: Die anderen
+     * Erweiterungen lösen kein eigenes `BeforeLineItemAdded` aus, und die Eingaben aus TMMS oder Zusatzfeldern gingen
+     * verloren. Dann gilt der Hinweis-Modus.
+     */
+    _effectiveSplitMode() {
+        const configured = this.el.dataset.splitMode || '';
+
+        return this._hasForeignIdController() && (configured === 'equal' || configured === 'max_rest') ? 'hint' : configured;
+    }
+
+    /**
+     * Übernimmt eine gültige Länge: Aufteilung als Vorschau, Formularwert, Preis und der passende Hinweis.
+     */
+    _applyLength(mm, splitMode, maxPiece) {
         // Greift die Teilstückgrenze, steht die Aufteilung als Vorschau unter dem Feld.
         const splitActive = (splitMode === 'equal' || splitMode === 'max_rest') && maxPiece > 0 && mm > maxPiece;
         const pieces = splitActive ? this._previewSplit(mm, maxPiece, splitMode) : [mm];
 
-        if (splitActive) {
-            const template = this.el.dataset.splitHintTemplate || '';
-            if (template) {
-                this._showSplitInfo(this._renderSplitText(template, mm, maxPiece, pieces));
-            }
-        } else {
+        if (splitActive && this.el.dataset.splitHintTemplate) {
+            this._showSplitInfo(this._renderSplitText(this.el.dataset.splitHintTemplate, mm, maxPiece, pieces));
+        } else if (!splitActive) {
             this._clearSplitInfo();
         }
 
@@ -253,6 +269,7 @@ export default class DynamicPricePlugin extends Plugin {
         // Berechnet wird die Summe der abgerechneten Teilstücke, nicht die gerundete Eingabe. Beides fällt
         // auseinander, sobald ein Reststück mit der Mindestlänge berechnet wird; auf der Eingabe gerechnet,
         // zeigte die Vorschau einen zu niedrigen Preis.
+        const min = this._minLength();
         const billedMm = this._billedPieces(pieces, splitMode, min).reduce((sum, piece) => sum + piece, 0);
         this._updatePrice(billedMm);
 
@@ -356,7 +373,7 @@ export default class DynamicPricePlugin extends Plugin {
 
     _showRoundUpHint(inputMm, billedMm) {
         const locale = document.documentElement.lang || 'de-DE';
-        const msg = (this.el.dataset.snippetRoundUp || 'Input %input% mm → billed %billed% mm')
+        const msg = (this.el.dataset.snippetRoundUp || '')
             .replace('%input%', inputMm.toLocaleString(locale))
             .replace('%billed%', billedMm.toLocaleString(locale));
 
@@ -377,16 +394,13 @@ export default class DynamicPricePlugin extends Plugin {
      */
     _showMinPieceUpliftHint(inputMm, billedMm, remainderMm, minLengthMm) {
         const locale = document.documentElement.lang || 'de-DE';
-        const template = this.el.dataset.snippetMinPieceUplift
-            || 'Input %input% mm → billed %billed% mm';
+        const template = this.el.dataset.snippetMinPieceUplift || '';
 
         const msg = template
             .replace(/\{remainder\}/g, remainderMm.toLocaleString(locale))
             .replace(/\{minLength\}/g, minLengthMm.toLocaleString(locale))
             .replace(/\{billed\}/g, billedMm.toLocaleString(locale))
-            .replace(/\{input\}/g, inputMm.toLocaleString(locale))
-            .replace('%input%', inputMm.toLocaleString(locale))
-            .replace('%billed%', billedMm.toLocaleString(locale));
+            .replace(/\{input\}/g, inputMm.toLocaleString(locale));
 
         if (this._infoEl) {
             this._infoEl.textContent = msg;
@@ -517,12 +531,12 @@ export default class DynamicPricePlugin extends Plugin {
             .replace(/\{remainder\}/g, remainder.toLocaleString(locale));
     }
 
-    _showSplitInfo(html) {
+    _showSplitInfo(text) {
         if (!this._splitInfoEl) {
             return;
         }
 
-        this._splitInfoEl.textContent = html;
+        this._splitInfoEl.textContent = text;
         this._splitInfoEl.classList.remove('alert-warning');
         this._splitInfoEl.classList.add('alert-info');
         this._splitInfoEl.hidden = false;
@@ -532,12 +546,12 @@ export default class DynamicPricePlugin extends Plugin {
      * Ein Hinweis, der den Kauf aufhält, aber nicht wie ein Fehler aussieht: Im Hinweis-Modus soll der
      * Kunde nicht glauben, er habe etwas falsch gemacht.
      */
-    _showBlockingInfo(html) {
+    _showBlockingInfo(text) {
         if (!this._splitInfoEl) {
             return;
         }
 
-        this._splitInfoEl.textContent = html;
+        this._splitInfoEl.textContent = text;
         this._splitInfoEl.classList.remove('alert-info');
         this._splitInfoEl.classList.add('alert-warning');
         this._splitInfoEl.hidden = false;

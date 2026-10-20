@@ -136,17 +136,18 @@ function extractMethodBody(source, name) {
 describe('_hasForeignIdController — einziger Einstiegspunkt', () => {
     // Vorschau und ID-Setzung fragen dieselbe Prüfstelle, damit sie dieselbe Antwort bekommen.
 
-    test('_onInput baut keine eigene Marker-Prüfung', () => {
-        const onInput = extractMethodBody(rawSource, '_onInput');
+    test('die Vorschau (_effectiveSplitMode) baut keine eigene Marker-Prüfung', () => {
+        const splitMode = extractMethodBody(rawSource, '_effectiveSplitMode');
 
         assert.ok(
-            onInput.includes('this._hasForeignIdController()'),
-            '_onInput muss _hasForeignIdController() aufrufen',
+            splitMode.includes('this._hasForeignIdController()'),
+            '_effectiveSplitMode muss _hasForeignIdController() aufrufen',
         );
         assert.ok(
-            !onInput.includes("querySelector('[data-rc-"),
-            '_onInput darf die Kennzeichnung nicht selbst per querySelector suchen',
+            !splitMode.includes("querySelector('[data-rc-"),
+            '_effectiveSplitMode darf die Kennzeichnung nicht selbst per querySelector suchen',
         );
+        assert.ok(extractMethodBody(rawSource, '_onInput').includes('this._effectiveSplitMode()'), '_onInput nutzt _effectiveSplitMode()');
     });
 
     test('_updateMeterState baut keine eigene Marker-Prüfung', () => {

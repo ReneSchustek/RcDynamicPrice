@@ -6,7 +6,6 @@ namespace Ruhrcoder\RcDynamicPrice\Tests\Integration\Service;
 
 use PHPUnit\Framework\TestCase;
 use Ruhrcoder\RcDynamicPrice\Service\MeterProductHelper;
-use Ruhrcoder\RcDynamicPrice\Service\Metrics\NullMetricsRecorder;
 use Shopware\Core\Content\Product\ProductCollection;
 use Shopware\Core\Framework\Context;
 use Shopware\Core\Framework\DataAbstractionLayer\EntityRepository;
@@ -61,6 +60,6 @@ class MeterProductHelperUuidTest extends TestCase
         self::assertInstanceOf(EntityRepository::class, $repository);
 
         /** @var EntityRepository<ProductCollection> $repository */
-        return new MeterProductHelper($repository, new NullMetricsRecorder());
+        return new MeterProductHelper($repository);
     }
 }

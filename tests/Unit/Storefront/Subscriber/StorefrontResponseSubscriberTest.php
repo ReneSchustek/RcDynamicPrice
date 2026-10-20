@@ -8,7 +8,6 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Ruhrcoder\RcDynamicPrice\Storefront\Subscriber\ProductPageSubscriber;
 use Ruhrcoder\RcDynamicPrice\Storefront\Subscriber\StorefrontResponseSubscriber;
-use Shopware\Storefront\Event\StorefrontRenderEvent;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Event\ResponseEvent;
@@ -25,14 +24,12 @@ final class StorefrontResponseSubscriberTest extends TestCase
 {
     private const CACHE_TAGS_HEADER = 'sw-cache-tags';
 
-    public function testSubscribesToStorefrontRenderAndResponseEvents(): void
+    public function testSubscribesToResponseBeforeTheCoreStoresIt(): void
     {
         $events = StorefrontResponseSubscriber::getSubscribedEvents();
 
-        self::assertArrayHasKey(StorefrontRenderEvent::class, $events);
-        self::assertArrayHasKey(KernelEvents::RESPONSE, $events);
-        // Priorität -1024: Er läuft nach den Subscribern des Kerns, damit die Tags nicht überschrieben werden.
-        self::assertSame(['onResponse', -1024], $events[KernelEvents::RESPONSE]);
+        // Vor `CacheResponseSubscriber::setResponseCache()` (-1500), sonst läge die Antwort ohne die Tags im Speicher.
+        self::assertSame([KernelEvents::RESPONSE => ['onResponse', -1024]], $events);
     }
 
     public function testOnResponseAddsTagsWhenAttributePresent(): void
@@ -133,29 +130,6 @@ final class StorefrontResponseSubscriberTest extends TestCase
         self::assertFalse($response->headers->has(self::CACHE_TAGS_HEADER));
     }
 
-    public function testOnStorefrontRenderReinjectsTagsIntoRequest(): void
-    {
-        $request = $this->createRequestWithTags(['rc-dynamic-price-global']);
-        $event = $this->createStorefrontRenderEvent($request);
-
-        (new StorefrontResponseSubscriber())->onStorefrontRender($event);
-
-        self::assertSame(
-            ['rc-dynamic-price-global'],
-            $request->attributes->get(ProductPageSubscriber::getCacheTagsRequestAttribute()),
-        );
-    }
-
-    public function testOnStorefrontRenderDoesNothingWhenNoTags(): void
-    {
-        $request = Request::create('/');
-        $event = $this->createStorefrontRenderEvent($request);
-
-        (new StorefrontResponseSubscriber())->onStorefrontRender($event);
-
-        self::assertSame([], $request->attributes->get(ProductPageSubscriber::getCacheTagsRequestAttribute(), []));
-    }
-
     /**
      * @param list<string> $tags
      */
@@ -172,14 +146,6 @@ final class StorefrontResponseSubscriberTest extends TestCase
         $kernel = $this->createMock(HttpKernelInterface::class);
 
         return new ResponseEvent($kernel, $request, HttpKernelInterface::MAIN_REQUEST, $response);
-    }
-
-    private function createStorefrontRenderEvent(Request $request): StorefrontRenderEvent
-    {
-        $event = $this->createMock(StorefrontRenderEvent::class);
-        $event->method('getRequest')->willReturn($request);
-
-        return $event;
     }
 
     /**

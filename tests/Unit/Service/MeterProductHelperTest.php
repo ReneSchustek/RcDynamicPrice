@@ -8,7 +8,6 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Ruhrcoder\RcDynamicPrice\DynamicPriceConstants;
 use Ruhrcoder\RcDynamicPrice\Service\MeterProductHelper;
-use Ruhrcoder\RcDynamicPrice\Service\Metrics\MetricsRecorderInterface;
 use Shopware\Core\Content\Product\ProductCollection;
 use Shopware\Core\Content\Product\ProductEntity;
 use Shopware\Core\Framework\Context;
@@ -27,14 +26,12 @@ final class MeterProductHelperTest extends TestCase
 
     /** @var EntityRepository<ProductCollection>&MockObject */
     private EntityRepository&MockObject $productRepository;
-    private MetricsRecorderInterface&MockObject $metrics;
     private MeterProductHelper $helper;
 
     protected function setUp(): void
     {
         $this->productRepository = $this->createMock(EntityRepository::class);
-        $this->metrics = $this->createMock(MetricsRecorderInterface::class);
-        $this->helper = new MeterProductHelper($this->productRepository, $this->metrics);
+        $this->helper = new MeterProductHelper($this->productRepository);
     }
 
     public function testLoadProductReturnsEntityWhenFound(): void
@@ -159,20 +156,6 @@ final class MeterProductHelperTest extends TestCase
     }
 
     // Die Rundung meldet ihre Dauer an die Metrik.
-
-    public function testRoundUpRecordsTimingMetric(): void
-    {
-        $this->metrics
-            ->expects($this->once())
-            ->method('timing')
-            ->with(
-                DynamicPriceConstants::METRIC_ROUNDING_DURATION,
-                $this->isType('float'),
-                ['mode' => 'cm'],
-            );
-
-        $this->helper->roundUp(1505, 'cm');
-    }
 
     public function testRoundUpResultIsUnaffectedByMetricsRecorder(): void
     {

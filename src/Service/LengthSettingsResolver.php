@@ -24,7 +24,7 @@ use Shopware\Core\Framework\Uuid\Uuid;
  * „Länge" die „Maße" ihrer Elternkategorie, und ein Relinggeländer unter „Balkongeländer" bekäme keine
  * Längengruppe.
  */
-final class LengthSettingsResolver
+final class LengthSettingsResolver implements LengthSettingsResolverInterface
 {
     public function __construct(
         private readonly CategoryChainLoaderInterface $categoryChainLoader,
@@ -33,8 +33,7 @@ final class LengthSettingsResolver
 
     public function forProduct(ProductEntity $product, string $salesChannelId, Context $context): LengthSettings
     {
-        /** @var array<string, mixed> $productFields */
-        $productFields = $product->getTranslation('customFields') ?? $product->getCustomFields() ?? [];
+        $productFields = ProductCustomFields::of($product);
 
         $categoryId = PrimaryCategory::idFor($product, $salesChannelId);
         $categoryChain = $categoryId === null ? [] : $this->categoryChainLoader->loadChain($categoryId, $context);
@@ -73,16 +72,11 @@ final class LengthSettingsResolver
     }
 
     /**
-     * Ein Haken ist gesetzt, wenn er wahr ist; über die Schnittstelle oder die Konsole kann er auch als
-     * `1` oder `"1"` ankommen.
-     *
      * @param array<string, mixed> $fields
      */
     private static function isSet(array $fields, string $key): bool
     {
-        $value = $fields[$key] ?? null;
-
-        return $value === true || $value === 1 || $value === '1';
+        return ProductCustomFields::isChecked($fields[$key] ?? null);
     }
 
     /**
@@ -95,7 +89,8 @@ final class LengthSettingsResolver
 
         $ids = [];
         foreach ($values as $id) {
-            // Kleinschreibung vor der Prüfung: `Uuid::isValid` kennt nur Kleinbuchstaben, die Schnittstelle nimmt beide.
+            // Kleinschreibung vor der Prüfung: `Uuid::isValid` kennt nur Kleinbuchstaben, die Schnittstelle
+            // nimmt beide.
             $id = \is_string($id) ? strtolower($id) : null;
             if ($id !== null && Uuid::isValid($id)) {
                 $ids[] = $id;

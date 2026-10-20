@@ -74,7 +74,7 @@ final class Migration1784000000RemoveMeterLengthFromOrderConfirmationMail extend
      * Schneidet den Block vom Marker bis zu dem `{% endif %}`, das ihn schließt.
      *
      * Ein Vergleich mit dem Blocktext, den die einfügende Migration erzeugt, läge nahe, träfe aber nicht
-     * jeden Shop. Im Live-Bestand steht in der Vorlage `{{ "`, ein echter Zeilenumbruch und `" }}`, wo
+     * jeden Shop. In manchem Bestand steht in der Vorlage `{{ "`, ein echter Zeilenumbruch und `" }}`, wo
      * der Code die Zeichenfolge `{{ "\n" }}` schreibt; der Block stammt dort aus einer früheren Fassung,
      * und die einfügende Migration läuft kein zweites Mal. Ein zeichengenauer Vergleich ließe den Block
      * stehen und die Länge doppelt ausgeben.

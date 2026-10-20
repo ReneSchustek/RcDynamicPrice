@@ -49,7 +49,7 @@ final class Migration1784000000RemoveMeterLengthFromOrderConfirmationMailTest ex
     }
 
     /**
-     * Im Live-Bestand steht in der Vorlage ein echter Zeilenumbruch, wo die einfügende Migration
+     * In manchem Bestand steht in der Vorlage ein echter Zeilenumbruch, wo die einfügende Migration
      * die Zeichenfolge `\n` schreibt; der Block stammt dort aus einer älteren Fassung, und die
      * einfügende Migration läuft kein zweites Mal. Ein zeichengenauer Vergleich mit dem Blocktext
      * ließe den Block deshalb stehen, und die Bestellbestätigung nennte die Länge zweimal.

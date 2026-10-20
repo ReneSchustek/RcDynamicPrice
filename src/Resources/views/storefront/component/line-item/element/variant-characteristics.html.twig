@@ -3,7 +3,12 @@
 {# Bei „Größen nur über die Länge" fällt die Zeile der Längengruppe weg („Maße: 3,0 m"); im Warenkorb steht
    nur die eingegebene Länge. Die Position kennt ihre Eigenschaften nur mit Namen, deshalb vergleicht die
    Vorlage mit den Gruppennamen, die `LengthSwitchLineItemSubscriber` beim Hinzufügen ablegt. Andere
-   Eigenschaften bleiben stehen; bleibt keine, entfällt der ganze Abschnitt. Bestellungen behalten alles. #}
+   Eigenschaften bleiben stehen; bleibt keine, entfällt der ganze Abschnitt. Bestellungen behalten alles.
+
+   Ersetzt wird `lineItem` nur im Kontext dieses Blocks, den Twig als Kopie weitergibt. Eine Erweiterung, die den
+   Block später erweitert und `parent()` ruft, behält die echte Position; das Ersatzobjekt sehen nur die Vorlagen
+   zwischen dieser und dem Kern, und der Kern liest hier nur `payload.options`. Den Kernblock nachzubauen, hielte ihn bei jedem
+   Update mit Hand nach. #}
 {% block component_line_item_variant_characteristics %}
     {% set rcGroups = lineItem.payload.rc_length_only.groups|default([]) %}
 

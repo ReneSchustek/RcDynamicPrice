@@ -7,7 +7,9 @@ namespace Ruhrcoder\RcDynamicPrice\Tests\Unit\Storefront\Subscriber;
 use PHPUnit\Framework\TestCase;
 use Ruhrcoder\RcDynamicPrice\DynamicPriceConstants;
 use Ruhrcoder\RcDynamicPrice\Service\CategoryChainLoaderInterface;
+use Ruhrcoder\RcDynamicPrice\Service\GuidedSelectionBuilder;
 use Ruhrcoder\RcDynamicPrice\Service\LengthSettingsResolver;
+use Ruhrcoder\RcDynamicPrice\Service\VariantGroupOrder;
 use Ruhrcoder\RcDynamicPrice\Storefront\Struct\GuidedSelectionStruct;
 use Ruhrcoder\RcDynamicPrice\Storefront\Struct\LengthSettingsStruct;
 use Ruhrcoder\RcDynamicPrice\Storefront\Subscriber\LengthSettingsSubscriber;
@@ -28,6 +30,7 @@ use Shopware\Core\Content\Property\PropertyGroupCollection;
 use Shopware\Core\Content\Property\PropertyGroupEntity;
 use Shopware\Core\Framework\Api\Context\SystemSource;
 use Shopware\Core\Framework\Context;
+use Shopware\Core\Framework\DataAbstractionLayer\EntityRepository;
 use Shopware\Core\System\SalesChannel\SalesChannelContext;
 use Shopware\Core\System\SystemConfig\SystemConfigService;
 use Shopware\Storefront\Page\Product\ProductPage;
@@ -54,7 +57,7 @@ final class LengthSettingsSubscriberTest extends TestCase
         self::assertSame([
             ['id' => self::LENGTH, 'optionIds' => ['m-1', 'm-2']],
             ['id' => self::POSTS, 'optionIds' => ['p-2', 'p-3']],
-        ], LengthSettingsSubscriber::orderedGroups($this->pageGroups(), self::LENGTH));
+        ], VariantGroupOrder::steps($this->pageGroups(), self::LENGTH));
     }
 
     /**
@@ -140,11 +143,11 @@ final class LengthSettingsSubscriberTest extends TestCase
             DynamicPriceConstants::FIELD_GUIDED_SELECTION => true,
             DynamicPriceConstants::FIELD_LENGTH_GROUPS => [self::LENGTH],
         ]);
-        $this->subscriber($combinations, 'eltern')->onProductPageLoaded($this->event($page));
+        $this->subscriber($combinations, 'parent')->onProductPageLoaded($this->event($page));
 
         $extension = $page->getExtension(LengthSettingsSubscriber::GUIDED_EXTENSION_NAME);
         self::assertInstanceOf(GuidedSelectionStruct::class, $extension);
-        self::assertSame(self::LENGTH, $extension->getLengthGroupId());
+        self::assertSame(self::LENGTH, $extension->getEntryGroupId());
         self::assertSame([['p-2', 'm-1'], ['p-3', 'm-2']], $extension->getCombinations());
     }
 
@@ -211,7 +214,7 @@ final class LengthSettingsSubscriberTest extends TestCase
             DynamicPriceConstants::FIELD_GUIDED_SELECTION => true,
             DynamicPriceConstants::FIELD_LENGTH_GROUPS => [self::LENGTH],
         ]);
-        $this->subscriber($combinations, 'eltern')->onProductPageLoaded($this->event($page));
+        $this->subscriber($combinations, 'parent')->onProductPageLoaded($this->event($page));
 
         self::assertFalse($page->hasExtension(LengthSettingsSubscriber::GUIDED_EXTENSION_NAME));
     }
@@ -230,12 +233,72 @@ final class LengthSettingsSubscriberTest extends TestCase
         $config->method('getBool')->willReturn(true);
 
         $page = $this->page([]);
-        $this->subscriber($combinations, 'eltern', $config)->onProductPageLoaded($this->event($page));
+        $this->subscriber($combinations, 'parent', $config)->onProductPageLoaded($this->event($page));
 
         self::assertTrue($page->hasExtension(LengthSettingsSubscriber::GUIDED_EXTENSION_NAME));
         $guided = $page->getExtension(LengthSettingsSubscriber::GUIDED_EXTENSION_NAME);
         self::assertInstanceOf(GuidedSelectionStruct::class, $guided);
         self::assertSame(self::POSTS, $guided->getGroups()[0]['id']);
+    }
+
+    /**
+     * Was: Artikel ohne Längeneinstellung, Schalter „Geführte Auswahl für alle Variantenartikel" aus.
+     * Warum: Ausgeschaltet bleibt die Seite beim Verhalten des Kerns; der Kombinationslader läuft gar nicht erst.
+     * Erwartet: keine Erweiterung, keine Abfrage der Kombinationen.
+     */
+    public function testWithTheSwitchOffArticlesWithoutLengthSettingsStayAsTheCoreShowsThem(): void
+    {
+        $page = $this->page([]);
+        $this->subscriber(new AvailableCombinationResult(), null)->onProductPageLoaded($this->event($page));
+
+        self::assertFalse($page->hasExtension(LengthSettingsSubscriber::GUIDED_EXTENSION_NAME));
+        self::assertFalse($page->hasExtension(LengthSettingsSubscriber::EXTENSION_NAME));
+    }
+
+    /**
+     * Was: Längengruppe eingestellt, Führung am Artikel aus, Schalter „für alle" an.
+     * Warum: Der Schalter gilt für alle Variantenartikel, auch für solche mit Längeneinstellung ohne eigene Führung.
+     * Erwartet: geführte Auswahl, die mit der Längengruppe beginnt.
+     */
+    public function testTheSwitchAlsoGuidesArticlesWithLengthSettings(): void
+    {
+        $combinations = new AvailableCombinationResult();
+        $combinations->addCombination(['p-2', 'm-1'], true);
+        $config = $this->createStub(SystemConfigService::class);
+        $config->method('getBool')->willReturn(true);
+
+        $page = $this->page([
+            DynamicPriceConstants::FIELD_LENGTH_VARIANT_SWITCH => true,
+            DynamicPriceConstants::FIELD_LENGTH_GROUPS => [self::LENGTH],
+        ]);
+        $this->subscriber($combinations, 'parent', $config)->onProductPageLoaded($this->event($page));
+
+        $guided = $page->getExtension(LengthSettingsSubscriber::GUIDED_EXTENSION_NAME);
+        self::assertInstanceOf(GuidedSelectionStruct::class, $guided);
+        self::assertSame(self::LENGTH, $guided->getEntryGroupId());
+    }
+
+    /**
+     * Was: „Größen nur über die Länge" eingestellt, Schalter „für alle" an.
+     * Warum: Die Längenknöpfe, mit denen die Führung beginnen würde, sind ausgeblendet; der Schalter hebt das nicht auf.
+     * Erwartet: „nur Länge", keine geführte Auswahl, keine Abfrage der Kombinationen.
+     */
+    public function testTheSwitchLeavesLengthOnlyArticlesWithoutGuidance(): void
+    {
+        $config = $this->createStub(SystemConfigService::class);
+        $config->method('getBool')->willReturn(true);
+
+        $page = $this->page([
+            DynamicPriceConstants::FIELD_LENGTH_VARIANT_SWITCH => true,
+            DynamicPriceConstants::FIELD_LENGTH_ONLY => true,
+            DynamicPriceConstants::FIELD_LENGTH_GROUPS => [self::LENGTH],
+        ]);
+        $this->subscriber(new AvailableCombinationResult(), null, $config)->onProductPageLoaded($this->event($page));
+
+        $settings = $page->getExtension(LengthSettingsSubscriber::EXTENSION_NAME);
+        self::assertInstanceOf(LengthSettingsStruct::class, $settings);
+        self::assertTrue($settings->isLengthOnly());
+        self::assertFalse($page->hasExtension(LengthSettingsSubscriber::GUIDED_EXTENSION_NAME));
     }
 
     private function subscriber(AvailableCombinationResult $combinations, ?string $expectedParentId, ?SystemConfigService $config = null): LengthSettingsSubscriber
@@ -252,16 +315,25 @@ final class LengthSettingsSubscriberTest extends TestCase
                 return $combinations;
             });
 
-        return new LengthSettingsSubscriber(new LengthSettingsResolver($chainLoader), $loader, $config);
+        if ($config === null) {
+            $config = $this->createStub(SystemConfigService::class);
+            $config->method('getBool')->willReturn(false);
+        }
+
+        return new LengthSettingsSubscriber(
+            new LengthSettingsResolver($chainLoader),
+            new GuidedSelectionBuilder($loader, $this->createStub(EntityRepository::class)),
+            $config,
+        );
     }
 
     /**
      * @param array<string, mixed> $customFields
      */
-    private function page(array $customFields, ?string $parentId = 'eltern'): ProductPage
+    private function page(array $customFields, ?string $parentId = 'parent'): ProductPage
     {
         $product = new SalesChannelProductEntity();
-        $product->setId('variante');
+        $product->setId('variant');
         $product->setParentId($parentId);
         $product->setChildCount(0);
         $product->setCustomFields(self::LENGTH_FIELD + $customFields);
@@ -276,7 +348,7 @@ final class LengthSettingsSubscriberTest extends TestCase
     private function cmsPageWith(BuyBoxStruct $buyBox): CmsPageEntity
     {
         $slot = new CmsSlotEntity();
-        $slot->setId('kaufbox');
+        $slot->setId('buy-box');
         $slot->setSlot('content');
         $slot->setData($buyBox);
 
@@ -285,7 +357,7 @@ final class LengthSettingsSubscriberTest extends TestCase
         $block->setSlots(new CmsSlotCollection([$slot]));
 
         $section = new CmsSectionEntity();
-        $section->setId('abschnitt');
+        $section->setId('section');
         $section->setBlocks(new CmsBlockCollection([$block]));
 
         $cmsPage = new CmsPageEntity();
@@ -298,7 +370,7 @@ final class LengthSettingsSubscriberTest extends TestCase
     private function event(ProductPage $page): ProductPageLoadedEvent
     {
         $context = $this->createMock(SalesChannelContext::class);
-        $context->method('getSalesChannelId')->willReturn('kanal');
+        $context->method('getSalesChannelId')->willReturn('sales-channel');
         $context->method('getContext')->willReturn(new Context(new SystemSource()));
 
         return new ProductPageLoadedEvent($page, $context, new Request());

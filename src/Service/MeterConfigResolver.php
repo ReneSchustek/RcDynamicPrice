@@ -17,11 +17,6 @@ use Shopware\Core\System\SystemConfig\SystemConfigService;
  */
 final class MeterConfigResolver implements MeterConfigResolverInterface
 {
-    // Ohne Einstellung gilt nur, dass ein Zuschnitt eine Länge hat; längere Zuschnitte als 10 m
-    // verlangen eine ausdrückliche Einstellung an Produkt, Kategorie oder in der Grundeinstellung.
-    private const DEFAULT_MIN_LENGTH = 1;
-    private const DEFAULT_MAX_LENGTH = 10000;
-
     private const VALID_ROUNDING_MODES = [
         DynamicPriceConstants::ROUNDING_NONE,
         DynamicPriceConstants::ROUNDING_CM,
@@ -38,7 +33,7 @@ final class MeterConfigResolver implements MeterConfigResolverInterface
 
     public function resolveForProduct(ProductEntity $product, string $salesChannelId, Context $context): ResolvedMeterConfig
     {
-        $productFields = $product->getCustomFields() ?? [];
+        $productFields = ProductCustomFields::of($product);
         $primaryCategoryId = PrimaryCategory::idFor($product, $salesChannelId);
 
         $categoryChain = $primaryCategoryId === null
@@ -65,25 +60,7 @@ final class MeterConfigResolver implements MeterConfigResolverInterface
             return ResolvedMeterConfig::disabled($activeScope, $cacheTags);
         }
 
-        [$minLength, $minScope] = $this->resolveInt(
-            $productFields,
-            $categoryChain,
-            DynamicPriceConstants::FIELD_MIN_LENGTH,
-            DynamicPriceConstants::CAT_FIELD_MIN_LENGTH,
-            DynamicPriceConstants::CONFIG_MIN_LENGTH,
-            $salesChannelId,
-            self::DEFAULT_MIN_LENGTH,
-        );
-
-        [$maxLength, $maxScope] = $this->resolveInt(
-            $productFields,
-            $categoryChain,
-            DynamicPriceConstants::FIELD_MAX_LENGTH,
-            DynamicPriceConstants::CAT_FIELD_MAX_LENGTH,
-            DynamicPriceConstants::CONFIG_MAX_LENGTH,
-            $salesChannelId,
-            self::DEFAULT_MAX_LENGTH,
-        );
+        [$minLength, $minScope, $maxLength, $maxScope] = $this->resolveLengthLimits($productFields, $categoryChain, $salesChannelId);
 
         [$roundingMode, $roundingScope] = $this->resolveRoundingMode($productFields, $categoryChain);
 
@@ -109,13 +86,6 @@ final class MeterConfigResolver implements MeterConfigResolverInterface
             $salesChannelId,
         );
 
-        if ($minLength > $maxLength) {
-            // Eine Fehleinstellung kommt durch; die Höchstlänge wird auf die Mindestlänge gehoben,
-            // damit Mindestlänge nicht über Höchstlänge liegt und das Widget-Struct nicht wirft.
-            $maxLength = $minLength;
-            $maxScope = ConfigScope::Default;
-        }
-
         [$equalSplitBilling, $equalSplitEnforceMin] = $this->resolveEqualBilling($salesChannelId);
 
         return new ResolvedMeterConfig(
@@ -137,6 +107,46 @@ final class MeterConfigResolver implements MeterConfigResolverInterface
             equalSplitEnforceMin: $equalSplitEnforceMin,
             cacheTags: $cacheTags,
         );
+    }
+
+    /**
+     * Mindest- und Höchstlänge mit ihrer Herkunft.
+     *
+     * @param array<string, mixed>                                      $productFields
+     * @param list<array{id: string, customFields: array<string, mixed>}> $categoryChain
+     *
+     * @return array{0: int, 1: ConfigScope, 2: int, 3: ConfigScope}
+     */
+    private function resolveLengthLimits(array $productFields, array $categoryChain, string $salesChannelId): array
+    {
+        [$minLength, $minScope] = $this->resolveInt(
+            $productFields,
+            $categoryChain,
+            DynamicPriceConstants::FIELD_MIN_LENGTH,
+            DynamicPriceConstants::CAT_FIELD_MIN_LENGTH,
+            DynamicPriceConstants::CONFIG_MIN_LENGTH,
+            $salesChannelId,
+            DynamicPriceConstants::DEFAULT_MIN_LENGTH,
+        );
+
+        [$maxLength, $maxScope] = $this->resolveInt(
+            $productFields,
+            $categoryChain,
+            DynamicPriceConstants::FIELD_MAX_LENGTH,
+            DynamicPriceConstants::CAT_FIELD_MAX_LENGTH,
+            DynamicPriceConstants::CONFIG_MAX_LENGTH,
+            $salesChannelId,
+            DynamicPriceConstants::DEFAULT_MAX_LENGTH,
+        );
+
+        if ($minLength > $maxLength) {
+            // Eine Fehleinstellung kommt durch; die Höchstlänge wird auf die Mindestlänge gehoben,
+            // damit Mindestlänge nicht über Höchstlänge liegt und das Widget-Struct nicht wirft.
+            $maxLength = $minLength;
+            $maxScope = ConfigScope::Default;
+        }
+
+        return [$minLength, $minScope, $maxLength, $maxScope];
     }
 
     /**

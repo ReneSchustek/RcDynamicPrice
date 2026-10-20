@@ -1,8 +1,8 @@
 {% sw_extends '@Storefront/storefront/component/buy-widget/buy-widget.html.twig' %}
 
 {# Die Länge steht oben: direkt hinter den Varianten, vor den Eingabefeldern von
-   TmmsProductCustomerInputs. Der Block gehört TMMS; die Erweiterung erbt von TMMS, weil sie später
-   installiert ist (die zuletzt installierte Erweiterung steht in der Vorlagenkette oben). Fehlt TMMS,
+   TmmsProductCustomerInputs. Der Block gehört TMMS; die Erweiterung erbt von TMMS, weil sie einen höheren
+   Vorrang beim Laden der Vorlagen hat (`RcDynamicPrice::getTemplatePriority()`). Fehlt TMMS,
    gibt es den Block nicht, und das Feld bleibt im Kaufformular (buy-widget-form.html.twig). #}
 {% block buy_widget_configurator_include_customerinput %}
     {% if page.extensions.rcDynamicPriceConfig is defined and page.product.extensions.tmmsCustomerInputCountValue is defined %}

@@ -18,9 +18,8 @@ use Shopware\Core\Framework\Uuid\Uuid;
  * Eine Längengruppe je Kategorie reichte nicht: In derselben Kategorie heißen die Längen mal „Maße",
  * mal „Länge". Mit mehreren Gruppen nimmt jeder Artikel die, die er hat.
  *
- * Auf Entwicklungsinstanzen gibt es bisher das Einzelfeld `rc_guided_length_group` aus 1.23.0. Seine
- * Werte werden als einelementige Liste übernommen, das Feld selbst entfernt. Staging und Live hatten
- * es nie; dort läuft nur das Anlegen.
+ * Wo es das Einzelfeld `rc_guided_length_group` aus 1.23.0 gibt, werden seine Werte als einelementige Liste
+ * übernommen; das Feld selbst entfernt `updateDestructive()`. Ohne Altfeld läuft nur das Anlegen.
  */
 final class Migration1788400000ReplaceLengthGroupWithLengthGroups extends MigrationStep
 {
@@ -56,20 +55,18 @@ final class Migration1788400000ReplaceLengthGroupWithLengthGroups extends Migrat
             $this->insert($connection, self::CATEGORY_LENGTH_ONLY_ID, DynamicPriceConstants::CAT_FIELD_LENGTH_ONLY, 'bool', self::lengthOnlyConfig(self::CATEGORY_POSITION + 2), $categorySetId);
         }
 
-        // Erst die Werte umziehen, dann die Altfelder löschen: Ohne Feld zeigte der Verwaltungsbereich
-        // den Wert nicht mehr, und niemand sähe, was verloren ginge.
+        // Die Werte ziehen hier um; die nun leeren Altfelder entfernt erst `updateDestructive()`, wie jedes Löschen.
         $this->moveValues($connection, 'product_translation', DynamicPriceConstants::LEGACY_FIELD_GUIDED_LENGTH_GROUP, DynamicPriceConstants::FIELD_LENGTH_GROUPS);
         $this->moveValues($connection, 'category_translation', DynamicPriceConstants::LEGACY_CAT_FIELD_GUIDED_LENGTH_GROUP, DynamicPriceConstants::CAT_FIELD_LENGTH_GROUPS);
+    }
 
+    public function updateDestructive(Connection $connection): void
+    {
         $connection->executeStatement(
             'DELETE FROM `custom_field` WHERE `name` IN (:names)',
             ['names' => [DynamicPriceConstants::LEGACY_FIELD_GUIDED_LENGTH_GROUP, DynamicPriceConstants::LEGACY_CAT_FIELD_GUIDED_LENGTH_GROUP]],
             ['names' => ArrayParameterType::STRING],
         );
-    }
-
-    public function updateDestructive(Connection $connection): void
-    {
     }
 
     /**

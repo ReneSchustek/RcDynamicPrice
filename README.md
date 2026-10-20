@@ -1,4 +1,4 @@
-﻿# RcDynamicPrice
+# RcDynamicPrice
 
 Shopware 6 Plugin zur längenbasierten Preisberechnung.
 
@@ -11,13 +11,21 @@ Produkte wie Kabel, Stoffe oder Profile werden nach Meterlänge verkauft. Der Gr
 - Live-Preisberechnung: `Grundpreis ÷ 1000 × eingegebene mm`
 - Validierung: Länge über null, Mindest- und Maximalwert konfigurierbar; ohne Einheit heißt eine Zahl mit Komma Meter, eine ganze Zahl Millimeter, eine einzelne Ziffer fragt nach
 - Produktspezifische Min/Max-Länge (mit Fallback auf globale Konfiguration)
-- Optional: Eingabe auf nächsten vollen Meter aufrunden (pro Produkt konfigurierbar)
+- Rundung der Eingabe je Produkt oder Kategorie: keine, auf volle Zentimeter, Viertelmeter, halbe oder volle Meter
 - **Längen-Splitting:** Eingaben über einer konfigurierbaren Teilstücklänge werden entweder automatisch in gleichmäßige oder „max + Rest"-Teilstücke aufgeteilt, oder der Kunde erhält einen konfigurierbaren Hinweis zum manuellen Aufteilen
 - Berechneter Preis wird verbindlich in den Warenkorb übernommen
 - Verschiedene Längen erzeugen separate Warenkorbpositionen
 - Länge wird im Warenkorb, im Checkout und in Bestellungen angezeigt
 - Aktivierbar pro Produkt, pro Kategorie (inklusive Tree-Walk zur Wurzel) oder global für alle Produkte
 - Tri-State pro Produkt: **Vererben** / **Aktiv** / **Inaktiv** (Custom Field `rc_meter_price_active`)
+- **Längenschalter:** Bei Artikeln mit Größenstufen als Varianten wählt die eingegebene Länge (im Längenfeld von
+  TmmsProductCustomerInputs) die passende Stufe; mehrere Längen in verschiedenen Stufen führt er Schritt für Schritt
+- **Größen nur über die Länge:** Die Knöpfe der Längengruppe bleiben verborgen, die Stufe ergibt sich aus der Eingabe
+- **Geführte Auswahl:** Der Kunde wählt Gruppe für Gruppe, zuerst die Länge; jede weitere Gruppe zeigt nur, was dazu
+  kaufbar ist. Mit „Geführte Auswahl für alle Variantenartikel" auch ohne Länge, dann beginnend mit der obersten Gruppe
+- Während der geführten Auswahl steht über der Auswahl der Preis der günstigsten Variante als „ab …"; bis zur ersten
+  Wahl tragen Überschrift, Seitentitel und Produktnummer Name und Nummer des Elternartikels
+- Längengruppen, Längenschalter, „Größen nur über die Länge" und geführte Auswahl je Produkt oder Kategorie
 - Kompatibel mit RcCartSplitter und TmmsProductCustomerInputs
 - Theme-kompatibel (BEM-Klassen, SCSS in `base.scss`)
 
@@ -49,14 +57,18 @@ Im Admin unter **Einstellungen → Plugins → Dynamischer Meterpreis**:
 
 | Feld | Beschreibung | Standard |
 |------|-------------|---------|
-| Hinweistext | Text im Popup beim ersten Fokus auf das Eingabefeld | „Bitte Länge in Millimetern eingeben – z. B. 1500 für 1,5 m" |
+| Hinweistext | Text im Popup beim ersten Fokus auf das Eingabefeld | leer (Vorgabe aus den Übersetzungen) |
 | Hinweis zum nächsten Schritt zeigen | Bei mehreren Längen in verschiedenen Größen ein Hinweis unter dem Feld, was nach dem Hinzufügen kommt | aus |
 | Mindestlänge (mm) | Kleinste erlaubte Eingabe (Fallback) | 1 |
 | Maximallänge (mm) | Größte erlaubte Eingabe (Fallback) | 10000 |
 | Standard-Split-Modus | Fallback, wenn am Produkt kein eigener Modus gesetzt ist (`equal`, `max_rest`, `hint` oder `none`) | none |
 | Max. Teilstücklänge (mm) | Schwellwert für das Splitting (Fallback) | 0 (kein Splitting) |
-| Hinweistext-Vorlage | Template mit Platzhaltern `{length}`, `{maxPiece}`, `{pieces}`, `{pieceLength}`, `{remainder}` | leer (Snippet-Default) |
+| Hinweistext-Vorlage | Template mit Platzhaltern `{length}`, `{maxPiece}`, `{pieces}`, `{pieceLength}`, `{remainder}` | leer (Vorgabe aus den Übersetzungen) |
+| Berechnete Länge der Teilstücke | `cut_length`: jedes Teilstück gerundet, die Summe kann die Eingabe übersteigen; `exact`: die Summe ist genau die Eingabe | cut_length |
+| Teilstücke auf Mindestlänge anheben | Ein Teilstück unter der Mindestlänge wird mit der Mindestlänge berechnet | an |
 | Meterpreis global für alle Produkte aktivieren | Aktiviert den Meterpreis für alle Produkte, die am Produkt auf **Vererben** stehen und deren Kategorie-Kette keinen Override setzt. Produkte mit **Inaktiv** bleiben immer deaktiviert. | aus |
+| Geführte Auswahl für alle Variantenartikel | Auch Artikel ohne Längengruppe führen den Kunden, beginnend mit der obersten Gruppe | aus |
+| Metriken protokollieren | Kennzahlen in den Kanal `rc_dynamic_price` (siehe „Metriken") | aus |
 
 ## Konfigurations-Scope
 
@@ -278,6 +290,9 @@ Vor dem Produktions-Rollout auf einer Staging-Instanz durchspielen:
 - [ ] Logs: Plugin-Events erscheinen im Standard-Log von Shopware, jeweils mit dem Präfix `RcDynamicPrice:`
 
 ### Was pro Versions-Sprung neu ist
+
+Was jede Fassung ändert und welche Schritte sie beim Ausrollen braucht, steht im `CHANGELOG.md` unter
+„Deployment". Die Tabelle unten deckt nur die frühen Fassungen bis 1.6.2 ab.
 
 | Sprung | Neu | Zusätzliche Schritte / Besonderheiten |
 |--------|-----|---------------------------------------|

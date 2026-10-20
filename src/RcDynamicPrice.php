@@ -8,8 +8,7 @@ use Shopware\Core\Framework\Plugin;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 
 /**
- * Plugin-Bootstrapper für RcDynamicPrice.
- * Registrierung von Services erfolgt über services.xml.
+ * Meldet den Protokollkanal der Erweiterung an; die Dienste stehen in `services.xml`.
  */
 final class RcDynamicPrice extends Plugin
 {

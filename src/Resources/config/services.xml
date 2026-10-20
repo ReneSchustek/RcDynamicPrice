@@ -24,7 +24,7 @@
 
         <service id="Ruhrcoder\RcDynamicPrice\Service\MeterProductHelper">
             <argument type="service" id="product.repository"/>
-            <argument type="service" id="Ruhrcoder\RcDynamicPrice\Service\Metrics\MetricsRecorderInterface"/>
+            <tag name="kernel.reset" method="reset"/>
         </service>
 
         <service id="Ruhrcoder\RcDynamicPrice\Service\MeterProductHelperInterface"
@@ -32,6 +32,7 @@
 
         <service id="Ruhrcoder\RcDynamicPrice\Service\CategoryChainLoader">
             <argument type="service" id="category.repository"/>
+            <tag name="kernel.reset" method="reset"/>
         </service>
 
         <service id="Ruhrcoder\RcDynamicPrice\Service\CategoryChainLoaderInterface"
@@ -70,11 +71,18 @@
             <argument type="service" id="Ruhrcoder\RcDynamicPrice\Service\CategoryChainLoaderInterface"/>
         </service>
 
-        <service id="Ruhrcoder\RcDynamicPrice\Storefront\Subscriber\LengthSettingsSubscriber">
-            <argument type="service" id="Ruhrcoder\RcDynamicPrice\Service\LengthSettingsResolver"/>
+        <service id="Ruhrcoder\RcDynamicPrice\Service\LengthSettingsResolverInterface"
+                 alias="Ruhrcoder\RcDynamicPrice\Service\LengthSettingsResolver"/>
+
+        <service id="Ruhrcoder\RcDynamicPrice\Service\GuidedSelectionBuilder">
             <argument type="service" id="Shopware\Core\Content\Product\SalesChannel\Detail\AvailableCombinationLoader"/>
-            <argument type="service" id="Shopware\Core\System\SystemConfig\SystemConfigService"/>
             <argument type="service" id="product.repository"/>
+        </service>
+
+        <service id="Ruhrcoder\RcDynamicPrice\Storefront\Subscriber\LengthSettingsSubscriber">
+            <argument type="service" id="Ruhrcoder\RcDynamicPrice\Service\LengthSettingsResolverInterface"/>
+            <argument type="service" id="Ruhrcoder\RcDynamicPrice\Service\GuidedSelectionBuilder"/>
+            <argument type="service" id="Shopware\Core\System\SystemConfig\SystemConfigService"/>
             <tag name="kernel.event_subscriber"/>
         </service>
 
@@ -87,13 +95,18 @@
             <argument type="service" id="Ruhrcoder\RcDynamicPrice\Service\MeterProductHelperInterface"/>
             <argument type="service" id="Ruhrcoder\RcDynamicPrice\Service\MeterConfigResolverInterface"/>
             <argument type="service" id="Ruhrcoder\RcDynamicPrice\Service\CartItemSplitAssemblerInterface"/>
+            <argument type="service" id="Ruhrcoder\RcDynamicPrice\Service\RequestedLengthReader"/>
             <argument type="service" id="monolog.logger"/>
             <tag name="kernel.event_subscriber"/>
         </service>
 
+        <service id="Ruhrcoder\RcDynamicPrice\Service\RequestedLengthReader">
+            <argument type="service" id="monolog.logger"/>
+        </service>
+
         <service id="Ruhrcoder\RcDynamicPrice\Subscriber\LengthSwitchLineItemSubscriber">
             <argument type="service" id="Ruhrcoder\RcDynamicPrice\Service\MeterProductHelperInterface"/>
-            <argument type="service" id="Ruhrcoder\RcDynamicPrice\Service\LengthSettingsResolver"/>
+            <argument type="service" id="Ruhrcoder\RcDynamicPrice\Service\LengthSettingsResolverInterface"/>
             <argument type="service" id="property_group.repository"/>
             <tag name="kernel.event_subscriber"/>
         </service>

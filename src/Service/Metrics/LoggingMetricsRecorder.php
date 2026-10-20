@@ -88,10 +88,16 @@ final class LoggingMetricsRecorder implements MetricsRecorderInterface
 
         try {
             $this->enabled = $this->systemConfigService->getBool(DynamicPriceConstants::CONFIG_ENABLE_METRICS);
-        } catch (\Throwable) {
+        } catch (\Throwable $e) {
             // Lässt sich die Einstellung nicht lesen, bleiben die Metriken aus. Auch das wird gemerkt,
-            // sonst liefe jeder weitere Aufruf erneut in die Ausnahme.
+            // sonst liefe jeder weitere Aufruf erneut in die Ausnahme; die Warnung erscheint so nur einmal.
             $this->enabled = false;
+
+            try {
+                $this->logger->warning('RcDynamicPrice: Einstellung der Metriken nicht lesbar, Metriken bleiben aus', ['exception' => $e]);
+            } catch (\Throwable) {
+                // Ohne Protokoll bleibt nur das Ausbleiben der Metriken; Warenkorb und Seite laufen weiter.
+            }
         }
 
         return $this->enabled;

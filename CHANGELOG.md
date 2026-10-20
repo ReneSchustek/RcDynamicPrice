@@ -1,4 +1,26 @@
-# 1.29.1
+# Changelog
+
+Alle nennenswerten Änderungen werden in dieser Datei dokumentiert.
+
+## [1.30.0] - 2026-10-20
+
+> **Deployment:** `plugin:update RcDynamicPrice` (Migration geändert), `bin/build-storefront.sh` (JS geändert),
+> `theme:compile`, `cache:clear`.
+
+- **Zusatzfelder werden auch in einer zweiten Sprache gelesen.** Der Meterpreis las die Einstellungen am Produkt
+  nur in der Sprache des Besuchers; ohne eigene Pflege in dieser Sprache fehlten sie. Jetzt gilt wie beim
+  Längenschalter der Rückfall auf die Standardsprache.
+- **Hinweistext aus den Übersetzungen.** Bleibt der Hinweistext in der Grundeinstellung leer, steht der Text der
+  jeweiligen Sprache da; bisher gab es nur eine deutsche Vorgabe. Gespeicherte Texte bleiben.
+- **Meldungen am Längenfeld nur noch aus den Übersetzungen**, nie mehr englische Ersatztexte in einem deutschen Shop.
+- Die Längengruppe aus 1.23.0 wird erst beim destruktiven Teil der Migration entfernt, wie jedes Löschen.
+- Intern: Prüfen und Berechnen, Länge lesen, geführte Auswahl und Gruppenreihenfolge als eigene Bausteine; Produkt
+  und Kategoriekette je Anfrage nur einmal geladen; Vorgaben der Längen an einer Stelle; der Längen-Resolver hat eine
+  Schnittstelle; der doppelte Render-Zuhörer für die Cache-Tags entfällt; Metriken warnen einmal, wenn ihre
+  Einstellung nicht lesbar ist. Neue Tests für die geführte Auswahl am Markup und für eine Migration.
+- README auf den Stand gebracht (Längenschalter, geführte Auswahl, Rundungsstufen, alle Einstellungen).
+
+## [1.29.1] - 2026-10-15
 
 > **Deployment:** `bin/build-storefront.sh`, `php bin/console cache:clear`.
 
@@ -7,7 +29,9 @@
 - **Ein Kennzeichen als Array im Warenkorb-Aufruf** (`rcTmmsActive[]=1`) führte zu HTTP 400 statt zu einer normalen
   Bearbeitung.
 
-# 1.29.0
+## [1.29.0] - 2026-10-14
+
+> **Deployment:** `plugin:update RcDynamicPrice`, `bin/build-storefront.sh`, `cache:clear` (JS geändert).
 
 - **Der erste Hinweis nennt die oberste Gruppe:** „Bitte wählen Sie zuerst: Glasstärke. …" statt immer „die Länge".
 - **Name und Nummer des Elternartikels, solange nichts gewählt ist:** Ruft jemand den Elternartikel auf, lädt Shopware
@@ -15,14 +39,16 @@
   Bis zur ersten Wahl stehen jetzt Name und Nummer des Elternartikels da. Im Markup bleibt der Variantenname, für
   Suchmaschinen und ohne Skript.
 
-# 1.28.0
+## [1.28.0] - 2026-10-14
+
+> **Deployment:** `plugin:update RcDynamicPrice`, `bin/build-storefront.sh`, `cache:clear` (JS geändert).
 
 - **Geführte Auswahl für alle Variantenartikel** (Karte „Geführte Auswahl", Vorgabe aus): Auch Artikel ohne Länge
   führen den Kunden. Er wählt zuerst die oberste Gruppe, etwa die Glasstärke, die er kennt; danach zeigt jede weitere
   Gruppe nur, was dazu kaufbar ist. Durchgestrichene Werte gibt es damit nicht mehr. Artikel mit Längengruppe beginnen
   wie bisher mit der Länge. Welche Gruppe oben steht, legt das Theme fest.
 
-# 1.27.1
+## [1.27.1] - 2026-10-14
 
 - **Der Hinweis zu den Eingaben steht unter der Länge.** „Jede abweichende Eingabe ergibt eine eigene Position im
   Warenkorb …" stand bei Längenschalter mit weiteren Feldern (etwa Endkappen) hinter allen Feldern. Er gehört zur
@@ -30,7 +56,7 @@
 
 > **Deployment:** `plugin:update RcDynamicPrice`, `theme:compile`, `cache:clear`.
 
-# 1.27.0
+## [1.27.0] - 2026-10-14
 
 - **Geführte Auswahl zeigt den Preis „ab …".** Bis die Variante feststeht, bleiben Preis und Kaufknopf verborgen; über
   der Auswahl steht jetzt aber der Preis der günstigsten Variante, z. B. „Ab 1.220,31 €*". Steht die Variante fest,
@@ -38,14 +64,14 @@
 
 > **Deployment:** `plugin:update RcDynamicPrice`, `theme:compile`, `cache:clear`.
 
-# 1.26.1
+## [1.26.1] - 2026-10-13
 
 - **Das Hinweisfenster nimmt den Radius des Themes.** Bisher fest 8 Pixel; in Design 2027 sind es 2. Im
   bisherigen Theme bleibt es bei 8.
 
 > **Deployment:** `plugin:update RcDynamicPrice`, `theme:compile`, `cache:clear`.
 
-# 1.26.0
+## [1.26.0] - 2026-10-09
 
 - **Die Längeneingabe steht direkt unter „Maße“.** Bei Artikeln mit Längenschalter und weiteren Variantengruppen,
   etwa dem Handlauf mit Kugelringen, stand das Feld „Gewünschte Länge in mm“ unter „Ausführung“. Es steht jetzt
@@ -55,7 +81,7 @@
 
 > **Deployment:** `plugin:update RcDynamicPrice`, `theme:compile`, `cache:clear`.
 
-# 1.25.1
+## [1.25.1] - 2026-10-09
 
 - **Die Längengruppe steht jetzt auch auf Produktseiten mit Erlebniswelt-Layout zuerst.** 1.25.0 stellte die
   Gruppen nur an der Seite um; die Kaufbox der Erlebniswelt liest sie aber aus ihren eigenen Daten. Am Handlauf
@@ -63,7 +89,7 @@
 
 > **Deployment:** `plugin:update RcDynamicPrice`, `cache:clear`.
 
-# 1.25.0
+## [1.25.0] - 2026-10-09
 
 - **Die Länge steht oben.** Bei Artikeln mit Meterpreis stand das Längenfeld unter den Eingabefeldern von
   TmmsProductCustomerInputs, etwa unter dem Gehrungsschnitt am Bodenprofil. Es steht jetzt direkt hinter den
@@ -76,7 +102,7 @@
 > **Deployment:** `plugin:update RcDynamicPrice`, `theme:compile`, `cache:clear`. Neues Storefront-Skript
 > (fertig gebaut im Paket).
 
-# 1.24.0
+## [1.24.0] - 2026-10-08
 
 - **Alle Längen mit einem Klick.** Fallen eingegebene Längen in verschiedene Größen („1200; 4200“), legt ein
   Klick auf „In den Warenkorb“ alle hinein: Die Seite stellt nach jedem Posten selbst auf die nächste Größe
@@ -90,7 +116,7 @@
 
 > **Deployment:** `plugin:update RcDynamicPrice`, `assets:install`, `theme:compile`, `cache:clear`.
 
-# 1.23.5
+## [1.23.5] - 2026-10-08
 
 - **Behoben: Die Längenzeile brach den Warenkorb.** Im aufklappbaren Bereich „Eingaben prüfen“ steht die
   Längenzeile jetzt wie bei TMMS als `<div>` statt als `<li>`. Das `<li>` ließ den Browser Elemente zu früh
@@ -107,14 +133,14 @@
 > **Deployment:** `plugin:update RcDynamicPrice`, `assets:install`, `theme:compile`, `cache:clear`. Erst danach
 > in den Warenkorb gelegte Positionen zeigen den Namen ohne Größe.
 
-# 1.23.4
+## [1.23.4] - 2026-10-06
 
 - **Behoben: Die Ja/Nein-Felder klebten in der Verwaltung aneinander.** „Geführte Auswahl: erst die Länge",
   „Eingegebene Länge wählt die Größe" und „Größen nur über die Länge" erscheinen an Produkt und Kategorie
   jetzt als Schalter mit Abstand statt als gerahmte Ankreuzfelder ohne Abstand. Gesetzte Werte bleiben,
   im Shop ändert sich nichts. Die Migration stellt nur Felder um, die noch Ankreuzfelder sind.
 
-# 1.23.3
+## [1.23.3] - 2026-10-06
 
 - **Behoben: Eine Unterkategorie mit eigener Längengruppe verdeckte die ihrer Elternkategorie.** Trägt
   „Balkongeländer" die Gruppe „Länge" und „Bausätze" darüber „Maße", bekam ein Relinggeländer unter
@@ -122,7 +148,7 @@
   dann alle Optionen der Seite lesen musste, auch „2 Pfosten". Die Längengruppen werden jetzt über die
   ganze Kette gesammelt, die nächste Stelle zuerst; es gilt die erste, die der Artikel hat.
 
-# 1.23.2
+## [1.23.2] - 2026-10-06
 
 - **Neu: Die Länge in jeder Einheit.** „4,2 m", „420 cm", „4200 mm" oder „4.2m" im Längenfeld und im
   Meterpreis-Feld; ohne Einheit gilt eine Zahl mit Komma als Meter, eine ganze Zahl als Millimeter, bei
@@ -143,7 +169,7 @@
 - Bei der geführten Auswahl meldet der erste Sprung kein „passt nicht zu …" mehr; gewählt war da noch
   nichts.
 
-# 1.23.1
+## [1.23.1] - 2026-10-05
 
 - **Behoben: Eine geänderte Einstellung blieb auf zwischengespeicherten Produktseiten unsichtbar.** Die
   Abrechnung der gleichmäßigen Teilung, „Mindestlänge je Teilstück erzwingen" und der Hinweistext gehen
@@ -154,7 +180,7 @@
   Tests mit englischen Bezeichnern und einem Testfall, der den Unterschied je Teilstück wirklich prüft.
 - Kommentare im ganzen Bestand nachgezogen; ein Wächter hält fest, dass jeder Typ einen Kopf hat.
 
-# Unveröffentlicht
+### Entwicklungswerkzeug (nicht im Ausrollpaket)
 
 - **Messprojekt `benchmarks/`** mit PHPBench und einer Seitenmessung über HTTP, Ablage je Lauf in
   `benchmarks/results.csv`; kommt in kein Ausrollpaket. Ausgangswerte vom 05.10. an einer Kopie des Shops:
@@ -162,7 +188,7 @@
   praktisch ohne Zeit, im schlimmsten erlaubten Fall (1 km in 1-mm-Stücken) 13 ms und 4 MB.
 - Wächter im Testlauf für diesen schlimmsten Fall. PHPStan und PHP CS Fixer prüfen auch `benchmarks/`.
 
-# 1.23.0
+## [1.23.0] - 2026-10-05
 
 - **Neu: geführte Variantenauswahl.** Bei Geländern steht die Länge oben und lässt sich auch frei eingeben;
   darunter erscheint zunächst nichts. Erst wenn die Länge feststeht, lassen sich die dazu passenden Pfosten
@@ -195,7 +221,7 @@
 - Intern: Die Bestimmung der Hauptkategorie steht in einer eigenen Klasse (`PrimaryCategory`), die
   Meterpreis und geführte Auswahl gemeinsam nutzen. Der Entwicklungsstand zieht Kern 6.7.15.0.
 
-# 1.22.2
+## [1.22.2] - 2026-09-02
 
 - **Das Fenster wird nicht mehr verschoben.** Es erschien erst oben und rutschte dann in die Mitte.
 
@@ -207,7 +233,7 @@
   Der Riegel gegen ein zweites Fenster aus 1.22.1 bleibt unverändert; er hängt jetzt am Fenster
   selbst statt am Dialog darin.
 
-# 1.22.1
+## [1.22.1] - 2026-09-02
 
 - **Behoben: Nach dem Bestätigen blieb die Seite gesperrt.** Nach dem Hinweis auf eine überschrittene
   Höchstlänge war das Fenster zwar geschlossen, die Seite dahinter aber weiter gesperrt.
@@ -232,7 +258,7 @@
   für denselben Handgriff die zweite Abfuhr. Eine Länge, die nur die Stufe wechselt, bleibt
   selbstverständlich stehen, sie war ja richtig.
 
-# 1.22.0
+## [1.22.0] - 2026-09-01
 
 - **Der Sprung bedient jetzt beide Formen der Größenwahl.** Ob ein Artikel die Stufen als Knopffeld
   oder als Auswahlfeld zeigt, entscheidet die Anzeigeart der Eigenschaftsgruppe im
@@ -242,7 +268,7 @@
   kosteten 226 Pixel und schoben den Kaufknopf unter die Falz. Mit dem Auswahlfeld sind es 70, und
   der Knopf rückt um 156 Pixel nach oben.
 
-# 1.21.1
+## [1.21.1] - 2026-09-01
 
 Drei Nachbesserungen aus der Prüfung am Bildschirm.
 
@@ -256,7 +282,7 @@ Drei Nachbesserungen aus der Prüfung am Bildschirm.
 - Dieselbe Eingabe wird nicht mehr mehrfach beurteilt. Ohne diesen Vergleich feuerte jedes weitere
   Zeichen hinter einer fertigen Angabe erneut, etwa das Leerzeichen nach dem Semikolon.
 
-# 1.21.0
+## [1.21.0] - 2026-09-01
 
 - **Die eingegebene Länge wählt die Größe.** Bei Artikeln, deren Größen als Bereiche beschriftet
   sind (»96 - 116 cm«), stellt der Shop auf die passende Größe um, sobald der Kunde eine Länge
@@ -273,19 +299,16 @@ Drei Nachbesserungen aus der Prüfung am Bildschirm.
 - **Neues Zusatzfeld am Produkt** `rc_length_variant_switch` im bestehenden Set. Ohne Haken ändert
   sich an einem Artikel nichts.
 
-# 1.20.2
+## [1.20.2] - 2026-08-17
 
 - **Vorbereitung auf die nächste Shopware-Hauptversion.** Der Zugriff auf Suchergebnisse folgt der Schreibweise, die Shopware 6.8 verlangt. Am Verhalten ändert sich nichts.
 
-# 1.20.1
+## [1.20.1] - 2026-08-17
 
 - **Behoben (kritisch): Gutscheincodes konnten den Warenkorb-Zugang zerreißen.** Das Plugin behandelte jede Warenkorb-Position als Produkt. Ein Gutschein trägt an der Stelle, an der sonst die Produktkennung steht, aber den **Code**. Die Produktsuche brach damit mit einer Ausnahme ab und riss den gesamten Vorgang mit. Der Kunde sah „Leider ist etwas schiefgelaufen“, im Protokoll stand nichts. Am laufenden Testsystem gegen die echte Datenbankschicht belegt.
 - Hinzugefügt: Drei Tests für Pfade, die bisher keinen hatten: den Ausfallschutz beim Aufteilen einer Position (er fängt eine Fehlkonfiguration ab, damit kein Serverfehler entsteht) und die neue Typprüfung.
 - Geändert: Nur noch Produktpositionen lösen die Meterpreis-Auflösung aus. Gutscheine, Versandkosten und Zuschläge werden übersprungen; dort ergab die Auflösung ohnehin nichts und schrieb nur eine irreführende Protokollzeile.
 
-# Changelog
-
-Alle nennenswerten Änderungen werden in dieser Datei dokumentiert.
 ## [1.20.0] - 2026-07-17: Handshake-Fix + Per-Positions-Länge
 
 > **Deployment:** `php bin/console plugin:update RcDynamicPrice && php bin/console cache:clear` + Theme-Kompilierung. Kein Schema-Break, keine Migration.

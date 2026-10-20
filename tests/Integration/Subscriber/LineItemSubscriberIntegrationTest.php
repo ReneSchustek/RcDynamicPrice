@@ -12,6 +12,7 @@ use Ruhrcoder\RcDynamicPrice\Service\CategoryChainLoaderInterface;
 use Ruhrcoder\RcDynamicPrice\Service\LengthSplitter;
 use Ruhrcoder\RcDynamicPrice\Service\MeterConfigResolver;
 use Ruhrcoder\RcDynamicPrice\Service\MeterProductHelperInterface;
+use Ruhrcoder\RcDynamicPrice\Service\RequestedLengthReader;
 use Ruhrcoder\RcDynamicPrice\Subscriber\LineItemSubscriber;
 use Shopware\Core\Checkout\Cart\Cart;
 use Shopware\Core\Checkout\Cart\Event\BeforeLineItemAddedEvent;
@@ -199,6 +200,7 @@ final class LineItemSubscriberIntegrationTest extends TestCase
             $helper,
             $resolver,
             $assembler,
+            new RequestedLengthReader(new NullLogger()),
             new NullLogger(),
         );
     }

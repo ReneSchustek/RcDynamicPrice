@@ -116,14 +116,14 @@ final class LengthSwitchLineItemSubscriberTest extends TestCase
 
         $parent = null;
         if ($parentName !== null) {
-            $product->setParentId('eltern');
+            $product->setParentId('parent');
             $parent = new ProductEntity();
-            $parent->setId('eltern');
+            $parent->setId('parent');
             $parent->setName($parentName);
         }
 
         $helper = $this->createMock(MeterProductHelperInterface::class);
-        $helper->method('loadProduct')->willReturnCallback(static fn (string $id): ?ProductEntity => $id === 'eltern' ? $parent : $product);
+        $helper->method('loadProduct')->willReturnCallback(static fn (string $id): ?ProductEntity => $id === 'parent' ? $parent : $product);
 
         $groups = new PropertyGroupCollection();
         foreach ($groupNames as $i => $name) {
@@ -146,7 +146,7 @@ final class LengthSwitchLineItemSubscriberTest extends TestCase
     private function event(LineItem $lineItem, bool $merged = false): BeforeLineItemAddedEvent
     {
         $context = $this->createMock(SalesChannelContext::class);
-        $context->method('getSalesChannelId')->willReturn('kanal');
+        $context->method('getSalesChannelId')->willReturn('sales-channel');
         $context->method('getContext')->willReturn(new Context(new SystemSource()));
 
         return new BeforeLineItemAddedEvent($lineItem, new Cart('warenkorb'), $context, $merged);
