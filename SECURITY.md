@@ -8,7 +8,7 @@
 
 ## Sicherheitslücken melden
 
-Sicherheitslücken bitte per E-Mail an **security@ruhrcoder.de** melden – nicht über öffentliche GitHub Issues.
+Sicherheitslücken bitte per E-Mail an **info@ruhrcoder.de** melden – nicht über öffentliche GitHub Issues.
 
 Bitte beschreibe:
 - Art der Sicherheitslücke
