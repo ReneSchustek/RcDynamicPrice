@@ -2,7 +2,7 @@
     "name": "ruhrcoder/rc-dynamic-price",
     "description": "Shopware plugin for length-based price calculation",
     "type": "shopware-platform-plugin",
-    "license": "MIT",
+    "license": "proprietary",
     "version": "1.30.0",
     "authors": [
         {

@@ -407,4 +407,4 @@ Rechner an `benchmarks/results.csv` an. Verglichen wird die Reihe derselben Inst
 
 ## Lizenz
 
-MIT, siehe [LICENSE](LICENSE).
+Proprietär – siehe [composer.json](composer.json).
