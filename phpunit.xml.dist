@@ -21,7 +21,8 @@
         </testsuite>
     </testsuites>
 
-    <source>
+    <!-- PHP-8.5-Meldungen aus Kern und Bibliotheken liegen nicht in unserer Hand; streng geprüft wird der eigene Code. -->
+    <source ignoreIndirectDeprecations="true">
         <include>
             <directory suffix=".php">src</directory>
         </include>

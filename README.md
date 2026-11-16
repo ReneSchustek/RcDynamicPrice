@@ -24,7 +24,7 @@ Produkte wie Kabel, Stoffe oder Profile werden nach Meterlänge verkauft. Der Gr
 - **Geführte Auswahl:** Der Kunde wählt Gruppe für Gruppe, zuerst die Länge; jede weitere Gruppe zeigt nur, was dazu
   kaufbar ist. Mit „Geführte Auswahl für alle Variantenartikel" auch ohne Länge, dann beginnend mit der obersten Gruppe
 - Während der geführten Auswahl steht über der Auswahl der Preis der günstigsten Variante als „ab …"; bis zur ersten
-  Wahl tragen Überschrift, Seitentitel und Produktnummer Name und Nummer des Elternartikels
+  Wahl tragen Überschrift und Seitentitel den Namen des Elternartikels, die Produktnummer ist die der vorbelegten Variante
 - Längengruppen, Längenschalter, „Größen nur über die Länge" und geführte Auswahl je Produkt oder Kategorie
 - Kompatibel mit RcCartSplitter und TmmsProductCustomerInputs
 - Theme-kompatibel (BEM-Klassen, SCSS in `base.scss`)

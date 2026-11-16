@@ -1,4 +1,4 @@
-// Testet das Verhalten der geführten Auswahl am Markup: Name und Nummer des Elternartikels, die Auswahlliste mit
+// Testet das Verhalten der geführten Auswahl am Markup: der Name des Elternartikels, die Auswahlliste mit
 // Platzhalter, die Kennzeichnung „nicht kombinierbar", das Abfangen des Variantenwechsels und das Zwischenlager.
 // Die Rechenregeln stehen in `guided-selection.test.mjs`. Der Quelltext wird wie dort in einer Stub-Umgebung
 // evaluiert; Dokument und Speicher sind kleine Nachbauten, die nur bieten, was das Skript nutzt.
@@ -43,16 +43,13 @@ function textElement(text) {
     return { textContent: text, classList: classList() };
 }
 
-function makeDocument({ title = '', names = [], numbers = [] } = {}) {
+function makeDocument({ title = '', names = [] } = {}) {
     return {
         title,
         body: { classList: classList() },
         querySelectorAll(selector) {
             if (selector === GuidedSelectionPlugin.options.nameSelector) {
                 return names;
-            }
-            if (selector === GuidedSelectionPlugin.options.numberSelector) {
-                return numbers;
             }
 
             return [];
@@ -68,57 +65,61 @@ function makePlugin(options = {}) {
     return plugin;
 }
 
-describe('_showParent — Name und Nummer des Elternartikels', () => {
+describe('_showParent — Name des Elternartikels, Nummer der Variante', () => {
     const options = {
         parentName: 'Relinggeländer',
-        parentNumber: 'EB270100',
         variantName: 'Relinggeländer (3m)',
-        variantNumber: 'EB270100-2-0',
     };
 
-    test('solange nichts gewählt ist, stehen Name, Nummer und Seitentitel des Elternartikels da', () => {
+    test('solange nichts gewählt ist, stehen Name und Seitentitel des Elternartikels da', () => {
         const name = textElement('Relinggeländer (3m)');
-        const number = textElement('EB270100-2-0');
-        globalThis.document = makeDocument({ title: 'Relinggeländer (3m) | Shop', names: [name], numbers: [number] });
+        globalThis.document = makeDocument({ title: 'Relinggeländer (3m) | Shop', names: [name] });
 
         makePlugin(options)._showParent(true);
 
         assert.equal(name.textContent, 'Relinggeländer');
-        assert.equal(number.textContent, 'EB270100');
-        assert.equal(document.title, 'Relinggeländer | Shop');
+        assert.equal(globalThis.document.title, 'Relinggeländer | Shop');
     });
 
-    test('nach der ersten Wahl kehren Name, Nummer und Seitentitel der Variante zurück', () => {
+    test('nach der ersten Wahl kehren Name und Seitentitel der Variante zurück', () => {
         const name = textElement('Relinggeländer (3m)');
-        const number = textElement('EB270100-2-0');
-        globalThis.document = makeDocument({ title: 'Relinggeländer (3m) | Shop', names: [name], numbers: [number] });
+        globalThis.document = makeDocument({ title: 'Relinggeländer (3m) | Shop', names: [name] });
         const plugin = makePlugin(options);
 
         plugin._showParent(true);
         plugin._showParent(false);
 
         assert.equal(name.textContent, 'Relinggeländer (3m)');
-        assert.equal(number.textContent, 'EB270100-2-0');
-        assert.equal(document.title, 'Relinggeländer (3m) | Shop');
+        assert.equal(globalThis.document.title, 'Relinggeländer (3m) | Shop');
     });
 
-    test('eine Stelle ohne eine der beiden Nummern bleibt unberührt', () => {
-        const other = textElement('Lieferzeit 3 Tage');
-        globalThis.document = makeDocument({ numbers: [other] });
+    test('die Nummer der vorbelegten Variante wird nicht angefasst', () => {
+        const number = textElement('EB270100-2-0');
+        const selectors = [];
+        globalThis.document = {
+            title: 'Relinggeländer (3m) | Shop',
+            querySelectorAll(selector) {
+                selectors.push(selector);
+
+                return [];
+            },
+        };
 
         makePlugin(options)._showParent(true);
 
-        assert.equal(other.textContent, 'Lieferzeit 3 Tage');
+        assert.deepEqual(selectors, [GuidedSelectionPlugin.options.nameSelector]);
+        assert.equal(number.textContent, 'EB270100-2-0');
     });
 
-    test('ohne Angaben zum Elternartikel wird nichts getauscht', () => {
-        const name = textElement('Relinggeländer (3m)');
-        globalThis.document = makeDocument({ title: 'Titel', names: [name] });
+    test('ohne Elternname oder bei gleichem Namen passiert nichts', () => {
+        const name = textElement('Relinggeländer');
+        globalThis.document = makeDocument({ title: 'Relinggeländer | Shop', names: [name] });
 
-        makePlugin({ ...options, parentName: '' })._showParent(true);
+        makePlugin({ parentName: '', variantName: 'Relinggeländer' })._showParent(true);
+        makePlugin({ parentName: 'Relinggeländer', variantName: 'Relinggeländer' })._showParent(true);
 
-        assert.equal(name.textContent, 'Relinggeländer (3m)');
-        assert.equal(document.title, 'Titel');
+        assert.equal(name.textContent, 'Relinggeländer');
+        assert.equal(globalThis.document.title, 'Relinggeländer | Shop');
     });
 });
 

@@ -29,7 +29,6 @@ final class GuidedSelectionStruct extends Struct
         private readonly array $groups,
         private readonly array $combinations,
         private readonly ?string $parentName = null,
-        private readonly ?string $parentNumber = null,
     ) {
     }
 
@@ -40,11 +39,6 @@ final class GuidedSelectionStruct extends Struct
     public function getParentName(): ?string
     {
         return $this->parentName;
-    }
-
-    public function getParentNumber(): ?string
-    {
-        return $this->parentNumber;
     }
 
     public function getEntryGroupId(): string

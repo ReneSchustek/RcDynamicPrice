@@ -44,38 +44,33 @@ final class GuidedSelectionBuilder
             return null;
         }
 
-        [$parentName, $parentNumber] = $this->parentLabels($page, $parentId, $context);
-
         return new GuidedSelectionStruct(
             $entryGroupId,
             VariantGroupOrder::steps($page->getConfiguratorSettings(), $entryGroupId),
             $combinations,
-            $parentName,
-            $parentNumber,
+            $this->parentName($page, $parentId, $context),
         );
     }
 
     /**
-     * Name und Nummer des Elternartikels. Ruft jemand den Elternartikel auf, lädt der Kern die beste Variante, und die
-     * Seite hieße „… Milchglas (3m)", obwohl noch keine Länge gewählt ist. Bis zur Wahl zeigt das Skript deshalb Name
-     * und Nummer des Elternartikels; die Variantennamen bleiben im Markup für Suchmaschinen und ohne Skript.
-     *
-     * @return array{0: ?string, 1: ?string}
+     * Name des Elternartikels. Ruft jemand den Elternartikel auf, lädt der Kern die beste Variante, und die Seite hieße
+     * „… Milchglas (3m)", obwohl noch keine Länge gewählt ist. Bis zur Wahl zeigt das Skript deshalb diesen Namen; der
+     * Variantenname bleibt im Markup für Suchmaschinen und ohne Skript. Die Nummer bleibt die der vorbelegten Variante.
      */
-    private function parentLabels(ProductPage $page, string $parentId, SalesChannelContext $context): array
+    private function parentName(ProductPage $page, string $parentId, SalesChannelContext $context): ?string
     {
-        // Zeigt die Seite den Elternartikel selbst, trägt sie schon seinen Namen und seine Nummer.
+        // Zeigt die Seite den Elternartikel selbst, trägt sie schon seinen Namen.
         if ($page->getProduct()->getId() === $parentId) {
-            return [null, null];
+            return null;
         }
 
         $parent = $this->productRepository->search(new Criteria([$parentId]), $context->getContext())->getEntities()->first();
         if ($parent === null) {
-            return [null, null];
+            return null;
         }
 
         $name = trim((string) ($parent->getTranslation('name') ?? $parent->getName()));
 
-        return [$name !== '' ? $name : null, $parent->getProductNumber()];
+        return $name !== '' ? $name : null;
     }
 }

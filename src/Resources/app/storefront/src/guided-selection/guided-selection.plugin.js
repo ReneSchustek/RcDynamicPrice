@@ -34,17 +34,12 @@ export default class GuidedSelectionPlugin extends Plugin {
         textChooseNext: '',
         textPlaceholder: '',
 
-        // Name und Nummer des Elternartikels, solange nichts gewählt ist (leer: nichts tauschen).
+        // Name des Elternartikels, solange nichts gewählt ist (leer: nichts tauschen).
         parentName: '',
-        parentNumber: '',
 
-        // Name und Nummer der vorgeladenen Variante; an ihnen findet das Skript die Stellen im Markup wieder.
+        // Name der vorgeladenen Variante; aus ihm entsteht der Seitentitel des Elternartikels.
         variantName: '',
-        variantNumber: '',
         nameSelector: '.product-detail-name',
-
-        // Die Nummer steht an mehreren Stellen; getauscht wird nur, wo eine der beiden Nummern tatsächlich steht.
-        numberSelector: '.product-detail-ordernumber, [data-rc-product-number]',
 
         configuratorSelector: '.product-detail-configurator-container',
         groupSelector: '.product-detail-configurator-group',
@@ -325,13 +320,13 @@ export default class GuidedSelectionPlugin extends Plugin {
     }
 
     /**
-     * Solange nichts gewählt ist, Name und Nummer des Elternartikels statt der vorgeladenen Variante. Der Kern zeigt
-     * beim Aufruf des Elternartikels die beste Variante, deren Name schon eine Länge nennt, die niemand gewählt hat.
+     * Solange nichts gewählt ist, der Name des Elternartikels statt der vorgeladenen Variante. Der Kern zeigt beim Aufruf
+     * des Elternartikels die beste Variante, deren Name schon eine Länge nennt, die niemand gewählt hat. Die Nummer bleibt
+     * die der vorbelegten Variante: Sie ist die, die der Kunde ohne weitere Wahl anfragen würde.
      */
     _showParent(show) {
-        const { parentName, parentNumber, variantName, variantNumber } = this.options;
-        // Ohne Elternangaben gibt es nichts zu tauschen, ebenso bei gleichem Namen ohne abweichende Nummer.
-        if (!parentName || !variantName || (parentName === variantName && (!parentNumber || parentNumber === variantNumber))) {
+        const { parentName, variantName } = this.options;
+        if (!parentName || !variantName || parentName === variantName) {
             return;
         }
 
@@ -341,22 +336,11 @@ export default class GuidedSelectionPlugin extends Plugin {
         }
 
         const name = show ? parentName : variantName;
-        // Ohne Nummer des Elternartikels bleibt die der Variante stehen.
-        const number = show ? (parentNumber || variantNumber) : variantNumber;
 
-        if (parentName !== variantName) {
-            document.querySelectorAll(this.options.nameSelector).forEach((element) => {
-                element.textContent = name;
-            });
-        }
-        document.querySelectorAll(this.options.numberSelector).forEach((element) => {
-            if ((variantNumber && element.textContent.includes(variantNumber)) || (parentNumber && element.textContent.includes(parentNumber))) {
-                element.textContent = number;
-            }
+        document.querySelectorAll(this.options.nameSelector).forEach((element) => {
+            element.textContent = name;
         });
-        if (parentName !== variantName) {
-            document.title = show ? this._titleBase.split(variantName).join(parentName) : this._titleBase;
-        }
+        document.title = show ? this._titleBase.split(variantName).join(parentName) : this._titleBase;
     }
 
     _groupTitle(groupId) {

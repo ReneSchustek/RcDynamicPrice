@@ -2,6 +2,14 @@
 
 Alle nennenswerten Änderungen werden in dieser Datei dokumentiert.
 
+## [1.30.1] - 2026-11-02
+
+> **Deployment:** `plugin:update RcDynamicPrice`, `theme:compile`, `cache:clear`. Das Storefront-Skript liegt gebaut bei.
+
+- **Produktnummer der vorbelegten Variante vor der ersten Wahl.** In der geführten Auswahl stand bis zur ersten Wahl die
+  Nummer des Elternartikels, während die Anfrage schon die Variante meinte. Die Nummer bleibt jetzt die der Variante. Der
+  Name bleibt bis zur Wahl der des Elternartikels, weil er sonst eine Länge nennen würde, die niemand gewählt hat.
+
 ## [1.30.0] - 2026-10-20
 
 > **Deployment:** `plugin:update RcDynamicPrice` (Migration geändert), `bin/build-storefront.sh` (JS geändert),
