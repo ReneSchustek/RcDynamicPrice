@@ -526,3 +526,84 @@ describe('escapeHtml — Texte im Hinweisfenster', () => {
         assert.equal(LengthVariantSwitchPlugin.escapeHtml(undefined), '');
     });
 });
+
+// BRIEF65, Nachtrag: Wählt der Kunde selbst eine Stufe, steht danach ihre Länge im leeren Pflichtfeld. Eine
+// vorhandene Eingabe bleibt; die eigenen Sprünge des Schalters und das Laden der Seite füllen nichts.
+describe('Stufenwahl des Kunden — die Länge kommt mit', () => {
+    const fixedStages = () => LengthVariantSwitchPlugin.completeFixedSizes(
+        ['0,2 m', '0,5 m', '1,0 m'].map((label) => LengthVariantSwitchPlugin.parseRange(label)),
+    ).map((range) => ({ ...range, fixed: true }));
+
+    const choose = (plugin, label, isTrusted = true) => {
+        const target = { label };
+        plugin._ranges = plugin._ranges.map((range) => ({ ...range, chosenBy: (event) => event.target.label === range.label }));
+        plugin._onStageChosen({ isTrusted, target });
+    };
+
+    test('HL-KR-100-0: Stufe 1,0 m bei leerem Feld trägt 1000 ein', () => {
+        const plugin = makePlugin(fixedStages());
+        choose(plugin, '1,0 m');
+
+        assert.deepEqual(plugin.stashed, { value: '1000', from: '', to: '1,0 m', count: 0, evaluate: false });
+    });
+
+    test('eine vorhandene Eingabe bleibt: 850, dann 1,0 m gewählt, bleibt 850', () => {
+        const plugin = makePlugin(fixedStages());
+        plugin._input.value = '850';
+        choose(plugin, '1,0 m');
+
+        assert.equal(plugin.stashed.value, '850');
+        assert.equal(plugin.stashed.evaluate, true);
+    });
+
+    test('ein Sprung aus Code (Schalter, geführte Auswahl) füllt nichts — kein Kreislauf', () => {
+        const plugin = makePlugin(fixedStages());
+        choose(plugin, '1,0 m', false);
+
+        assert.equal(plugin.stashed, undefined);
+    });
+
+    test('bei einem Bereich bleibt das Feld leer', () => {
+        const plugin = makePlugin([LengthVariantSwitchPlugin.parseRange('96 - 116 cm')].map((range) => ({ ...range, fixed: false })));
+        choose(plugin, '96 – 116 cm');
+
+        assert.equal(plugin.stashed, undefined);
+    });
+
+    test('stageLength: feste Maße in Millimetern, Bereiche ohne', () => {
+        assert.equal(LengthVariantSwitchPlugin.stageLength({ fixed: true, max: 20 }, MM_PER_CM), '200');
+        assert.equal(LengthVariantSwitchPlugin.stageLength({ fixed: true, max: 100 }, MM_PER_CM), '1000');
+        assert.equal(LengthVariantSwitchPlugin.stageLength({ fixed: false, max: 116 }, MM_PER_CM), null);
+    });
+
+    test('Stangenmaterial („Größen nur über die Länge") hängt keinen Zuhörer an', () => {
+        const plugin = makePlugin(fixedStages());
+        plugin.options.lengthOnly = true;
+        let listened = false;
+        plugin._ranges = plugin._ranges.map((range) => ({ ...range, trigger: { addEventListener: () => { listened = true; } } }));
+        plugin._listenToStageChoice();
+
+        assert.equal(listened, false);
+    });
+
+    test('nach dem Sprung: die eingetragene Länge wird gespeichert, ohne neue Stufenwahl', () => {
+        const plugin = makePlugin(fixedStages());
+        plugin._takeStash = () => ({ value: '1000', from: '', to: '1,0 m', count: 0, evaluate: false });
+        plugin._hideHint = () => {};
+        plugin._restoreAfterSwitch();
+
+        assert.equal(plugin._input.value, '1000');
+        assert.deepEqual(plugin.firedEvents, ['change']);
+        assert.equal(plugin.applied, undefined);
+        assert.deepEqual(plugin.openedModals, []);
+    });
+
+    test('nach dem Sprung: eine mitgenommene Eingabe, die nicht passt, wählt die passende Stufe', () => {
+        const plugin = makePlugin(fixedStages());
+        plugin._takeStash = () => ({ value: '850', from: '', to: '0,2 m', count: 0, evaluate: true });
+        plugin._restoreAfterSwitch();
+
+        assert.equal(plugin.applied, 1);
+        assert.equal(plugin.stashed.to, '1,0 m');
+    });
+});

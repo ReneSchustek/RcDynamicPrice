@@ -17,6 +17,14 @@ export default class DynamicPricePlugin extends Plugin {
     // die einen Suffix an der Kennung setzt, meldet ihn darüber.
     static SUFFIX_CHANGED_EVENT = 'rcSuffixChanged';
 
+    /**
+     * Meldet auf `document`, dass der Preis der Seite aus der Länge berechnet oder wieder zurückgesetzt wurde.
+     * `detail.unitPrice` ist der berechnete Preis in der angezeigten Steuerart, `null` nach dem Zurücksetzen;
+     * dann gilt wieder der Grundpreis je Meter (`detail.basePrice`). Für Anzeigen außerhalb des Formulars,
+     * etwa die mitlaufende Kaufleiste des Themes oder den Zweitpreis von RcDualPrice.
+     */
+    static PRICE_CHANGED_EVENT = 'rcDynamicPriceChanged';
+
     init() {
         this._input       = this.el.querySelector('.rc-dynamic-price__input');
         this._hidden      = this.el.querySelector('.rc-dynamic-price__hidden');
@@ -572,8 +580,10 @@ export default class DynamicPricePlugin extends Plugin {
             return;
         }
 
-        // Der Grundpreis gilt je Meter, die Länge steht in Millimetern.
-        const price    = (basePrice / 1000) * mm;
+        // Der Grundpreis gilt je Meter, die Länge steht in Millimetern. Auf Cent gerundet wie im Warenkorb: Wer den
+        // ungerundeten Wert weitergibt, rechnet daraus einen anderen Nettopreis (78,555 € ergibt 66,01 € netto,
+        // die angezeigten 78,56 € ergeben 66,02 €).
+        const price    = Math.round(((basePrice / 1000) * mm + Number.EPSILON) * 100) / 100;
         const currency = this.el.dataset.currency || 'EUR';
         const locale   = document.documentElement.lang || 'de-DE';
 
@@ -588,6 +598,8 @@ export default class DynamicPricePlugin extends Plugin {
         if (this._productPrice) {
             this._productPrice.textContent = formatted;
         }
+
+        this._dispatchPriceChanged(price, formatted);
     }
 
     _clearResult() {
@@ -598,6 +610,20 @@ export default class DynamicPricePlugin extends Plugin {
         if (this._productPrice && this._originalPriceHtml) {
             this._productPrice.innerHTML = this._originalPriceHtml;
         }
+
+        this._dispatchPriceChanged(null, null);
+    }
+
+    _dispatchPriceChanged(unitPrice, formatted) {
+        document.dispatchEvent(new CustomEvent(DynamicPricePlugin.PRICE_CHANGED_EVENT, {
+            detail: {
+                productId: this._productId,
+                unitPrice,
+                formatted,
+                basePrice: parseFloat(this.el.dataset.basePrice) || null,
+                currency: this.el.dataset.currency || 'EUR',
+            },
+        }));
     }
 
     _showError(message) {

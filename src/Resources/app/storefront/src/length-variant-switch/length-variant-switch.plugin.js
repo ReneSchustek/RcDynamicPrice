@@ -107,6 +107,7 @@ export default class LengthVariantSwitchPlugin extends Plugin {
         }
 
         this._subscribeToAddToCart();
+        this._listenToStageChoice();
         this._restoreAfterSwitch();
     }
 
@@ -167,6 +168,9 @@ export default class LengthVariantSwitchPlugin extends Plugin {
 
             ranges.push({
                 ...bounds,
+                fixed: bounds.min === null,
+                chosenBy: (event) => event.target === select && select.value === option.value,
+                trigger: select,
                 // Der Variantenwechsel hängt am `change` des Feldes, nicht an einem Klick.
                 apply: () => {
                     select.value = option.value;
@@ -215,6 +219,9 @@ export default class LengthVariantSwitchPlugin extends Plugin {
 
             ranges.push({
                 ...bounds,
+                fixed: bounds.min === null,
+                chosenBy: (event) => event.target === input && input.checked,
+                trigger: input,
                 apply: () => input.click(),
                 isCurrent: () => input.defaultChecked,
                 confirm: () => {
@@ -634,6 +641,69 @@ export default class LengthVariantSwitchPlugin extends Plugin {
     }
 
     /**
+     * Wählt der Kunde selbst eine Stufe, nimmt der Sprung die Länge mit (BRIEF65, Nachtrag).
+     *
+     * Ist das Feld leer, steht danach die Länge der Stufe darin, 1,0 m als 1000: Das Feld ist Pflicht, und der Kunde
+     * soll nicht zweimal dasselbe angeben. Bei einem Bereich wie „96 - 116 cm" bleibt es leer, denn dort schneiden wir
+     * auf ein Maß zu, das nur der Kunde kennt; die Obergrenze einzutragen hieße, ungefragt die längste Länge zu bestellen.
+     * Steht schon eine Länge im Feld, nimmt der Sprung sie mit, und die Seite prüft sie danach wie eine Eingabe.
+     *
+     * Nur bei einer Wahl durch den Kunden (`isTrusted`): Die eigenen Sprünge des Schalters und die geführte Auswahl
+     * lösen das Ereignis aus Code aus und füllen nichts, sonst überschriebe die Stufenwahl die Eingabe, die sie eben
+     * ausgelöst hat. Beim Laden der Seite gibt es kein Ereignis; die vorgewählte Stufe und Stangenmaterial ohne Knöpfe
+     * bleiben leer.
+     */
+    _listenToStageChoice() {
+        if (this.options.lengthOnly) {
+            return;
+        }
+
+        const triggers = new Set(this._ranges.map((range) => range.trigger).filter(Boolean));
+
+        for (const trigger of triggers) {
+            trigger.addEventListener('change', (event) => this._onStageChosen(event));
+        }
+    }
+
+    _onStageChosen(event) {
+        if (!event.isTrusted) {
+            return;
+        }
+
+        const range = this._ranges.find((candidate) => candidate.chosenBy?.(event));
+
+        if (!range) {
+            return;
+        }
+
+        const value = this._input.value.trim();
+        const filled = value === '' ? LengthVariantSwitchPlugin.stageLength(range, this.options.millimetresPerCentimetre) : null;
+
+        if (value === '' && filled === null) {
+            return;
+        }
+
+        this._stash({
+            value: value === '' ? filled : value,
+            from: '',
+            to: range.label,
+            count: 0,
+            evaluate: value !== '',
+        });
+    }
+
+    /**
+     * Die Länge einer festen Stufe in Millimetern, „1,0 m" als `"1000"`; ein Bereich hat keine.
+     */
+    static stageLength(range, millimetresPerCentimetre) {
+        if (!range.fixed) {
+            return null;
+        }
+
+        return String(Math.round(range.max * millimetresPerCentimetre));
+    }
+
+    /**
      * Nach dem Neuladen den mitgenommenen Wert zurückschreiben und dasselbe `change` auslösen, das der
      * Kunde beim Verlassen des Feldes auslöst; erst das Ereignis lässt TMMS den Wert für die neue Variante
      * speichern. Das Zwischenlager ist zu diesem Zeitpunkt schon geleert (`_takeStash()`), ein zweites
@@ -649,6 +719,18 @@ export default class LengthVariantSwitchPlugin extends Plugin {
         this._input.value = stashed.value;
         this._lastEvaluated = stashed.value;
         this._input.dispatchEvent(new Event('change', { bubbles: true }));
+
+        // Die Eingabe des Kunden kam über seine eigene Stufenwahl mit: Passt sie nicht zu ihr, wählt die Seite wie bei
+        // jeder Eingabe die passende Stufe, mit Hinweis.
+        if (stashed.evaluate) {
+            const carried = LengthVariantSwitchPlugin.parseLengths(stashed.value);
+
+            if (carried !== null && carried.length > 0) {
+                this._applyEvaluation(carried);
+            }
+
+            return;
+        }
 
         this._applyQuantity(stashed.count);
 

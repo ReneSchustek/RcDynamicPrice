@@ -38,9 +38,17 @@
         }
     },
     "error": {
-        "rc-dynamic-price-meter-price-unavailable": "No price per metre could be determined for %name%. Please remove the item or contact us — ordering is not possible until this is resolved."
+        "rc-dynamic-price-meter-price-unavailable": "No price per metre could be determined for %name%. Please remove the item or contact us — ordering is not possible until this is resolved.",
+        "rc-dynamic-price-length-stage-too-long": "The chosen size \"%stage%\" of %name% does not fit %length%. Please choose \"%suggestion%\" — ordering is not possible until then.",
+        "rc-dynamic-price-length-stage-too-long-for-all": "%length% is longer than every size of %name%. Please split the length or contact us — ordering is not possible until then.",
+        "rc-dynamic-price-length-stage-missing": "The desired length for %name% is missing. Please enter it — ordering is not possible until then.",
+        "rc-dynamic-price-length-stage-unreadable": "The length for %name% cannot be read. Please enter it in millimetres, e.g. 800 — ordering is not possible until then."
     },
     "checkout": {
-        "rc-dynamic-price-meter-price-unavailable": "No price per metre could be determined for %name%. Please remove the item or contact us — ordering is not possible until this is resolved."
+        "rc-dynamic-price-meter-price-unavailable": "No price per metre could be determined for %name%. Please remove the item or contact us — ordering is not possible until this is resolved.",
+        "rc-dynamic-price-length-stage-too-long": "The chosen size \"%stage%\" of %name% does not fit %length%. Please choose \"%suggestion%\" — ordering is not possible until then.",
+        "rc-dynamic-price-length-stage-too-long-for-all": "%length% is longer than every size of %name%. Please split the length or contact us — ordering is not possible until then.",
+        "rc-dynamic-price-length-stage-missing": "The desired length for %name% is missing. Please enter it — ordering is not possible until then.",
+        "rc-dynamic-price-length-stage-unreadable": "The length for %name% cannot be read. Please enter it in millimetres, e.g. 800 — ordering is not possible until then."
     }
 }

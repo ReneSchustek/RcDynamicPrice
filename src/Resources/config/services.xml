@@ -116,6 +116,20 @@
             <tag name="kernel.event_subscriber"/>
         </service>
 
+        <service id="Ruhrcoder\RcDynamicPrice\Service\LengthStage\LengthStageReader">
+            <argument type="service" id="Ruhrcoder\RcDynamicPrice\Service\MeterProductHelperInterface"/>
+            <argument type="service" id="Ruhrcoder\RcDynamicPrice\Service\LengthSettingsResolverInterface"/>
+            <argument type="service" id="property_group_option.repository"/>
+            <tag name="kernel.reset" method="reset"/>
+        </service>
+
+        <!-- Länge gegen Längenstufe (BRIEF65): sperrt die Bestellung, wenn die eingegebene Länge nicht zur Stufe passt. -->
+        <service id="Ruhrcoder\RcDynamicPrice\Cart\LengthStageValidator">
+            <argument type="service" id="Ruhrcoder\RcDynamicPrice\Service\LengthStage\LengthStageReader"/>
+            <argument type="service" id="request_stack"/>
+            <tag name="shopware.cart.validator"/>
+        </service>
+
         <service id="Ruhrcoder\RcDynamicPrice\Cart\DynamicPriceProcessor">
             <argument type="service" id="Shopware\Core\Checkout\Cart\Price\QuantityPriceCalculator"/>
             <argument type="service" id="Ruhrcoder\RcDynamicPrice\Service\MeterProductHelperInterface"/>

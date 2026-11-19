@@ -2,6 +2,37 @@
 
 Alle nennenswerten Änderungen werden in dieser Datei dokumentiert.
 
+## [1.32.0] - 2026-11-18: Länge gegen Längenstufe prüfen
+
+> **Deployment:** `plugin:update RcDynamicPrice`, `theme:compile`, `cache:clear`. Das Storefront-Skript liegt gebaut bei.
+
+### Neu
+
+- **Der Warenkorb prüft die Länge gegen die gekaufte Längenstufe** (BRIEF65). Bei Artikeln mit Längenstufen als
+  Varianten sperrt eine Länge, die länger ist als die Stufe, die Bestellung, mit der passenden Stufe im Hinweis („Für
+  800 mm passt die gewählte Größe ‚0,2 m‘ nicht. Bitte wählen Sie ‚1,0 m‘"). Ebenso gesperrt: eine unlesbare Angabe und
+  ein leeres Längenfeld, das in TMMS als Pflicht markiert ist, auch über die Store-API. Kürzere Längen bleiben erlaubt.
+  Die Prüfung läuft bei jeder Berechnung des Warenkorbs und unmittelbar vor der Bestellung.
+- **Die Länge der gewählten Stufe kommt ins leere Längenfeld.** Wählt der Kunde selbst eine feste Stufe wie 1,0 m,
+  steht danach 1000 im Feld. Eine vorhandene Eingabe bleibt und wird wie bisher geprüft. Bei Bereichen wie „96 - 116 cm"
+  bleibt das Feld leer, ebenso beim Laden der Seite und bei Stangenmaterial ohne Stufenknöpfe.
+
+## [1.31.0] - 2026-11-18: Berechneter Preis als Ereignis, auf Cent gerundet
+
+> **Deployment:** `plugin:update RcDynamicPrice`, `theme:compile`, `cache:clear`. Das Storefront-Skript liegt gebaut bei.
+
+### Neu
+
+- **Ereignis `rcDynamicPriceChanged` auf `document`**, wenn der Preis aus der Länge berechnet oder zurückgesetzt wird
+  (`detail.unitPrice`, `formatted`, `basePrice`, `currency`, `productId`). Die Kaufleiste des Themes und der Zweitpreis
+  von RcDualPrice übernehmen damit den berechneten Preis; bisher blieben beide beim Meterpreis stehen (Theme BRIEF167).
+
+### Behoben
+
+- **Der berechnete Preis ist auf Cent gerundet**, bevor er angezeigt und gemeldet wird. 1500 mm zu 52,37 € je Meter
+  sind 78,555 €; angezeigt wurden 78,56 €, weitergerechnet aber mit 78,555 €, und der Nettopreis daraus lag einen Cent
+  unter dem im Warenkorb.
+
 ## [1.30.1] - 2026-11-02
 
 > **Deployment:** `plugin:update RcDynamicPrice`, `theme:compile`, `cache:clear`. Das Storefront-Skript liegt gebaut bei.
