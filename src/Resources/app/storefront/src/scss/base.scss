@@ -80,7 +80,15 @@
 // Gruppen werden zu Gliedern der Kaufbox, und `order` stellt sie um: Längengruppe, Längeneingabe samt Hinweis,
 // übrige Gruppen, alles Weitere. Die Längengruppe ist immer die erste (LengthSettingsSubscriber). Am Quelltext
 // ändert sich nichts; Variantenwechsel und Speichern der Eingaben laufen wie im Kern.
-div:has(> .rc-length-order) {
+//
+// Die Markierung steht im Behälter `buy_widget_buy_container` des Kerns, einem `div` ohne Klasse. Das `:has()` sitzt
+// deshalb an der Wurzel der Kaufbox, die es einmal je Seite gibt (`js-magnifier-zoom-image-container`; die Klasse
+// `product-detail-buy-<id>` ändert sich je Erlebniswelt). Bis 1.32.0 stand hier `div:has(> .rc-length-order)`: Dafür
+// prüft der Browser jedes `div` der Seite und mit `> *` jedes Element. Am gedrosselten Telefon kostete das auf der
+// Startseite 1,6 Sekunden Stilberechnung, auch ohne Längenfeld (Theme BRIEF166).
+$rc-length-box: '.js-magnifier-zoom-image-container:has(> div > .rc-length-order) > div';
+
+#{$rc-length-box} {
     display: flex;
     flex-direction: column;
 
@@ -123,7 +131,7 @@ div:has(> .rc-length-order) {
 
 // Die Längeneingabe selbst; TMMS nummeriert seine Formulare `…-<Nummer>` und kennt höchstens fünf Felder (1.4.6).
 @for $field from 1 through 5 {
-    div:has(> .rc-length-order--field-#{$field}) > form[id^="productCustomerInputForm-"][id$="-#{$field}"] {
+    .js-magnifier-zoom-image-container:has(> div > .rc-length-order--field-#{$field}) > div > form[id^="productCustomerInputForm-"][id$="-#{$field}"] {
         order: 2;
     }
 }

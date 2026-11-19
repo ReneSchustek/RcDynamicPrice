@@ -59,8 +59,23 @@ final class LengthFieldPlacementTest extends TestCase
 
         $scss = file_get_contents(__DIR__ . '/../../../src/Resources/app/storefront/src/scss/base.scss');
         self::assertIsString($scss);
-        self::assertStringContainsString('div:has(> .rc-length-order)', $scss);
-        self::assertStringContainsString('div:has(> .rc-length-order--field-#{$field}) > form[id^="productCustomerInputForm-"][id$="-#{$field}"]', $scss);
+        self::assertStringContainsString("\$rc-length-box: '.js-magnifier-zoom-image-container:has(> div > .rc-length-order) > div';", $scss);
+        self::assertStringContainsString('.js-magnifier-zoom-image-container:has(> div > .rc-length-order--field-#{$field}) > div > form[id^="productCustomerInputForm-"][id$="-#{$field}"]', $scss);
+    }
+
+    /**
+     * Was: kein `:has()` mehr, dessen Subjekt ein bloßes `div` ist.
+     * Warum: `div:has(> .rc-length-order)` mit `> *` ließ den Browser jedes Element prüfen; am gedrosselten Telefon
+     *        kostete das 1,6 Sekunden Stilberechnung, auch auf Seiten ohne Längenfeld (Theme BRIEF166).
+     */
+    public function testNoHasSelectorOnABareDiv(): void
+    {
+        $scss = file_get_contents(__DIR__ . '/../../../src/Resources/app/storefront/src/scss/base.scss');
+        self::assertIsString($scss);
+        $rules = (string) preg_replace('~//[^
+]*~', '', $scss);
+
+        self::assertDoesNotMatchRegularExpression('/(^|[\s,>+~])div:has\(/m', $rules);
     }
 
     private function source(string $file): string

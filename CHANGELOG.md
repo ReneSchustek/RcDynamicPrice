@@ -2,6 +2,17 @@
 
 Alle nennenswerten Änderungen werden in dieser Datei dokumentiert.
 
+## [1.32.1] - 2026-11-19: Schnellere Stilberechnung
+
+> **Deployment:** `plugin:update RcDynamicPrice`, `theme:compile`, `cache:clear`.
+
+### Behoben
+
+- **Die Regel, die die Längeneingabe unter die Längengruppe stellt, bremste jede Seite.** Sie hing als
+  `div:has(> .rc-length-order)` an jedem `div` und mit `> *` an jedem Element. Am gedrosselten Telefon kostete das auf
+  der Startseite 1,6 Sekunden Stilberechnung, auch ohne Längenfeld. Das `:has()` sitzt jetzt an der Wurzel der Kaufbox,
+  die es einmal je Seite gibt; die Darstellung ist unverändert (Theme BRIEF166).
+
 ## [1.32.0] - 2026-11-18: Länge gegen Längenstufe prüfen
 
 > **Deployment:** `plugin:update RcDynamicPrice`, `theme:compile`, `cache:clear`. Das Storefront-Skript liegt gebaut bei.
